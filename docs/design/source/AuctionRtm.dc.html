@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<div style="width:100%;max-width:420px;background:var(--surface);color:var(--ink);border-radius:28px;padding:22px;box-sizing:border-box;display:flex;flex-direction:column;gap:16px;box-shadow:0 20px 60px oklch(0 0 0 / 0.3);font-family:'Plus Jakarta Sans',system-ui,sans-serif">
+  <div style="display:flex;justify-content:space-between;align-items:center"><span style="font-size:11px;font-weight:800;letter-spacing:0.06em;padding:5px 10px;border-radius:999px;background:var(--warn-tint);color:var(--warn-ink)">RIGHT TO MATCH</span><span style="font-family:'DM Mono',monospace;font-size:22px;font-weight:500;color:var(--warn-ink)">{{ v.rtm.time }}</span></div>
+  <div style="display:flex;gap:12px;align-items:center"><span style="width:48px;height:48px;border-radius:14px;background:{{ v.rtm.bg }};color:#fff;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:17px;flex-shrink:0">{{ v.rtm.id }}</span><div style="display:flex;flex-direction:column;gap:2px"><span style="font-weight:800;font-size:18px;letter-spacing:-0.02em;line-height:1.2">{{ v.rtm.team }} played their RTM card</span><span style="font-size:13px;color:var(--ink-2)">on {{ v.lot.name }}, their player last season</span></div></div>
+  <sc-if value="{{ v.rtm.isRaise }}" hint-placeholder-val="{{ true }}">
+    <div style="display:flex;flex-direction:column;gap:14px">
+      <div style="font-size:14px;line-height:1.5;color:var(--ink-2);text-wrap:pretty">They'll match your <b style="font-family:'DM Mono',monospace;font-weight:500;color:var(--ink)">{{ v.rtm.amount }}</b>. You get <b style="color:var(--ink)">one final raise</b>. If they match that too, they keep him and pay it.</div>
+      <div style="display:flex;flex-direction:column;gap:6px"><span style="font-size:11px;font-weight:700;letter-spacing:0.06em;color:var(--ink-2)">YOUR FINAL RAISE</span>
+        <div style="height:56px;border-radius:16px;background:var(--surface-2);display:flex;align-items:center;justify-content:space-between;padding:0 6px"><button data-d="-1" onClick="{{ onStep }}" style="width:44px;height:44px;border:0;border-radius:12px;background:var(--surface);color:var(--ink);cursor:pointer;font-family:'Material Symbols Rounded';font-size:22px">remove</button><span style="font-family:'DM Mono',monospace;font-size:24px;font-weight:500">{{ v.rtm.raise }}</span><button data-d="1" onClick="{{ onStep }}" style="width:44px;height:44px;border:0;border-radius:12px;background:var(--surface);color:var(--ink);cursor:pointer;font-family:'Material Symbols Rounded';font-size:22px">add</button></div>
+      </div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap"><button onClick="{{ onRaise }}" style="flex:1 1 160px;height:52px;border:0;border-radius:14px;background:var(--team);color:var(--on-team);font:inherit;font-weight:700;font-size:15px;cursor:pointer">Raise to {{ v.rtm.raise }}</button><button onClick="{{ onDecline }}" style="flex:1 1 140px;height:52px;border:1px solid var(--line);border-radius:14px;background:var(--surface);color:var(--ink);font:inherit;font-weight:700;font-size:15px;cursor:pointer">Hold at {{ v.rtm.amount }}</button></div>
+      <div style="font-size:12px;color:var(--ink-2)">One decision. No take-backs. Your guard still applies.</div>
+    </div>
+  </sc-if>
+  <sc-if value="{{ v.rtm.isWaiting }}" hint-placeholder-val="{{ false }}">
+    <div style="display:flex;align-items:center;gap:10px;padding:14px;border-radius:16px;background:var(--surface-2);font-size:14px;font-weight:600"><span style="font-family:'Material Symbols Rounded';font-size:22px;line-height:1">progress_activity</span>{{ v.rtm.team }} is deciding whether to match {{ v.bid }}…</div>
+  </sc-if>
+  <sc-if value="{{ v.rtm.isDone }}" hint-placeholder-val="{{ false }}">
+    <div style="display:flex;align-items:center;gap:10px;padding:14px;border-radius:16px;background:var(--ok-tint);font-size:14px;font-weight:600;line-height:1.45"><span style="font-family:'Material Symbols Rounded';font-size:22px;line-height:1;color:var(--ok)">gavel</span>{{ v.rtm.result }}</div>
+  </sc-if>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:420,&quot;height&quot;:440},&quot;v&quot;:{&quot;editor&quot;:null,&quot;tsType&quot;:&quot;AuctionView&quot;},&quot;onRaise&quot;:{&quot;editor&quot;:null,&quot;tsType&quot;:&quot;() =&gt; void&quot;},&quot;onDecline&quot;:{&quot;editor&quot;:null,&quot;tsType&quot;:&quot;() =&gt; void&quot;},&quot;onStep&quot;:{&quot;editor&quot;:null,&quot;tsType&quot;:&quot;(e) =&gt; void&quot;}}"></script>
+</body>
+</html>

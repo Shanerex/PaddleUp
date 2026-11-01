@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<title>PaddleUp — Auction explorations</title>
+<meta name="design_doc_mode" content="canvas">
+<link rel="icon" href="assets/favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=DM+Mono:wght@400;500&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@20..48,400..600,0..1,0&display=block">
+<script src="paddle.js"></script>
+<style>html,body{margin:0;padding:0;background:#ece9e4}body{font-family:'Plus Jakarta Sans',system-ui,sans-serif;-webkit-font-smoothing:antialiased}a{color:#b8401f}a:hover{color:#2a2420}</style>
+<template id="__bundler_thumbnail"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><rect width="100" height="100" fill="#e0532f"></rect><g transform="rotate(-16 50 50)" fill="#fffaf6"><rect x="46" y="52" width="8" height="22" rx="4"></rect><circle cx="50" cy="42" r="16"></circle></g></svg></template>
+</helmet>
+<section id="turn-3" style="padding:64px;display:flex;flex-direction:column;gap:28px;color:#2a2420">
+  <div style="display:flex;flex-direction:column;gap:6px;max-width:900px"><span style="font-family:'DM Mono',monospace;font-size:13px;color:#6b625a">Edge states · shown on <a href="#1a">1a</a> at phone size · every variant supports these via the scene tweak</span><h2 style="margin:0;font-size:32px;font-weight:800;letter-spacing:-0.03em">Auction states</h2></div>
+  <div style="display:flex;flex-wrap:wrap;gap:40px">
+    <div id="3a" style="display:flex;flex-direction:column;gap:12px"><div style="display:flex;gap:8px;align-items:center"><span style="font-family:'DM Mono',monospace;font-size:13px;font-weight:500;padding:4px 10px;border-radius:8px;background:#2a2420;color:#fff">3a</span><span style="font-weight:700;font-size:16px">Outbid</span></div><div style="width:390px;height:844px;border-radius:36px;overflow:hidden;box-shadow:0 20px 60px rgba(0,0,0,0.12)"><dc-import name="Auction A Spotlight" scene="outbid" height="100%" style="width:390px;height:844px" hint-size="390px,844px"></dc-import></div></div>
+    <div id="3b" style="display:flex;flex-direction:column;gap:12px"><div style="display:flex;gap:8px;align-items:center"><span style="font-family:'DM Mono',monospace;font-size:13px;font-weight:500;padding:4px 10px;border-radius:8px;background:#2a2420;color:#fff">3b</span><span style="font-weight:700;font-size:16px">Bid rejected by eligibility guard</span></div><div style="width:390px;height:844px;border-radius:36px;overflow:hidden;box-shadow:0 20px 60px rgba(0,0,0,0.12)"><dc-import name="Auction A Spotlight" scene="rejected" height="100%" style="width:390px;height:844px" hint-size="390px,844px"></dc-import></div></div>
+    <div id="3c" style="display:flex;flex-direction:column;gap:12px"><div style="display:flex;gap:8px;align-items:center"><span style="font-family:'DM Mono',monospace;font-size:13px;font-weight:500;padding:4px 10px;border-radius:8px;background:#2a2420;color:#fff">3c</span><span style="font-weight:700;font-size:16px">RTM interrupt + final raise</span></div><div style="width:390px;height:844px;border-radius:36px;overflow:hidden;box-shadow:0 20px 60px rgba(0,0,0,0.12)"><dc-import name="Auction A Spotlight" scene="rtm" height="100%" style="width:390px;height:844px" hint-size="390px,844px"></dc-import></div></div>
+    <div id="3d" style="display:flex;flex-direction:column;gap:12px"><div style="display:flex;gap:8px;align-items:center"><span style="font-family:'DM Mono',monospace;font-size:13px;font-weight:500;padding:4px 10px;border-radius:8px;background:#2a2420;color:#fff">3d</span><span style="font-weight:700;font-size:16px">Paused</span></div><div style="width:390px;height:844px;border-radius:36px;overflow:hidden;box-shadow:0 20px 60px rgba(0,0,0,0.12)"><dc-import name="Auction A Spotlight" scene="paused" height="100%" style="width:390px;height:844px" hint-size="390px,844px"></dc-import></div></div>
+    <div id="3e" style="display:flex;flex-direction:column;gap:12px"><div style="display:flex;gap:8px;align-items:center"><span style="font-family:'DM Mono',monospace;font-size:13px;font-weight:500;padding:4px 10px;border-radius:8px;background:#2a2420;color:#fff">3e</span><span style="font-weight:700;font-size:16px">Adjourned</span></div><div style="width:390px;height:844px;border-radius:36px;overflow:hidden;box-shadow:0 20px 60px rgba(0,0,0,0.12)"><dc-import name="Auction A Spotlight" scene="adjourned" height="100%" style="width:390px;height:844px" hint-size="390px,844px"></dc-import></div></div>
+    <div id="3f" style="display:flex;flex-direction:column;gap:12px"><div style="display:flex;gap:8px;align-items:center"><span style="font-family:'DM Mono',monospace;font-size:13px;font-weight:500;padding:4px 10px;border-radius:8px;background:#2a2420;color:#fff">3f</span><span style="font-weight:700;font-size:16px">Reconnecting</span></div><div style="width:390px;height:844px;border-radius:36px;overflow:hidden;box-shadow:0 20px 60px rgba(0,0,0,0.12)"><dc-import name="Auction A Spotlight" scene="reconnecting" height="100%" style="width:390px;height:844px" hint-size="390px,844px"></dc-import></div></div>
+    <div id="3g" style="display:flex;flex-direction:column;gap:12px"><div style="display:flex;gap:8px;align-items:center"><span style="font-family:'DM Mono',monospace;font-size:13px;font-weight:500;padding:4px 10px;border-radius:8px;background:#2a2420;color:#fff">3g</span><span style="font-weight:700;font-size:16px">Sold</span></div><div style="width:390px;height:844px;border-radius:36px;overflow:hidden;box-shadow:0 20px 60px rgba(0,0,0,0.12)"><dc-import name="Auction A Spotlight" scene="sold" height="100%" style="width:390px;height:844px" hint-size="390px,844px"></dc-import></div></div>
+    <div id="3h" style="display:flex;flex-direction:column;gap:12px"><div style="display:flex;gap:8px;align-items:center"><span style="font-family:'DM Mono',monospace;font-size:13px;font-weight:500;padding:4px 10px;border-radius:8px;background:#2a2420;color:#fff">3h</span><span style="font-weight:700;font-size:16px">Unsold</span></div><div style="width:390px;height:844px;border-radius:36px;overflow:hidden;box-shadow:0 20px 60px rgba(0,0,0,0.12)"><dc-import name="Auction A Spotlight" scene="unsold" height="100%" style="width:390px;height:844px" hint-size="390px,844px"></dc-import></div></div>
+    <div id="3i" style="display:flex;flex-direction:column;gap:12px"><div style="display:flex;gap:8px;align-items:center"><span style="font-family:'DM Mono',monospace;font-size:13px;font-weight:500;padding:4px 10px;border-radius:8px;background:#2a2420;color:#fff">3i</span><span style="font-weight:700;font-size:16px">AI failure · lifeline refunded</span></div><div style="width:390px;height:844px;border-radius:36px;overflow:hidden;box-shadow:0 20px 60px rgba(0,0,0,0.12)"><dc-import name="Auction A Spotlight" scene="advisorFail" height="100%" style="width:390px;height:844px" hint-size="390px,844px"></dc-import></div></div>
+    <div id="3j" style="display:flex;flex-direction:column;gap:12px"><div style="display:flex;gap:8px;align-items:center"><span style="font-family:'DM Mono',monospace;font-size:13px;font-weight:500;padding:4px 10px;border-radius:8px;background:#2a2420;color:#fff">3j</span><span style="font-weight:700;font-size:16px">Dark mode · live</span></div><div style="width:390px;height:844px;border-radius:36px;overflow:hidden;box-shadow:0 20px 60px rgba(0,0,0,0.12)"><dc-import name="Auction A Spotlight" scene="live" mode="dark" height="100%" style="width:390px;height:844px" hint-size="390px,844px"></dc-import></div></div>
+  </div>
+</section>
+
+<section id="turn-2" style="padding:64px;display:flex;flex-direction:column;gap:28px;color:#2a2420;border-top:1px solid #d8d3cc">
+  <div style="display:flex;flex-direction:column;gap:6px;max-width:900px"><span style="font-family:'DM Mono',monospace;font-size:13px;color:#6b625a">Team Table presentation · session open on a Fit Check · bid dock stays reachable in both</span><h2 style="margin:0;font-size:32px;font-weight:800;letter-spacing:-0.03em">AI advisor: sheet vs side panel</h2></div>
+  <div style="display:flex;flex-wrap:wrap;gap:56px;align-items:flex-start">
+    <div id="2a" style="display:flex;flex-direction:column;gap:12px"><div style="display:flex;gap:8px;align-items:center"><span style="font-family:'DM Mono',monospace;font-size:13px;font-weight:500;padding:4px 10px;border-radius:8px;background:#2a2420;color:#fff">2a</span><span style="font-weight:700;font-size:16px">Bottom sheet over the auction</span><span style="font-size:14px;color:#6b625a">Floats above the dock. Lot stays partly visible.</span></div>
+      <div style="display:flex;gap:24px;align-items:flex-start;flex-wrap:wrap">
+        <div style="width:390px;height:844px;border-radius:36px;overflow:hidden;box-shadow:0 20px 60px rgba(0,0,0,0.12)"><dc-import name="Auction A Spotlight" scene="advisor" advisor="sheet" height="100%" style="width:390px;height:844px" hint-size="390px,844px"></dc-import></div>
+        <div style="width:1440px;height:900px;border-radius:20px;overflow:hidden;box-shadow:0 20px 60px rgba(0,0,0,0.12)"><dc-import name="Auction A Spotlight" scene="advisor" advisor="sheet" height="100%" style="width:1440px;height:900px" hint-size="1440px,900px"></dc-import></div>
+      </div>
+    </div>
+    <div id="2b" style="display:flex;flex-direction:column;gap:12px"><div style="display:flex;gap:8px;align-items:center"><span style="font-family:'DM Mono',monospace;font-size:13px;font-weight:500;padding:4px 10px;border-radius:8px;background:#2a2420;color:#fff">2b</span><span style="font-weight:700;font-size:16px">Side panel, pushes content</span><span style="font-size:14px;color:#6b625a">Tablet/desktop dock a 400px column. Phone gets a full-height takeover above the dock.</span></div>
+      <div style="display:flex;gap:24px;align-items:flex-start;flex-wrap:wrap">
+        <div style="width:390px;height:844px;border-radius:36px;overflow:hidden;box-shadow:0 20px 60px rgba(0,0,0,0.12)"><dc-import name="Auction A Spotlight" scene="advisor" advisor="panel" height="100%" style="width:390px;height:844px" hint-size="390px,844px"></dc-import></div>
+        <div style="width:1440px;height:900px;border-radius:20px;overflow:hidden;box-shadow:0 20px 60px rgba(0,0,0,0.12)"><dc-import name="Auction A Spotlight" scene="advisor" advisor="panel" height="100%" style="width:1440px;height:900px" hint-size="1440px,900px"></dc-import></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section id="turn-1" style="padding:64px;display:flex;flex-direction:column;gap:28px;color:#2a2420;border-top:1px solid #d8d3cc">
+  <div style="display:flex;flex-direction:column;gap:6px;max-width:900px"><span style="font-family:'DM Mono',monospace;font-size:13px;color:#6b625a">All three are live: rivals bid, the clock runs, your paddle works. Tap "Table" to spend a lifeline.</span><h2 style="margin:0;font-size:32px;font-weight:800;letter-spacing:-0.03em">Auction screen: three directions</h2></div>
+  <div id="1a" style="display:flex;flex-direction:column;gap:12px"><div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap"><span style="font-family:'DM Mono',monospace;font-size:13px;font-weight:500;padding:4px 10px;border-radius:8px;background:#2a2420;color:#fff">1a</span><span style="font-weight:700;font-size:18px">Spotlight</span><span style="font-size:14px;color:#6b625a">Bid-centric. One player, one number, one button. Rivals, bids and squad live in drawers.</span></div>
+    <div style="display:flex;gap:24px;align-items:flex-start">
+      <div style="width:390px;height:844px;border-radius:36px;overflow:hidden;box-shadow:0 20px 60px rgba(0,0,0,0.12);flex-shrink:0"><dc-import name="Auction A Spotlight" height="100%" style="width:390px;height:844px" hint-size="390px,844px"></dc-import></div>
+      <div style="width:820px;height:1180px;border-radius:28px;overflow:hidden;box-shadow:0 20px 60px rgba(0,0,0,0.12);flex-shrink:0"><dc-import name="Auction A Spotlight" height="100%" style="width:820px;height:1180px" hint-size="820px,1180px"></dc-import></div>
+      <div style="width:1440px;height:900px;border-radius:20px;overflow:hidden;box-shadow:0 20px 60px rgba(0,0,0,0.12);flex-shrink:0"><dc-import name="Auction A Spotlight" height="100%" style="width:1440px;height:900px" hint-size="1440px,900px"></dc-import></div>
+    </div>
+  </div>
+  <div id="1b" style="display:flex;flex-direction:column;gap:12px;padding-top:28px"><div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap"><span style="font-family:'DM Mono',monospace;font-size:13px;font-weight:500;padding:4px 10px;border-radius:8px;background:#2a2420;color:#fff">1b</span><span style="font-weight:700;font-size:18px">War Room</span><span style="font-size:14px;color:#6b625a">Everything at once on desktop: every rival's purse and needs, the lot, the feed, your squad. Collapses to a purse strip on phone.</span></div>
+    <div style="display:flex;gap:24px;align-items:flex-start">
+      <div style="width:390px;height:844px;border-radius:36px;overflow:hidden;box-shadow:0 20px 60px rgba(0,0,0,0.12);flex-shrink:0"><dc-import name="Auction B War Room" height="100%" style="width:390px;height:844px" hint-size="390px,844px"></dc-import></div>
+      <div style="width:820px;height:1180px;border-radius:28px;overflow:hidden;box-shadow:0 20px 60px rgba(0,0,0,0.12);flex-shrink:0"><dc-import name="Auction B War Room" height="100%" style="width:820px;height:1180px" hint-size="820px,1180px"></dc-import></div>
+      <div style="width:1440px;height:900px;border-radius:20px;overflow:hidden;box-shadow:0 20px 60px rgba(0,0,0,0.12);flex-shrink:0"><dc-import name="Auction B War Room" height="100%" style="width:1440px;height:900px" hint-size="1440px,900px"></dc-import></div>
+    </div>
+  </div>
+  <div id="1c" style="display:flex;flex-direction:column;gap:12px;padding-top:28px"><div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap"><span style="font-family:'DM Mono',monospace;font-size:13px;font-weight:500;padding:4px 10px;border-radius:8px;background:#2a2420;color:#fff">1c</span><span style="font-weight:700;font-size:18px">Paddle Row</span><span style="font-size:14px;color:#6b625a">The room as a row of paddles. Whoever leads has theirs raised. The clock wraps the current bid.</span></div>
+    <div style="display:flex;gap:24px;align-items:flex-start">
+      <div style="width:390px;height:844px;border-radius:36px;overflow:hidden;box-shadow:0 20px 60px rgba(0,0,0,0.12);flex-shrink:0"><dc-import name="Auction C Paddle Row" height="100%" style="width:390px;height:844px" hint-size="390px,844px"></dc-import></div>
+      <div style="width:820px;height:1180px;border-radius:28px;overflow:hidden;box-shadow:0 20px 60px rgba(0,0,0,0.12);flex-shrink:0"><dc-import name="Auction C Paddle Row" height="100%" style="width:820px;height:1180px" hint-size="820px,1180px"></dc-import></div>
+      <div style="width:1440px;height:900px;border-radius:20px;overflow:hidden;box-shadow:0 20px 60px rgba(0,0,0,0.12);flex-shrink:0"><dc-import name="Auction C Paddle Row" height="100%" style="width:1440px;height:900px" hint-size="1440px,900px"></dc-import></div>
+    </div>
+  </div>
+</section>
+</x-dc>
+</body>
+</html>

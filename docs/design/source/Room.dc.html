@@ -1,0 +1,473 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<title>PaddleUp — Room</title>
+<link rel="icon" href="assets/favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=DM+Mono:wght@400;500&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@20..48,400..600,0..1,0&display=block">
+<script src="paddle.js"></script>
+<style>html,body{margin:0;padding:0}*{scrollbar-width:none}*::-webkit-scrollbar{display:none}body{font-family:'Plus Jakarta Sans',system-ui,sans-serif;-webkit-font-smoothing:antialiased}a{color:var(--team-ink,#1d6b72)}a:hover{color:var(--ink,#2a2420)}</style>
+</helmet>
+<div ref="{{ rootRef }}" style="--bg:oklch(0.975 0.006 75);--surface:oklch(0.995 0.003 75);--surface-2:oklch(0.955 0.007 75);--line:oklch(0.905 0.008 75);--ink:oklch(0.23 0.012 60);--ink-2:oklch(0.46 0.012 60);--ink-3:oklch(0.62 0.01 60);--ok:oklch(0.56 0.14 155);--ok-tint:oklch(0.95 0.04 155);--warn:oklch(0.72 0.15 75);--warn-ink:oklch(0.5 0.12 70);--warn-tint:oklch(0.96 0.05 85);--bad:oklch(0.57 0.2 25);--bad-tint:oklch(0.95 0.035 25);--info:oklch(0.55 0.13 245);--info-tint:oklch(0.95 0.03 245);--inverse:oklch(0.24 0.012 60);--inverse-2:oklch(0.31 0.012 60);--on-inverse:oklch(0.97 0.005 75);--on-inverse-2:oklch(0.78 0.01 70);--coach:oklch(0.78 0.14 70);--analyst:oklch(0.76 0.11 230);--shadow:0 1px 2px oklch(0.3 0.02 60 / 0.06), 0 6px 20px oklch(0.3 0.02 60 / 0.07);--team:oklch(0.56 0.15 195);--team-strong:oklch(0.48 0.14 195);--team-tint:oklch(0.955 0.03 195);--team-tint-2:oklch(0.9 0.06 195);--team-ink:oklch(0.42 0.12 195);--on-team:oklch(0.99 0.005 195);--room-bg:oklch(0.972 0.014 195);--role1-bg:oklch(0.93 0.04 70);--role1-ink:oklch(0.4 0.09 70);--role2-bg:oklch(0.93 0.04 250);--role2-ink:oklch(0.4 0.1 250);--role3-bg:oklch(0.93 0.04 150);--role3-ink:oklch(0.4 0.09 150);--role4-bg:oklch(0.93 0.04 320);--role4-ink:oklch(0.42 0.1 320);position:relative;width:100%;height:{{ frameH }};display:flex;flex-direction:column;background:var(--room-bg);color:var(--ink);font-family:'Plus Jakarta Sans',system-ui,sans-serif;overflow:hidden">
+
+  <div style="background:var(--team);color:var(--on-team);padding:10px 16px;display:flex;align-items:center;gap:12px;flex-shrink:0">
+    <a href="Home.dc.html" style="color:inherit;display:flex"><span style="font-family:'Material Symbols Rounded';font-size:22px;line-height:1">arrow_back</span></a>
+    <div style="flex:1;min-width:0;display:flex;flex-direction:column;gap:2px">
+      <div style="display:flex;align-items:center;gap:8px"><span style="font-weight:700;font-size:15px;white-space:nowrap">Monsoon League</span><span style="font-size:10px;font-weight:800;letter-spacing:0.05em;padding:3px 8px;border-radius:999px;background:oklch(1 0 0 / 0.2);white-space:nowrap">{{ phasePill }}</span></div>
+      <span style="font-size:12px;opacity:0.85;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ screenTitle }}</span>
+    </div>
+    <div style="width:36px;height:36px;border-radius:11px;background:var(--on-team);color:var(--team);display:flex;align-items:center;justify-content:center;font-weight:800;font-size:13px;flex-shrink:0">MR</div>
+  </div>
+
+  <div style="flex:1;min-height:0;display:flex">
+    <sc-if value="{{ isDesktop }}" hint-placeholder-val="{{ false }}">
+      <div style="width:248px;flex-shrink:0;background:var(--surface);border-right:1px solid var(--line);padding:14px 12px;box-sizing:border-box;display:flex;flex-direction:column;gap:2px;overflow:auto">
+        <div style="display:flex;align-items:center;gap:10px;padding:10px;border-radius:14px;background:var(--team-tint);margin-bottom:10px"><span style="width:32px;height:32px;border-radius:10px;background:var(--team);color:var(--on-team);display:flex;align-items:center;justify-content:center;font-weight:800;font-size:12px">MR</span><div style="display:flex;flex-direction:column;min-width:0"><span style="font-weight:800;font-size:14px;color:var(--team-ink)">Monsoon Riders</span><span style="font-size:12px;color:var(--ink-2)">2nd · 3,670 pts</span></div></div>
+        <sc-for list="{{ railNav }}" as="n" hint-placeholder-count="9"><button data-s="{{ n.key }}" onClick="{{ nav }}" style="display:flex;align-items:center;gap:10px;padding:10px;border:0;border-radius:12px;background:{{ n.bg }};color:{{ n.ink }};font:inherit;font-size:14px;font-weight:{{ n.weight }};cursor:pointer;text-align:left"><span style="font-family:'Material Symbols Rounded';font-size:22px;line-height:1;font-variation-settings:'FILL' {{ n.fill }}">{{ n.icon }}</span>{{ n.label }}</button></sc-for>
+      </div>
+    </sc-if>
+
+    <div style="flex:1;min-width:0;display:flex;flex-direction:column;position:relative">
+      <sc-if value="{{ offline }}" hint-placeholder-val="{{ false }}">
+        <div style="flex-shrink:0;display:flex;align-items:center;gap:10px;padding:10px 16px;background:var(--info-tint);font-size:13px"><span style="font-family:'Material Symbols Rounded';font-size:20px;line-height:1;color:var(--info)">cloud_off</span><span style="flex:1"><b>You're offline.</b> <span style="color:var(--ink-2)">Showing standings saved at 9:41 AM.</span></span></div>
+      </sc-if>
+      <div style="flex:1;min-height:0;overflow:auto;padding:18px 16px 32px">
+        <div style="max-width:1040px;margin:0 auto;display:flex;flex-direction:column;gap:16px">
+
+<sc-if value="{{ sOverview }}" hint-placeholder-val="{{ true }}">
+  <div style="display:flex;flex-direction:column;gap:16px">
+    <div style="display:flex;gap:4px;align-items:center;overflow-x:auto;padding:2px 0">
+      <sc-for list="{{ phases }}" as="p" hint-placeholder-count="5"><div style="display:flex;align-items:center;gap:4px;flex-shrink:0"><span style="font-size:11px;font-weight:800;letter-spacing:0.04em;padding:5px 10px;border-radius:999px;background:{{ p.bg }};color:{{ p.ink }}">{{ p.label }}</span><span style="width:{{ p.sep }};height:2px;background:var(--line)"></span></div></sc-for>
+    </div>
+    <div style="display:flex;flex-wrap:wrap;gap:16px">
+      <div style="flex:2 1 380px;min-width:0;border-radius:28px;background:var(--team);color:var(--on-team);padding:22px;display:flex;flex-direction:column;gap:18px;box-shadow:var(--shadow)">
+        <div style="display:flex;align-items:center;gap:14px"><div style="width:56px;height:56px;border-radius:17px;background:var(--on-team);color:var(--team);display:flex;align-items:center;justify-content:center;font-weight:800;font-size:20px">MR</div><div style="display:flex;flex-direction:column;gap:2px"><span style="font-size:22px;font-weight:800;letter-spacing:-0.02em">Monsoon Riders</span><span style="font-size:13px;opacity:0.85">38 pts behind Chai Chargers. Very catchable.</span></div></div>
+        <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px">
+          <div style="border-radius:16px;background:oklch(1 0 0 / 0.16);padding:12px;display:flex;flex-direction:column;gap:2px"><span style="font-size:10px;font-weight:700;letter-spacing:0.06em;opacity:0.85">RANK</span><span style="font-family:'DM Mono',monospace;font-size:26px;font-weight:500">2<span style="font-size:15px;opacity:0.8">/8</span></span></div>
+          <div style="border-radius:16px;background:oklch(1 0 0 / 0.16);padding:12px;display:flex;flex-direction:column;gap:2px"><span style="font-size:10px;font-weight:700;letter-spacing:0.06em;opacity:0.85">TOTAL</span><span style="font-family:'DM Mono',monospace;font-size:26px;font-weight:500">3,670</span></div>
+          <div style="border-radius:16px;background:oklch(1 0 0 / 0.16);padding:12px;display:flex;flex-direction:column;gap:2px"><span style="font-size:10px;font-weight:700;letter-spacing:0.06em;opacity:0.85">LAST NIGHT</span><span style="font-family:'DM Mono',monospace;font-size:26px;font-weight:500">+142</span></div>
+        </div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap"><button data-s="standings" onClick="{{ nav }}" style="height:44px;padding:0 16px;border:0;border-radius:14px;background:var(--on-team);color:var(--team-ink);font:inherit;font-weight:700;font-size:14px;cursor:pointer">Standings</button><button data-s="match" onClick="{{ nav }}" style="height:44px;padding:0 16px;border:0;border-radius:14px;background:oklch(1 0 0 / 0.18);color:var(--on-team);font:inherit;font-weight:700;font-size:14px;cursor:pointer">Last night's points</button></div>
+      </div>
+      <div style="flex:1 1 280px;min-width:0;display:flex;flex-direction:column;gap:12px">
+        <div style="border-radius:24px;background:var(--surface);padding:16px;display:flex;flex-direction:column;gap:10px;box-shadow:var(--shadow)">
+          <div style="display:flex;justify-content:space-between"><span style="font-size:11px;font-weight:700;letter-spacing:0.06em;color:var(--ink-2)">NEXT MATCH</span><span style="font-size:12px;font-weight:700;color:var(--team-ink)">Tonight 7:30 PM</span></div>
+          <span style="font-size:18px;font-weight:800">MI vs CSK</span>
+          <div style="display:flex;gap:6px;flex-wrap:wrap"><span style="font-size:12px;font-weight:600;padding:4px 10px;border-radius:999px;background:var(--team-tint);color:var(--team-ink)">Kiran Desai</span><span style="font-size:12px;font-weight:600;padding:4px 10px;border-radius:999px;background:var(--team-tint);color:var(--team-ink)">Jaden Okoro</span><span style="font-size:12px;font-weight:600;padding:4px 10px;border-radius:999px;background:var(--team-tint);color:var(--team-ink)">Dwayne Pollard</span><span style="font-size:12px;font-weight:600;padding:4px 10px;border-radius:999px;background:var(--team-tint);color:var(--team-ink)">+1</span></div>
+        </div>
+        <button data-s="report" onClick="{{ nav }}" style="border:0;border-radius:24px;background:var(--surface);padding:16px;display:flex;align-items:center;gap:14px;box-shadow:var(--shadow);font:inherit;color:inherit;text-align:left;cursor:pointer"><span style="width:52px;height:52px;border-radius:16px;background:var(--ok-tint);color:var(--ok);display:flex;align-items:center;justify-content:center;font-weight:800;font-size:22px;flex-shrink:0">B+</span><div style="flex:1;display:flex;flex-direction:column;gap:2px"><span style="font-weight:800;font-size:15px">Auction Report Card</span><span style="font-size:13px;color:var(--ink-2)">Projected 2nd. Best buy: Harshit Malhotra.</span></div><span style="font-family:'Material Symbols Rounded';font-size:22px;color:var(--ink-2)">chevron_right</span></button>
+      </div>
+    </div>
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,220px),1fr));gap:10px">
+      <button data-s="audit" onClick="{{ nav }}" style="border:0;border-radius:18px;background:var(--surface);padding:14px;display:flex;align-items:center;gap:12px;font:inherit;color:inherit;cursor:pointer;text-align:left"><span style="font-family:'Material Symbols Rounded';font-size:22px;color:var(--ink-2)">receipt_long</span><span style="flex:1;font-weight:700;font-size:14px">Audit log</span><span style="font-family:'Material Symbols Rounded';font-size:20px;color:var(--ink-3)">chevron_right</span></button>
+      <button data-s="summary" onClick="{{ nav }}" style="border:0;border-radius:18px;background:var(--surface);padding:14px;display:flex;align-items:center;gap:12px;font:inherit;color:inherit;cursor:pointer;text-align:left"><span style="font-family:'Material Symbols Rounded';font-size:22px;color:var(--ink-2)">gavel</span><span style="flex:1;font-weight:700;font-size:14px">Auction summary</span><span style="font-family:'Material Symbols Rounded';font-size:20px;color:var(--ink-3)">chevron_right</span></button>
+      <button data-s="players" onClick="{{ nav }}" style="border:0;border-radius:18px;background:var(--surface);padding:14px;display:flex;align-items:center;gap:12px;font:inherit;color:inherit;cursor:pointer;text-align:left"><span style="font-family:'Material Symbols Rounded';font-size:22px;color:var(--ink-2)">star</span><span style="flex:1;font-weight:700;font-size:14px">Top players &amp; best value</span><span style="font-family:'Material Symbols Rounded';font-size:20px;color:var(--ink-3)">chevron_right</span></button>
+      <button data-s="commish" onClick="{{ nav }}" style="border:0;border-radius:18px;background:var(--surface);padding:14px;display:flex;align-items:center;gap:12px;font:inherit;color:inherit;cursor:pointer;text-align:left"><span style="font-family:'Material Symbols Rounded';font-size:22px;color:var(--ink-2)">shield_person</span><span style="flex:1;font-weight:700;font-size:14px">Commissioner tools</span><span style="font-size:11px;font-weight:800;padding:3px 8px;border-radius:999px;background:var(--bad-tint);color:var(--bad)">2</span></button>
+    </div>
+  </div>
+</sc-if>
+
+<sc-if value="{{ sLobby }}" hint-placeholder-val="{{ false }}">
+  <div style="display:flex;flex-wrap:wrap;gap:16px;align-items:flex-start">
+    <div style="flex:3 1 380px;min-width:0;display:flex;flex-direction:column;gap:16px">
+      <div style="border-radius:28px;background:var(--surface);padding:24px;display:flex;flex-direction:column;align-items:center;gap:10px;text-align:center;box-shadow:var(--shadow)">
+        <span style="font-size:11px;font-weight:700;letter-spacing:0.06em;color:var(--ink-2)">AUCTION STARTS IN</span>
+        <span style="font-family:'DM Mono',monospace;font-size:56px;line-height:1;font-weight:500;letter-spacing:-0.04em">{{ countdown }}</span>
+        <span style="font-size:14px;color:var(--ink-2)">Sat 2 Nov · <b style="color:var(--ink)">8:00 PM your time</b> · 120-player short pool</span>
+        <button onClick="{{ toggleReady }}" style="margin-top:8px;height:56px;width:100%;max-width:360px;border:{{ readyBorder }};border-radius:16px;background:{{ readyBg }};color:{{ readyInk }};font:inherit;font-weight:800;font-size:16px;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px"><span style="font-family:'Material Symbols Rounded';font-size:22px;line-height:1;font-variation-settings:'FILL' 1">{{ readyIcon }}</span>{{ readyLabel }}</button>
+      </div>
+      <div style="border-radius:24px;background:var(--surface);padding:18px;display:flex;flex-direction:column;gap:12px;box-shadow:var(--shadow)">
+        <span style="font-size:11px;font-weight:700;letter-spacing:0.06em;color:var(--ink-2)">HOUSE RULES</span>
+        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:8px">
+          <div style="background:var(--surface-2);border-radius:14px;padding:10px 12px;display:flex;flex-direction:column;gap:2px"><span style="font-size:11px;color:var(--ink-2);font-weight:700">PURSE</span><span style="font-family:'DM Mono',monospace;font-size:15px">₹120 Cr</span></div>
+          <div style="background:var(--surface-2);border-radius:14px;padding:10px 12px;display:flex;flex-direction:column;gap:2px"><span style="font-size:11px;color:var(--ink-2);font-weight:700">SQUAD</span><span style="font-family:'DM Mono',monospace;font-size:15px">18–25</span></div>
+          <div style="background:var(--surface-2);border-radius:14px;padding:10px 12px;display:flex;flex-direction:column;gap:2px"><span style="font-size:11px;color:var(--ink-2);font-weight:700">ROLE MINIMUMS</span><span style="font-family:'DM Mono',monospace;font-size:15px">2 WK · 5 BAT · 5 BOWL · 3 AR</span></div>
+          <div style="background:var(--surface-2);border-radius:14px;padding:10px 12px;display:flex;flex-direction:column;gap:2px"><span style="font-size:11px;color:var(--ink-2);font-weight:700">OVERSEAS</span><span style="font-family:'DM Mono',monospace;font-size:15px">≤ 8</span></div>
+          <div style="background:var(--surface-2);border-radius:14px;padding:10px 12px;display:flex;flex-direction:column;gap:2px"><span style="font-size:11px;color:var(--ink-2);font-weight:700">TIMER</span><span style="font-family:'DM Mono',monospace;font-size:15px">30s open · 15s per bid</span></div>
+          <div style="background:var(--surface-2);border-radius:14px;padding:10px 12px;display:flex;flex-direction:column;gap:2px"><span style="font-size:11px;color:var(--ink-2);font-weight:700">LIFELINES</span><span style="font-family:'DM Mono',monospace;font-size:15px">1 Fit · 1 Ceiling · 1 Scan</span></div>
+        </div>
+        <span style="font-size:13px;color:var(--ink-2);line-height:1.5">Bids are final. The app won't let you bid past what you need to fill your minimums at base price.</span>
+      </div>
+    </div>
+    <div style="flex:2 1 300px;min-width:0;border-radius:24px;background:var(--surface);padding:8px;display:flex;flex-direction:column;box-shadow:var(--shadow)">
+      <div style="display:flex;justify-content:space-between;padding:10px"><span style="font-size:11px;font-weight:700;letter-spacing:0.06em;color:var(--ink-2)">IN THE ROOM</span><span style="font-family:'DM Mono',monospace;font-size:12px;color:var(--ink-2)">{{ readyCount }}/8 ready</span></div>
+      <sc-for list="{{ lobby }}" as="m" hint-placeholder-count="8"><div style="display:flex;align-items:center;gap:12px;padding:10px;border-radius:14px;background:{{ m.rowBg }}"><span style="width:36px;height:36px;border-radius:11px;background:{{ m.bg }};color:#fff;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:13px;opacity:{{ m.op }}">{{ m.id }}</span><div style="flex:1;display:flex;flex-direction:column;min-width:0"><span style="font-weight:700;font-size:14px">{{ m.name }}</span><span style="font-size:12px;color:var(--ink-2)">{{ m.mgr }} · {{ m.local }}</span></div><span style="font-size:11px;font-weight:800;padding:4px 9px;border-radius:999px;background:{{ m.stBg }};color:{{ m.stInk }}">{{ m.status }}</span></div></sc-for>
+      <div style="padding:10px;display:flex;gap:8px;flex-wrap:wrap;border-top:1px solid var(--line);margin-top:6px"><span style="font-size:12px;font-weight:700;color:var(--ink-2);display:flex;align-items:center;gap:6px"><span style="font-family:'Material Symbols Rounded';font-size:18px">shield_person</span>Commissioner</span><span style="flex:1"></span><span style="height:36px;padding:0 14px;border-radius:12px;background:var(--team);color:var(--on-team);font-size:13px;font-weight:700;display:flex;align-items:center">Start now</span></div>
+    </div>
+  </div>
+</sc-if>
+
+<sc-if value="{{ sRetention }}" hint-placeholder-val="{{ false }}">
+  <div style="display:flex;flex-wrap:wrap;gap:16px;align-items:flex-start">
+    <div style="flex:3 1 380px;min-width:0;display:flex;flex-direction:column;gap:12px">
+      <div style="display:flex;flex-direction:column;gap:4px"><span style="font-size:24px;font-weight:800;letter-spacing:-0.025em">Keep your core</span><span style="font-size:14px;color:var(--ink-2);line-height:1.5">Season 2. Retain up to 6 from last year's squad: max 5 capped, 2 uncapped. Every unused slot becomes an RTM card. Window closes in <b style="font-family:'DM Mono',monospace;font-weight:500;color:var(--ink)">1d 04:12</b>.</span></div>
+      <div style="border-radius:24px;background:var(--surface);padding:6px;box-shadow:var(--shadow)">
+        <sc-for list="{{ retain }}" as="p" hint-placeholder-count="8"><button data-i="{{ p.i }}" onClick="{{ toggleRetain }}" style="width:100%;display:flex;align-items:center;gap:12px;padding:12px;border:0;border-radius:16px;background:{{ p.rowBg }};font:inherit;color:inherit;text-align:left;cursor:pointer"><span style="width:24px;height:24px;border-radius:8px;border:2px solid {{ p.boxBorder }};background:{{ p.boxBg }};color:var(--on-team);display:flex;align-items:center;justify-content:center;font-family:'Material Symbols Rounded';font-size:18px;flex-shrink:0">{{ p.check }}</span><span style="font-size:10px;font-weight:800;padding:3px 6px;border-radius:6px;background:{{ p.roleBg }};color:{{ p.roleInk }};width:34px;text-align:center">{{ p.role }}</span><div style="flex:1;display:flex;flex-direction:column;min-width:0"><span style="font-weight:700;font-size:14px">{{ p.name }}</span><span style="font-size:12px;color:var(--ink-2)">{{ p.tag }} · {{ p.pts }} pts last season</span></div><span style="font-family:'DM Mono',monospace;font-size:13px;color:{{ p.costInk }}">{{ p.cost }}</span></button></sc-for>
+      </div>
+    </div>
+    <div style="flex:2 1 280px;min-width:0;display:flex;flex-direction:column;gap:12px">
+      <div style="border-radius:24px;background:var(--surface);padding:18px;display:flex;flex-direction:column;gap:12px;box-shadow:var(--shadow)">
+        <div style="display:flex;justify-content:space-between;align-items:baseline"><span style="font-size:11px;font-weight:700;letter-spacing:0.06em;color:var(--ink-2)">PURSE AFTER RETENTION</span><span style="font-family:'DM Mono',monospace;font-size:12px;color:var(--ink-2)">of ₹120 Cr</span></div>
+        <span style="font-family:'DM Mono',monospace;font-size:32px;font-weight:500;letter-spacing:-0.03em">{{ retPurse }}</span>
+        <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px">
+          <div style="background:var(--surface-2);border-radius:12px;padding:10px;display:flex;flex-direction:column;gap:2px"><span style="font-size:10px;font-weight:700;color:var(--ink-2)">CAPPED</span><span style="font-family:'DM Mono',monospace;font-size:16px">{{ retCapped }}/5</span></div>
+          <div style="background:var(--surface-2);border-radius:12px;padding:10px;display:flex;flex-direction:column;gap:2px"><span style="font-size:10px;font-weight:700;color:var(--ink-2)">UNCAPPED</span><span style="font-family:'DM Mono',monospace;font-size:16px">{{ retUncapped }}/2</span></div>
+          <div style="background:var(--team-tint);border-radius:12px;padding:10px;display:flex;flex-direction:column;gap:2px"><span style="font-size:10px;font-weight:700;color:var(--team-ink)">RTM CARDS</span><span style="font-family:'DM Mono',monospace;font-size:16px;color:var(--team-ink)">{{ retRtm }}</span></div>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:6px;font-size:12px;color:var(--ink-2)"><span style="font-weight:700;color:var(--ink)">Slab costs</span><span>Capped picks 1 · 2 · 3: <span style="font-family:'DM Mono',monospace">₹18 · ₹14 · ₹11 Cr</span>, then ₹11 Cr each</span><span>Uncapped: <span style="font-family:'DM Mono',monospace">₹4 Cr</span></span></div>
+        <button style="height:52px;border:0;border-radius:14px;background:var(--team);color:var(--on-team);font:inherit;font-weight:700;font-size:15px;cursor:pointer">Lock in {{ retCount }} retentions</button>
+        <span style="font-size:12px;color:var(--ink-2)">You can change picks until the window closes.</span>
+      </div>
+    </div>
+  </div>
+</sc-if>
+
+<sc-if value="{{ sSquad }}" hint-placeholder-val="{{ false }}">
+  <div style="display:flex;flex-direction:column;gap:14px">
+    <div style="display:flex;gap:8px;overflow-x:auto;padding:2px">
+      <sc-for list="{{ teamChips }}" as="t" hint-placeholder-count="8"><button data-t="{{ t.id }}" onClick="{{ pickSquad }}" style="display:flex;align-items:center;gap:8px;padding:5px 12px 5px 5px;border:0;border-radius:12px;background:{{ t.chipBg }};box-shadow:{{ t.ring }};font:inherit;font-size:13px;font-weight:700;color:var(--ink);cursor:pointer;flex-shrink:0"><span style="width:26px;height:26px;border-radius:8px;background:{{ t.bg }};color:#fff;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:10px">{{ t.id }}</span>{{ t.short }}</button></sc-for>
+    </div>
+    <div style="display:flex;flex-wrap:wrap;gap:16px;align-items:flex-start">
+      <div style="flex:1 1 280px;min-width:0;border-radius:24px;background:var(--surface);padding:18px;display:flex;flex-direction:column;gap:14px;box-shadow:var(--shadow)">
+        <div style="display:flex;align-items:center;gap:12px"><span style="width:44px;height:44px;border-radius:13px;background:{{ sq.bg }};color:#fff;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:15px">{{ sq.id }}</span><div style="display:flex;flex-direction:column"><span style="font-weight:800;font-size:17px">{{ sq.name }}</span><span style="font-size:12px;color:var(--ink-2)">{{ sq.mgr }} · {{ sq.count }} players</span></div></div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+          <div style="background:var(--surface-2);border-radius:14px;padding:10px 12px;display:flex;flex-direction:column;gap:2px"><span style="font-size:10px;font-weight:700;letter-spacing:0.06em;color:var(--ink-2)">SPENT</span><span style="font-family:'DM Mono',monospace;font-size:17px">{{ sq.spent }}</span></div>
+          <div style="background:var(--surface-2);border-radius:14px;padding:10px 12px;display:flex;flex-direction:column;gap:2px"><span style="font-size:10px;font-weight:700;letter-spacing:0.06em;color:var(--ink-2)">PURSE LEFT</span><span style="font-family:'DM Mono',monospace;font-size:17px">{{ sq.left }}</span></div>
+          <div style="background:var(--surface-2);border-radius:14px;padding:10px 12px;display:flex;flex-direction:column;gap:2px"><span style="font-size:10px;font-weight:700;letter-spacing:0.06em;color:var(--ink-2)">SEASON PTS</span><span style="font-family:'DM Mono',monospace;font-size:17px">{{ sq.pts }}</span></div>
+          <div style="background:var(--surface-2);border-radius:14px;padding:10px 12px;display:flex;flex-direction:column;gap:2px"><span style="font-size:10px;font-weight:700;letter-spacing:0.06em;color:var(--ink-2)">OVERSEAS</span><span style="font-family:'DM Mono',monospace;font-size:17px">{{ sq.os }}/8</span></div>
+        </div>
+        <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:6px"><sc-for list="{{ sq.roles }}" as="r" hint-placeholder-count="4"><div style="border-radius:12px;padding:8px 4px;background:var(--ok-tint);display:flex;flex-direction:column;align-items:center;gap:2px"><span style="font-size:10px;font-weight:800;color:var(--ok)">{{ r.k }}</span><span style="font-family:'DM Mono',monospace;font-size:14px;color:var(--ok)">{{ r.v }}</span></div></sc-for></div>
+        <span style="font-size:12px;color:var(--ink-2)">All squads are public. Purses too.</span>
+      </div>
+      <div style="flex:2 1 380px;min-width:0;display:flex;flex-direction:column;gap:12px">
+        <sc-for list="{{ sq.groups }}" as="g" hint-placeholder-count="4">
+          <div style="border-radius:24px;background:var(--surface);padding:6px 6px 4px;box-shadow:var(--shadow)">
+            <div style="display:flex;justify-content:space-between;align-items:center;padding:10px 10px 6px"><span style="font-size:12px;font-weight:800;padding:4px 9px;border-radius:7px;background:{{ g.bg }};color:{{ g.ink }}">{{ g.role }}</span><span style="font-size:11px;font-weight:700;color:var(--ink-2);display:flex;gap:16px"><span>PAID</span><span style="width:44px;text-align:right">PTS</span></span></div>
+            <sc-for list="{{ g.players }}" as="p" hint-placeholder-count="4"><button data-s="{{ p.link }}" onClick="{{ nav }}" style="width:100%;display:flex;align-items:center;gap:10px;padding:10px;border:0;border-top:1px solid var(--line);background:transparent;font:inherit;color:inherit;text-align:left;cursor:pointer"><div style="flex:1;display:flex;flex-direction:column;min-width:0"><span style="font-weight:700;font-size:14px">{{ p.name }}</span><span style="font-size:12px;color:var(--ink-2)">{{ p.tags }} · {{ p.xi }} · {{ p.value }}</span></div><span style="font-family:'DM Mono',monospace;font-size:13px;color:var(--ink-2)">{{ p.price }}</span><span style="font-family:'DM Mono',monospace;font-size:14px;font-weight:500;width:44px;text-align:right">{{ p.pts }}</span></button></sc-for>
+          </div>
+        </sc-for>
+      </div>
+    </div>
+  </div>
+</sc-if>
+
+<sc-if value="{{ sStandings }}" hint-placeholder-val="{{ false }}">
+  <div style="display:flex;flex-direction:column;gap:14px">
+    <div style="display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap"><span style="font-size:24px;font-weight:800;letter-spacing:-0.025em">Standings</span><div style="height:40px;border-radius:12px;background:var(--surface-2);display:flex;padding:4px;gap:4px"><span style="padding:0 14px;border-radius:9px;background:var(--surface);box-shadow:var(--shadow);display:flex;align-items:center;font-size:13px;font-weight:700">Franchises</span><button data-s="players" onClick="{{ nav }}" style="padding:0 14px;border:0;border-radius:9px;background:transparent;font:inherit;font-size:13px;font-weight:600;color:var(--ink-2);cursor:pointer">Players</button></div></div>
+    <div style="border-radius:24px;background:var(--surface);padding:6px;box-shadow:var(--shadow)">
+      <div style="display:flex;align-items:center;gap:12px;padding:8px 12px;font-size:11px;font-weight:700;letter-spacing:0.05em;color:var(--ink-2)"><span style="width:22px">#</span><span style="flex:1">FRANCHISE</span><sc-if value="{{ notPhone }}" hint-placeholder-val="{{ true }}"><span style="width:96px">LAST 6</span><span style="width:60px;text-align:right">LAST</span></sc-if><span style="width:64px;text-align:right">TOTAL</span></div>
+      <sc-for list="{{ standings }}" as="s" hint-placeholder-count="8"><button data-t="{{ s.id }}" onClick="{{ openTeam }}" style="width:100%;display:flex;align-items:center;gap:12px;padding:12px;border:0;border-radius:16px;background:{{ s.rowBg }};font:inherit;color:inherit;text-align:left;cursor:pointer">
+        <span style="font-family:'DM Mono',monospace;font-size:15px;font-weight:500;width:22px">{{ s.rank }}</span>
+        <div style="width:36px;height:36px;border-radius:11px;background:{{ s.bg }};color:#fff;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:13px;flex-shrink:0">{{ s.id }}</div>
+        <div style="flex:1;display:flex;flex-direction:column;min-width:0"><span style="font-weight:700;font-size:15px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ s.name }}</span><span style="font-size:12px;color:var(--ink-2)">{{ s.mgr }} <span style="font-family:'DM Mono',monospace;color:{{ s.mvInk }}">{{ s.mv }}</span></span></div>
+        <sc-if value="{{ notPhone }}" hint-placeholder-val="{{ true }}"><div style="width:96px;height:28px;display:flex;align-items:flex-end;gap:3px"><sc-for list="{{ s.trend }}" as="b" hint-placeholder-count="6"><span style="flex:1;height:{{ b.h }};border-radius:3px;background:{{ s.bg }};opacity:{{ b.o }}"></span></sc-for></div><span style="font-family:'DM Mono',monospace;font-size:13px;color:var(--ink-2);width:60px;text-align:right">+{{ s.last }}</span></sc-if>
+        <span style="font-family:'DM Mono',monospace;font-size:16px;font-weight:500;width:64px;text-align:right">{{ s.total }}</span>
+      </button></sc-for>
+    </div>
+    <span style="font-size:12px;color:var(--ink-2)">Tap a franchise to see its squad. Tap any number to see where the points came from.</span>
+  </div>
+</sc-if>
+
+<sc-if value="{{ sPlayers }}" hint-placeholder-val="{{ false }}">
+  <div style="display:flex;flex-direction:column;gap:14px">
+    <div style="display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap"><span style="font-size:24px;font-weight:800;letter-spacing:-0.025em">Top players</span><div style="height:40px;border-radius:12px;background:var(--surface-2);display:flex;padding:4px;gap:4px"><button data-s="standings" onClick="{{ nav }}" style="padding:0 14px;border:0;border-radius:9px;background:transparent;font:inherit;font-size:13px;font-weight:600;color:var(--ink-2);cursor:pointer">Franchises</button><span style="padding:0 14px;border-radius:9px;background:var(--surface);box-shadow:var(--shadow);display:flex;align-items:center;font-size:13px;font-weight:700">Players</span></div></div>
+    <div style="display:flex;flex-wrap:wrap;gap:16px;align-items:flex-start">
+      <div style="flex:1 1 340px;min-width:0;border-radius:24px;background:var(--surface);padding:6px;box-shadow:var(--shadow)">
+        <div style="padding:10px 12px;font-size:11px;font-weight:700;letter-spacing:0.06em;color:var(--ink-2)">MOST POINTS</div>
+        <sc-for list="{{ topPts }}" as="p" hint-placeholder-count="6"><div style="display:flex;align-items:center;gap:10px;padding:10px 12px;border-top:1px solid var(--line)"><span style="font-family:'DM Mono',monospace;font-size:13px;width:18px;color:var(--ink-2)">{{ p.rank }}</span><span style="font-size:10px;font-weight:800;padding:3px 6px;border-radius:6px;background:{{ p.roleBg }};color:{{ p.roleInk }};width:34px;text-align:center">{{ p.role }}</span><span style="flex:1;font-weight:700;font-size:14px;min-width:0">{{ p.name }}</span><span style="width:24px;height:24px;border-radius:7px;background:{{ p.bg }};color:#fff;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:9px">{{ p.owner }}</span><span style="font-family:'DM Mono',monospace;font-size:14px;font-weight:500;width:44px;text-align:right">{{ p.pts }}</span></div></sc-for>
+      </div>
+      <div style="flex:1 1 340px;min-width:0;border-radius:24px;background:var(--surface);padding:6px;box-shadow:var(--shadow)">
+        <div style="padding:10px 12px;font-size:11px;font-weight:700;letter-spacing:0.06em;color:var(--ink-2)">BEST VALUE · PTS PER ₹1 CR</div>
+        <sc-for list="{{ topVal }}" as="p" hint-placeholder-count="6"><div style="display:flex;align-items:center;gap:10px;padding:10px 12px;border-top:1px solid var(--line)"><span style="font-family:'DM Mono',monospace;font-size:13px;width:18px;color:var(--ink-2)">{{ p.rank }}</span><div style="flex:1;display:flex;flex-direction:column;min-width:0"><span style="font-weight:700;font-size:14px">{{ p.name }}</span><span style="font-size:12px;color:var(--ink-2)">bought for <span style="font-family:'DM Mono',monospace">{{ p.price }}</span></span></div><span style="width:24px;height:24px;border-radius:7px;background:{{ p.bg }};color:#fff;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:9px">{{ p.owner }}</span><span style="font-family:'DM Mono',monospace;font-size:14px;font-weight:500;width:44px;text-align:right">{{ p.value }}</span></div></sc-for>
+      </div>
+    </div>
+  </div>
+</sc-if>
+
+<sc-if value="{{ sMatches }}" hint-placeholder-val="{{ false }}">
+  <div style="display:flex;flex-direction:column;gap:14px">
+    <span style="font-size:24px;font-weight:800;letter-spacing:-0.025em">Matches</span>
+    <sc-if value="{{ matchesEmpty }}" hint-placeholder-val="{{ false }}">
+      <div style="border-radius:24px;background:var(--surface);padding:36px 20px;display:flex;flex-direction:column;align-items:center;gap:10px;text-align:center;box-shadow:var(--shadow)"><span style="width:56px;height:56px;border-radius:18px;background:var(--team-tint);color:var(--team-ink);display:flex;align-items:center;justify-content:center;font-family:'Material Symbols Rounded';font-size:28px">scoreboard</span><span style="font-weight:800;font-size:18px">No matches scored yet</span><span style="font-size:14px;color:var(--ink-2);max-width:34ch;line-height:1.5">First ball is Fri 22 Mar. Points land here the morning after each match.</span><span style="height:40px;padding:0 16px;border-radius:12px;background:var(--team-tint);color:var(--team-ink);font-weight:700;font-size:14px;display:flex;align-items:center">See fixtures</span></div>
+    </sc-if>
+    <sc-if value="{{ matchesFull }}" hint-placeholder-val="{{ true }}">
+      <div style="display:flex;flex-direction:column;gap:10px">
+        <sc-for list="{{ matches }}" as="m" hint-placeholder-count="5"><button data-s="{{ m.link }}" onClick="{{ nav }}" style="display:flex;align-items:center;gap:14px;padding:14px 16px;border:0;border-radius:20px;background:var(--surface);box-shadow:var(--shadow);font:inherit;color:inherit;text-align:left;cursor:pointer">
+          <div style="display:flex;flex-direction:column;align-items:center;width:44px;flex-shrink:0"><span style="font-size:10px;font-weight:700;color:var(--ink-2)">MATCH</span><span style="font-family:'DM Mono',monospace;font-size:18px;font-weight:500">{{ m.n }}</span></div>
+          <div style="flex:1;display:flex;flex-direction:column;gap:3px;min-width:0"><span style="font-weight:800;font-size:15px">{{ m.teams }}</span><span style="font-size:12px;color:var(--ink-2)">{{ m.when }} · {{ m.mine }}</span></div>
+          <sc-if value="{{ m.manual }}" hint-placeholder-val="{{ false }}"><span style="font-size:10px;font-weight:800;padding:3px 7px;border-radius:6px;background:var(--warn-tint);color:var(--warn-ink)">MANUAL</span></sc-if>
+          <div style="display:flex;flex-direction:column;align-items:flex-end;gap:2px"><span style="font-family:'DM Mono',monospace;font-size:17px;font-weight:500;color:{{ m.ptsInk }}">{{ m.pts }}</span><span style="font-size:11px;color:var(--ink-2)">{{ m.rank }}</span></div>
+        </button></sc-for>
+      </div>
+    </sc-if>
+  </div>
+</sc-if>
+
+<sc-if value="{{ sMatch }}" hint-placeholder-val="{{ false }}">
+  <div style="display:flex;flex-direction:column;gap:14px">
+    <button data-s="matches" onClick="{{ nav }}" style="align-self:flex-start;border:0;background:transparent;color:var(--ink-2);font:inherit;font-size:14px;font-weight:700;display:flex;align-items:center;gap:4px;cursor:pointer;padding:0"><span style="font-family:'Material Symbols Rounded';font-size:20px;line-height:1">arrow_back</span>Matches</button>
+    <div style="display:flex;flex-direction:column;gap:4px"><span style="font-size:24px;font-weight:800;letter-spacing:-0.025em">RCB vs KKR</span><span style="font-size:13px;color:var(--ink-2)">Match 23 · yesterday · scored 6:12 AM from provider</span></div>
+    <div style="display:flex;flex-wrap:wrap;gap:16px;align-items:flex-start">
+      <div style="flex:1 1 320px;min-width:0;border-radius:24px;background:var(--surface);padding:6px;box-shadow:var(--shadow)">
+        <div style="padding:10px 12px;font-size:11px;font-weight:700;letter-spacing:0.06em;color:var(--ink-2)">WHO WON THE NIGHT</div>
+        <sc-for list="{{ matchTeams }}" as="t" hint-placeholder-count="8"><div style="display:flex;align-items:center;gap:10px;padding:9px 12px;border-radius:14px;background:{{ t.rowBg }}"><span style="width:28px;height:28px;border-radius:9px;background:{{ t.bg }};color:#fff;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:10px">{{ t.id }}</span><span style="flex:1;font-weight:600;font-size:14px">{{ t.name }}</span><span style="font-size:12px;color:var(--ink-2)">{{ t.n }} in XI</span><span style="font-family:'DM Mono',monospace;font-size:15px;font-weight:500;width:44px;text-align:right">{{ t.pts }}</span></div></sc-for>
+      </div>
+      <div style="flex:1 1 320px;min-width:0;border-radius:24px;background:var(--surface);padding:6px;box-shadow:var(--shadow)">
+        <div style="padding:10px 12px;font-size:11px;font-weight:700;letter-spacing:0.06em;color:var(--ink-2)">YOUR PLAYERS · +142</div>
+        <sc-for list="{{ myMatch }}" as="p" hint-placeholder-count="4"><button data-s="breakdown" onClick="{{ nav }}" style="width:100%;display:flex;align-items:center;gap:10px;padding:12px;border:0;border-top:1px solid var(--line);background:transparent;font:inherit;color:inherit;text-align:left;cursor:pointer"><span style="font-size:10px;font-weight:800;padding:3px 6px;border-radius:6px;background:{{ p.roleBg }};color:{{ p.roleInk }};width:34px;text-align:center">{{ p.role }}</span><div style="flex:1;display:flex;flex-direction:column;min-width:0"><span style="font-weight:700;font-size:14px">{{ p.name }}</span><span style="font-size:12px;color:var(--ink-2)">{{ p.line }}</span></div><span style="font-family:'DM Mono',monospace;font-size:15px;font-weight:500">{{ p.pts }}</span><span style="font-family:'Material Symbols Rounded';font-size:20px;color:var(--ink-3)">chevron_right</span></button></sc-for>
+      </div>
+    </div>
+  </div>
+</sc-if>
+
+<sc-if value="{{ sBreakdown }}" hint-placeholder-val="{{ false }}">
+  <div style="display:flex;flex-direction:column;gap:14px;max-width:560px">
+    <button data-s="match" onClick="{{ nav }}" style="align-self:flex-start;border:0;background:transparent;color:var(--ink-2);font:inherit;font-size:14px;font-weight:700;display:flex;align-items:center;gap:4px;cursor:pointer;padding:0"><span style="font-family:'Material Symbols Rounded';font-size:20px;line-height:1">arrow_back</span>RCB vs KKR</button>
+    <div style="display:flex;align-items:center;gap:12px"><span style="font-size:11px;font-weight:800;padding:4px 8px;border-radius:7px;background:var(--role2-bg);color:var(--role2-ink)">BOWL</span><div style="display:flex;flex-direction:column"><span style="font-size:22px;font-weight:800;letter-spacing:-0.02em">Jaden Okoro</span><span style="font-size:13px;color:var(--ink-2)">Monsoon Riders · bought for ₹9.00 Cr</span></div></div>
+    <div style="border-radius:24px;background:var(--surface);padding:18px;display:flex;flex-direction:column;gap:2px;box-shadow:var(--shadow)">
+      <div style="display:flex;justify-content:space-between;align-items:center;padding-bottom:10px"><span style="font-size:13px;color:var(--ink-2)">4–0–22–3 · 1 catch</span><span style="font-size:11px;font-weight:800;padding:3px 8px;border-radius:6px;background:var(--surface-2);color:var(--ink-2)">PROVIDER</span></div>
+      <sc-for list="{{ breakdown }}" as="b" hint-placeholder-count="7"><div style="display:flex;justify-content:space-between;gap:12px;padding:9px 0;font-size:14px;border-top:1px solid var(--line)"><span style="color:var(--ink-2)">{{ b.k }}</span><span style="font-family:'DM Mono',monospace">{{ b.v }}</span></div></sc-for>
+      <div style="display:flex;justify-content:space-between;padding:12px 0 0;font-size:16px;font-weight:800;border-top:2px solid var(--ink)"><span>Total</span><span style="font-family:'DM Mono',monospace;font-weight:500">109 pts</span></div>
+    </div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap"><span style="height:44px;padding:0 16px;border-radius:14px;background:var(--surface);border:1px solid var(--line);display:flex;align-items:center;gap:6px;font-weight:700;font-size:14px"><span style="font-family:'Material Symbols Rounded';font-size:20px;line-height:1">flag</span>Something's off</span><span style="height:44px;padding:0 16px;border-radius:14px;background:var(--team-tint);color:var(--team-ink);display:flex;align-items:center;gap:6px;font-weight:700;font-size:14px"><span style="font-family:'Material Symbols Rounded';font-size:20px;line-height:1">edit_note</span>Override stats · commish</span></div>
+    <span style="font-size:12px;color:var(--ink-2);line-height:1.5">Scored with this room's rules. Manual corrections always win over provider data and survive re-imports.</span>
+  </div>
+</sc-if>
+
+<sc-if value="{{ sSummary }}" hint-placeholder-val="{{ false }}">
+  <div style="display:flex;flex-direction:column;gap:14px">
+    <div style="display:flex;flex-direction:column;gap:4px"><span style="font-size:24px;font-weight:800;letter-spacing:-0.025em">Hammer's down</span><span style="font-size:14px;color:var(--ink-2)">Auction closed Sat 2 Nov, 11:48 PM · 142 lots · 131 sold · 2 evenings</span></div>
+    <div style="display:flex;align-items:flex-start;gap:12px;padding:14px;border-radius:18px;background:var(--bad-tint)"><span style="font-family:'Material Symbols Rounded';font-size:22px;line-height:1;color:var(--bad)">group_off</span><div style="flex:1;display:flex;flex-direction:column;gap:2px"><span style="font-weight:700;font-size:14px">2 squads below minimum</span><span style="font-size:13px;color:var(--ink-2);line-height:1.45">Ghat Gliders need 1 WK. Hilltop Howlers need 1 more player. Commissioner to resolve before the first match.</span></div><button data-s="commish" onClick="{{ nav }}" style="height:36px;padding:0 12px;border:0;border-radius:12px;background:var(--surface);color:var(--ink);font:inherit;font-size:13px;font-weight:700;cursor:pointer;flex-shrink:0">Resolve</button></div>
+    <div style="border-radius:24px;background:var(--surface);padding:6px;box-shadow:var(--shadow)">
+      <div style="display:flex;align-items:center;gap:12px;padding:8px 12px;font-size:11px;font-weight:700;letter-spacing:0.05em;color:var(--ink-2)"><span style="flex:1">FRANCHISE</span><span style="width:52px;text-align:right">SQUAD</span><sc-if value="{{ notPhone }}" hint-placeholder-val="{{ true }}"><span style="width:96px;text-align:right">SPENT</span></sc-if><span style="width:92px;text-align:right">LEFT</span></div>
+      <sc-for list="{{ summary }}" as="s" hint-placeholder-count="8"><button data-t="{{ s.id }}" onClick="{{ openTeam }}" style="width:100%;display:flex;align-items:center;gap:12px;padding:12px;border:0;border-radius:16px;background:{{ s.rowBg }};font:inherit;color:inherit;text-align:left;cursor:pointer">
+        <div style="width:36px;height:36px;border-radius:11px;background:{{ s.bg }};color:#fff;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:13px;flex-shrink:0">{{ s.id }}</div>
+        <div style="flex:1;display:flex;flex-direction:column;gap:2px;min-width:0"><span style="font-weight:700;font-size:15px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ s.name }}</span><span style="font-size:12px;font-weight:{{ s.flagW }};color:{{ s.flagInk }}">{{ s.flag }}</span></div>
+        <span style="font-family:'DM Mono',monospace;font-size:14px;width:52px;text-align:right;color:{{ s.sqInk }}">{{ s.squad }}</span>
+        <sc-if value="{{ notPhone }}" hint-placeholder-val="{{ true }}"><span style="font-family:'DM Mono',monospace;font-size:14px;width:96px;text-align:right;color:var(--ink-2)">{{ s.spent }}</span></sc-if>
+        <span style="font-family:'DM Mono',monospace;font-size:14px;font-weight:500;width:92px;text-align:right">{{ s.left }}</span>
+      </button></sc-for>
+    </div>
+    <button data-s="report" onClick="{{ nav }}" style="display:flex;align-items:center;gap:14px;padding:18px;border:0;border-radius:24px;background:var(--inverse);color:var(--on-inverse);font:inherit;text-align:left;cursor:pointer"><span style="font-family:'Material Symbols Rounded';font-size:28px;line-height:1;color:var(--coach)">grade</span><div style="flex:1;display:flex;flex-direction:column;gap:2px"><span style="font-weight:800;font-size:16px">The Report Card is out</span><span style="font-size:13px;color:var(--on-inverse-2)">Every franchise graded A–F. Brace yourselves.</span></div><span style="font-family:'Material Symbols Rounded';font-size:22px">arrow_forward</span></button>
+  </div>
+</sc-if>
+
+<sc-if value="{{ sReport }}" hint-placeholder-val="{{ false }}">
+  <div style="display:flex;flex-direction:column;gap:16px">
+    <div style="display:flex;justify-content:space-between;align-items:flex-end;gap:12px;flex-wrap:wrap"><div style="display:flex;flex-direction:column;gap:4px"><span style="font-size:24px;font-weight:800;letter-spacing:-0.025em">Auction Report Card</span><span style="font-size:14px;color:var(--ink-2)">Graded on projected points, value, depth, role balance and concentration risk.</span></div><span style="height:44px;padding:0 16px;border-radius:14px;background:var(--team);color:var(--on-team);display:flex;align-items:center;gap:6px;font-weight:700;font-size:14px"><span style="font-family:'Material Symbols Rounded';font-size:20px;line-height:1">ios_share</span>Share as image</span></div>
+    <div style="display:flex;flex-wrap:wrap;gap:16px;align-items:flex-start">
+      <div style="flex:3 1 380px;min-width:0;border-radius:28px;background:var(--surface);padding:20px;display:flex;flex-direction:column;gap:18px;box-shadow:var(--shadow)">
+        <div style="display:flex;align-items:center;gap:16px"><span style="width:72px;height:72px;border-radius:22px;background:var(--ok-tint);color:var(--ok);display:flex;align-items:center;justify-content:center;font-weight:800;font-size:32px;flex-shrink:0">B+</span><div style="display:flex;flex-direction:column;gap:4px"><span style="font-size:20px;font-weight:800;letter-spacing:-0.02em">Monsoon Riders</span><span style="font-size:14px;color:var(--ink-2)">Projected <b style="color:var(--ink)">2nd</b>. Strong spine, a little top-heavy.</span></div></div>
+        <div style="display:flex;flex-direction:column;gap:10px">
+          <sc-for list="{{ criteria }}" as="c" hint-placeholder-count="5"><div style="display:flex;align-items:center;gap:12px"><span style="font-size:13px;width:140px;flex-shrink:0;color:var(--ink-2)">{{ c.k }}</span><div style="flex:1;height:8px;border-radius:4px;background:var(--surface-2);overflow:hidden"><div style="width:{{ c.w }};height:100%;background:{{ c.c }}"></div></div><span style="font-weight:800;font-size:14px;width:28px;text-align:right;color:{{ c.c }}">{{ c.g }}</span></div></sc-for>
+        </div>
+        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:10px">
+          <div style="border-radius:16px;background:var(--ok-tint);padding:14px;display:flex;flex-direction:column;gap:4px"><span style="font-size:11px;font-weight:700;letter-spacing:0.06em;color:var(--ok)">BEST BUY</span><span style="font-weight:800;font-size:15px">Harshit Malhotra</span><span style="font-size:13px;color:var(--ink-2)"><span style="font-family:'DM Mono',monospace">₹4.80 Cr</span> for a projected 11 pts per match</span></div>
+          <div style="border-radius:16px;background:var(--bad-tint);padding:14px;display:flex;flex-direction:column;gap:4px"><span style="font-size:11px;font-weight:700;letter-spacing:0.06em;color:var(--bad)">BIGGEST OVERPAY</span><span style="font-weight:800;font-size:15px">Callum Webb</span><span style="font-size:13px;color:var(--ink-2)"><span style="font-family:'DM Mono',monospace">₹10.25 Cr</span>, about ₹3 Cr over his ceiling</span></div>
+        </div>
+        <div style="border-radius:20px;background:var(--inverse);color:var(--on-inverse);padding:16px;display:flex;flex-direction:column;gap:12px">
+          <div style="display:flex;justify-content:space-between;align-items:center;gap:10px"><span style="font-weight:800;font-size:15px;display:flex;align-items:center;gap:8px"><span style="font-family:'Material Symbols Rounded';font-size:20px;line-height:1;color:var(--coach)">forum</span>Advice vs action</span><span style="font-size:11px;font-weight:800;padding:3px 8px;border-radius:999px;background:var(--inverse-2);display:flex;align-items:center;gap:4px"><span style="font-family:'Material Symbols Rounded';font-size:14px;line-height:1">lock</span>ONLY YOU</span></div>
+          <sc-for list="{{ advice }}" as="a" hint-placeholder-count="3"><div style="display:flex;gap:10px;align-items:flex-start"><span style="font-family:'Material Symbols Rounded';font-size:20px;line-height:1;color:{{ a.c }}">{{ a.icon }}</span><div style="display:flex;flex-direction:column;gap:2px"><span style="font-size:14px;font-weight:700">{{ a.lot }}</span><span style="font-size:13px;color:var(--on-inverse-2);line-height:1.45">{{ a.text }}</span></div></div></sc-for>
+          <span style="align-self:flex-start;height:36px;padding:0 12px;border-radius:12px;background:var(--inverse-2);display:flex;align-items:center;font-size:13px;font-weight:700">Share with the room</span>
+        </div>
+      </div>
+      <div style="flex:2 1 300px;min-width:0;border-radius:24px;background:var(--surface);padding:6px;box-shadow:var(--shadow)">
+        <div style="padding:10px 12px;font-size:11px;font-weight:700;letter-spacing:0.06em;color:var(--ink-2)">THE ROOM</div>
+        <sc-for list="{{ grades }}" as="g" hint-placeholder-count="8"><div style="display:flex;align-items:center;gap:12px;padding:10px 12px;border-radius:14px;background:{{ g.rowBg }}"><span style="width:36px;height:36px;border-radius:11px;background:{{ g.bg }};color:#fff;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:13px;flex-shrink:0">{{ g.id }}</span><div style="flex:1;display:flex;flex-direction:column;gap:2px;min-width:0"><span style="font-weight:700;font-size:14px">{{ g.name }}</span><span style="font-size:12px;color:var(--ink-2)">{{ g.line }}</span></div><span style="width:40px;height:40px;border-radius:12px;background:{{ g.gBg }};color:{{ g.gInk }};display:flex;align-items:center;justify-content:center;font-weight:800;font-size:16px;flex-shrink:0">{{ g.grade }}</span></div></sc-for>
+      </div>
+    </div>
+  </div>
+</sc-if>
+
+<sc-if value="{{ sAudit }}" hint-placeholder-val="{{ false }}">
+  <div style="display:flex;flex-direction:column;gap:14px">
+    <div style="display:flex;flex-direction:column;gap:4px"><span style="font-size:24px;font-weight:800;letter-spacing:-0.025em">Audit log</span><span style="font-size:14px;color:var(--ink-2)">Every bid, pass, RTM, lifeline and admin action. Append-only. Lifelines show type and lot, never what the advisor said.</span></div>
+    <div style="display:flex;gap:8px;overflow-x:auto"><sc-for list="{{ auditFilters }}" as="f" hint-placeholder-count="5"><button data-f="{{ f.k }}" onClick="{{ setAudit }}" style="height:36px;padding:0 14px;border:0;border-radius:12px;background:{{ f.bg }};color:{{ f.ink }};font:inherit;font-size:13px;font-weight:700;cursor:pointer;flex-shrink:0">{{ f.label }}</button></sc-for></div>
+    <div style="border-radius:24px;background:var(--surface);padding:6px;box-shadow:var(--shadow)">
+      <sc-for list="{{ audit }}" as="a" hint-placeholder-count="10"><div style="display:flex;gap:10px;padding:10px;align-items:center;font-size:13px;border-radius:12px;background:{{ a.rowBg }}"><span style="font-family:'DM Mono',monospace;font-size:11px;color:var(--ink-2);width:60px;flex-shrink:0">{{ a.t }}</span><span style="width:24px;height:24px;border-radius:7px;background:{{ a.bg }};color:{{ a.ink }};display:flex;align-items:center;justify-content:center;font-weight:800;font-size:9px;flex-shrink:0"><span style="font-family:{{ a.font }};font-size:{{ a.fs }}">{{ a.mark }}</span></span><span style="flex:1;min-width:0">{{ a.text }}</span><span style="font-size:10px;font-weight:800;color:{{ a.typeInk }}">{{ a.type }}</span></div></sc-for>
+    </div>
+  </div>
+</sc-if>
+
+<sc-if value="{{ sCommish }}" hint-placeholder-val="{{ false }}">
+  <div style="display:flex;flex-direction:column;gap:14px">
+    <div style="display:flex;flex-direction:column;gap:4px"><span style="font-size:24px;font-weight:800;letter-spacing:-0.025em">Commissioner tools</span><span style="font-size:14px;color:var(--ink-2)">Every action here lands in the audit log.</span></div>
+    <div style="display:flex;flex-wrap:wrap;gap:16px;align-items:flex-start">
+      <div style="flex:1 1 340px;min-width:0;display:flex;flex-direction:column;gap:12px">
+        <div style="border-radius:24px;background:var(--surface);padding:16px;display:flex;flex-direction:column;gap:12px;box-shadow:var(--shadow)">
+          <span style="font-size:11px;font-weight:700;letter-spacing:0.06em;color:var(--ink-2)">NEEDS YOU · 2</span>
+          <div style="display:flex;gap:10px;align-items:flex-start;padding:12px;border-radius:14px;background:var(--bad-tint)"><span style="font-family:'Material Symbols Rounded';font-size:20px;line-height:1;color:var(--bad)">person_alert</span><div style="flex:1;display:flex;flex-direction:column;gap:6px"><span style="font-weight:700;font-size:14px">Unmapped player in Match 23</span><span style="font-size:13px;color:var(--ink-2);line-height:1.45">Provider sent "J. Okoro (sub)". Points are held until you match it to a pool player.</span><div style="display:flex;gap:6px;flex-wrap:wrap"><span style="height:32px;padding:0 12px;border-radius:10px;background:var(--surface);display:flex;align-items:center;font-size:12px;font-weight:700">Map to Jaden Okoro</span><span style="height:32px;padding:0 12px;border-radius:10px;background:transparent;display:flex;align-items:center;font-size:12px;font-weight:700;color:var(--ink-2)">Not in pool</span></div></div></div>
+          <div style="display:flex;gap:10px;align-items:flex-start;padding:12px;border-radius:14px;background:var(--bad-tint)"><span style="font-family:'Material Symbols Rounded';font-size:20px;line-height:1;color:var(--bad)">group_off</span><div style="flex:1;display:flex;flex-direction:column;gap:6px"><span style="font-weight:700;font-size:14px">Ghat Gliders are 1 WK short</span><span style="font-size:13px;color:var(--ink-2);line-height:1.45">Assign an unsold WK at base price, or waive the minimum for this season.</span><div style="display:flex;gap:6px;flex-wrap:wrap"><span style="height:32px;padding:0 12px;border-radius:10px;background:var(--surface);display:flex;align-items:center;font-size:12px;font-weight:700">Assign from unsold</span><span style="height:32px;padding:0 12px;border-radius:10px;background:transparent;display:flex;align-items:center;font-size:12px;font-weight:700;color:var(--ink-2)">Waive</span></div></div></div>
+        </div>
+        <div style="border-radius:24px;background:var(--surface);padding:16px;display:flex;flex-direction:column;gap:10px;box-shadow:var(--shadow)">
+          <span style="font-size:11px;font-weight:700;letter-spacing:0.06em;color:var(--ink-2)">AUCTION CONTROLS</span>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+            <sc-for list="{{ controls }}" as="c" hint-placeholder-count="6"><span style="height:44px;border-radius:12px;background:var(--surface-2);color:var(--ink-3);display:flex;align-items:center;gap:8px;padding:0 12px;font-size:13px;font-weight:700"><span style="font-family:'Material Symbols Rounded';font-size:20px;line-height:1">{{ c.icon }}</span>{{ c.label }}</span></sc-for>
+          </div>
+          <span style="font-size:12px;color:var(--ink-2)">Available while the auction is live. Re-opening a lot needs a reason.</span>
+        </div>
+      </div>
+      <div style="flex:1 1 340px;min-width:0;display:flex;flex-direction:column;gap:12px">
+        <div style="border-radius:24px;background:var(--surface);padding:16px;display:flex;flex-direction:column;gap:12px;box-shadow:var(--shadow)">
+          <div style="display:flex;justify-content:space-between;align-items:center"><span style="font-size:11px;font-weight:700;letter-spacing:0.06em;color:var(--ink-2)">MANUAL STAT ENTRY</span><span style="font-size:10px;font-weight:800;padding:3px 7px;border-radius:6px;background:var(--warn-tint);color:var(--warn-ink)">OVERRIDES PROVIDER</span></div>
+          <div style="height:44px;border-radius:12px;background:var(--surface-2);display:flex;align-items:center;justify-content:space-between;padding:0 12px;font-size:14px;font-weight:600">Match 21 · GT vs LSG · Sid Rao<span style="font-family:'Material Symbols Rounded';font-size:20px;color:var(--ink-2)">expand_more</span></div>
+          <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(120px,1fr));gap:8px">
+            <sc-for list="{{ statFields }}" as="s" hint-placeholder-count="8"><div style="display:flex;flex-direction:column;gap:4px"><span style="font-size:11px;font-weight:700;color:var(--ink-2)">{{ s.k }}</span><div style="height:40px;border-radius:10px;background:var(--surface-2);border:1.5px solid {{ s.border }};display:flex;align-items:center;padding:0 10px;font-family:'DM Mono',monospace;font-size:14px">{{ s.v }}</div></div></sc-for>
+          </div>
+          <span style="font-size:12px;color:var(--ink-2)">Fields come from the Sport Pack's stat schema. Points recompute when you save.</span>
+          <span style="height:44px;border-radius:12px;background:var(--team);color:var(--on-team);display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:700">Save and recompute</span>
+        </div>
+        <div style="border-radius:24px;background:var(--surface);padding:6px;box-shadow:var(--shadow)">
+          <div style="display:flex;align-items:center;gap:12px;padding:12px"><span style="font-family:'Material Symbols Rounded';font-size:22px;color:var(--ink-2)">rule</span><div style="flex:1;display:flex;flex-direction:column"><span style="font-weight:700;font-size:14px">Scoring rules</span><span style="font-size:12px;color:var(--ink-2)">Frozen since Match 1. Changes need all 8 managers.</span></div><span style="font-family:'Material Symbols Rounded';font-size:20px;color:var(--ink-3)">lock</span></div>
+          <div style="display:flex;align-items:center;gap:12px;padding:12px;border-top:1px solid var(--line)"><span style="font-family:'Material Symbols Rounded';font-size:22px;color:var(--ink-2)">swap_horiz</span><span style="flex:1;font-weight:700;font-size:14px">Transfer commissionership</span><span style="font-family:'Material Symbols Rounded';font-size:20px;color:var(--ink-3)">chevron_right</span></div>
+          <div style="display:flex;align-items:center;gap:12px;padding:12px;border-top:1px solid var(--line)"><span style="font-family:'Material Symbols Rounded';font-size:22px;color:var(--ink-2)">key_off</span><span style="flex:1;font-weight:700;font-size:14px">Revoke invite code</span><span style="font-family:'Material Symbols Rounded';font-size:20px;color:var(--ink-3)">chevron_right</span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</sc-if>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <sc-if value="{{ notDesktop }}" hint-placeholder-val="{{ true }}">
+    <div style="flex-shrink:0;background:var(--surface);border-top:1px solid var(--line);padding:6px 8px 10px;display:flex;justify-content:space-around">
+      <sc-for list="{{ tabNav }}" as="n" hint-placeholder-count="5"><button data-s="{{ n.key }}" onClick="{{ nav }}" style="display:flex;flex-direction:column;align-items:center;gap:4px;padding:6px 8px;border:0;background:transparent;color:{{ n.ink }};font:inherit;cursor:pointer;min-width:56px"><span style="padding:2px 14px;border-radius:999px;background:{{ n.pill }};font-family:'Material Symbols Rounded';font-size:24px;line-height:1;font-variation-settings:'FILL' {{ n.fill }}">{{ n.icon }}</span><span style="font-size:11px;font-weight:{{ n.weight }}">{{ n.label }}</span></button></sc-for>
+    </div>
+  </sc-if>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;screen&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;overview&quot;,&quot;lobby&quot;,&quot;retention&quot;,&quot;squad&quot;,&quot;standings&quot;,&quot;offline&quot;,&quot;players&quot;,&quot;matches&quot;,&quot;matchesEmpty&quot;,&quot;match&quot;,&quot;breakdown&quot;,&quot;summary&quot;,&quot;report&quot;,&quot;audit&quot;,&quot;commish&quot;],&quot;default&quot;:&quot;overview&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;Prototype&quot;},&quot;mode&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;light&quot;,&quot;dark&quot;],&quot;default&quot;:&quot;light&quot;,&quot;tsType&quot;:&quot;'light'|'dark'&quot;,&quot;section&quot;:&quot;Theme&quot;},&quot;hue&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;15&quot;,&quot;45&quot;,&quot;75&quot;,&quot;105&quot;,&quot;135&quot;,&quot;165&quot;,&quot;195&quot;,&quot;225&quot;,&quot;255&quot;,&quot;285&quot;,&quot;315&quot;,&quot;345&quot;],&quot;default&quot;:&quot;195&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;Theme&quot;},&quot;height&quot;:{&quot;editor&quot;:null,&quot;tsType&quot;:&quot;string&quot;}}">
+class Component extends DCLogic {
+  state = { screen: null, bp: 'phone', ready: false, retained: [0, 1, 2, 5], tbl: 'franchises', sqTeam: 'MR', auditF: 'all' };
+  rootRef = React.createRef();
+  componentDidMount() {
+    const go = () => {
+      if (!window.PaddleSim) { this.t = setTimeout(go, 40); return; }
+      this.theme();
+      this.unw = PaddleSim.watchWidth(this.rootRef.current, (bp) => bp !== this.state.bp && this.setState({ bp }));
+    };
+    go();
+    this.iv = setInterval(() => this.state.screen === 'lobby' || this.props.screen === 'lobby' ? this.forceUpdate() : null, 1000);
+  }
+  theme() { window.PaddleSim && PaddleSim.applyTheme(this.rootRef.current, this.props.mode ?? 'light', Number(this.props.hue ?? 195)); }
+  componentDidUpdate(pp) { if (pp.mode !== this.props.mode || pp.hue !== this.props.hue) this.theme(); if (pp.screen !== this.props.screen) this.setState({ screen: null }); }
+  componentWillUnmount() { clearTimeout(this.t); clearInterval(this.iv); this.unw && this.unw(); }
+  data() {
+    const T = { MR: ['Monsoon Riders', 'You', 195], CC: ['Chai Chargers', 'Priya', 45], BB: ['Bandra Blasters', 'Arjun', 15], SS: ['Spice Strikers', 'Rohan', 255], HH: ['Hilltop Howlers', 'Meera', 315], DD: ['Deccan Dynamos', 'Zoya', 285], KK: ['Kochi Kites', 'Dev', 75], GG: ['Ghat Gliders', 'Kabir', 135] };
+    return { T };
+  }
+  renderVals() {
+    const sc = this.state.screen ?? this.props.screen ?? 'overview';
+    const screen = sc === 'offline' ? 'standings' : sc === 'matchesEmpty' ? 'matches' : sc;
+    const bp = this.state.bp; const { T } = this.data();
+    const tab = { overview: 'overview', lobby: 'auction', retention: 'auction', summary: 'auction', report: 'auction', audit: 'auction', squad: 'squad', standings: 'standings', players: 'standings', matches: 'matches', match: 'matches', breakdown: 'matches', commish: 'commish' }[screen];
+    const navDef = [['overview', 'Room', 'home'], ['summary', 'Auction', 'gavel'], ['squad', 'Squad', 'groups'], ['standings', 'Standings', 'leaderboard'], ['matches', 'Matches', 'sports_cricket']];
+    const tabKey = { overview: 'overview', summary: 'auction', squad: 'squad', standings: 'standings', matches: 'matches' };
+    const mk = (key, label, icon, active) => ({ key, label, icon, fill: active ? 1 : 0, ink: active ? 'var(--team-ink)' : 'var(--ink-2)', pill: active ? 'var(--team-tint)' : 'transparent', bg: active ? 'var(--team-tint)' : 'transparent', weight: active ? '800' : '600' });
+    const tabNav = navDef.map(([k, l, i]) => mk(k, l, i, tabKey[k] === tab));
+    const railNav = [...navDef.map(([k, l, i]) => mk(k, l, i, tabKey[k] === tab)), mk('report', 'Report card', 'grade', screen === 'report'), mk('audit', 'Audit log', 'receipt_long', screen === 'audit'), mk('lobby', 'Lobby (preview)', 'event', screen === 'lobby'), mk('retention', 'Retention (S2)', 'bookmark', screen === 'retention'), mk('commish', 'Commissioner', 'shield_person', screen === 'commish')];
+    const titles = { overview: 'Monsoon Riders · 2nd of 8', lobby: 'Auction lobby', retention: 'Retention window · Season 2', squad: 'Squads', standings: 'Standings · after 23 matches', players: 'Player leaderboard', matches: 'Matches', match: 'Match 23 · RCB vs KKR', breakdown: 'Jaden Okoro · Match 23', summary: 'Auction summary', report: 'Auction Report Card', audit: 'Audit log', commish: 'Commissioner tools' };
+    const phaseIdx = screen === 'lobby' ? 1 : screen === 'retention' ? 0 : 3;
+    const phases = ['Setup', 'Retention', 'Auction', 'Season', 'Completed'].map((l, i) => ({ label: l.toUpperCase(), bg: i === 3 ? 'var(--team)' : i < 3 ? 'var(--team-tint)' : 'var(--surface-2)', ink: i === 3 ? 'var(--on-team)' : i < 3 ? 'var(--team-ink)' : 'var(--ink-3)', sep: i < 4 ? '14px' : '0px' }));
+    // lobby
+    const start = new Date(); start.setHours(start.getHours() + 2, start.getMinutes() + 14, 36, 0);
+    if (!this.lobbyAt) this.lobbyAt = Date.now() + (2 * 3600 + 14 * 60 + 36) * 1000;
+    const left = Math.max(0, this.lobbyAt - Date.now()); const hh = Math.floor(left / 3600000), mm = Math.floor(left / 60000) % 60, ss = Math.floor(left / 1000) % 60;
+    const pad = (n) => String(n).padStart(2, '0');
+    const lobbyRaw = [['MR', 'Bengaluru 8:00 PM', this.state.ready ? 'ready' : 'here'], ['CC', 'Bengaluru 8:00 PM', 'ready'], ['BB', 'Mumbai 8:00 PM', 'ready'], ['SS', 'London 2:30 PM', 'ready'], ['HH', 'Dubai 6:30 PM', 'here'], ['DD', 'Toronto 10:30 AM', 'away'], ['KK', 'Kochi 8:00 PM', 'ready'], ['GG', 'Singapore 10:30 PM', 'here']];
+    const lobby = lobbyRaw.map(([id, local, st]) => ({ id, name: T[id][0], mgr: T[id][1], local, bg: `oklch(0.56 0.15 ${T[id][2]})`, op: st === 'away' ? '0.4' : '1', rowBg: id === 'MR' ? 'var(--team-tint)' : 'transparent', status: st === 'ready' ? 'READY' : st === 'here' ? 'IN LOBBY' : 'NOT HERE', stBg: st === 'ready' ? 'var(--ok-tint)' : st === 'here' ? 'var(--surface-2)' : 'var(--surface-2)', stInk: st === 'ready' ? 'var(--ok)' : st === 'here' ? 'var(--ink-2)' : 'var(--ink-3)' }));
+    // retention
+    const prev = [['Kiran Desai', 'BAT', 'Capped', 401], ['Dwayne Pollard', 'AR', 'Capped', 420], ['Jaden Okoro', 'BOWL', 'Capped', 377], ['Callum Webb', 'BOWL', 'Capped', 298], ['Leo Fairbank', 'BAT', 'Capped', 356], ['Arnav Kulkarni', 'AR', 'Uncapped', 170], ['Varun Iyer', 'BAT', 'Uncapped', 65], ['Ravi Teja Nair', 'WK', 'Capped', 312]];
+    const slot = { BAT: 1, BOWL: 2, AR: 3, WK: 4 }; const r = this.state.retained;
+    let capN = 0, unN = 0, cost = 0; const capSlab = [1800, 1400, 1100, 1100, 1100];
+    const retain = prev.map((p, i) => { const on = r.includes(i); let c = '';
+      if (on) { if (p[2] === 'Capped') { c = capSlab[capN]; capN++; } else { c = 400; unN++; } cost += c; }
+      const nextCost = p[2] === 'Capped' ? capSlab[capN] : 400;
+      return { i, name: p[0], role: p[1], tag: p[2], pts: p[3], roleBg: `var(--role${slot[p[1]]}-bg)`, roleInk: `var(--role${slot[p[1]]}-ink)`, rowBg: on ? 'var(--team-tint)' : 'transparent', boxBorder: on ? 'var(--team)' : 'var(--line)', boxBg: on ? 'var(--team)' : 'transparent', check: on ? 'check' : '', cost: on ? PaddleSimFmt(c) : PaddleSimFmt(nextCost || 1100), costInk: on ? 'var(--team-ink)' : 'var(--ink-3)' }; });
+    function PaddleSimFmt(p) { return '₹' + (p / 100).toFixed(0) + ' Cr'; }
+    const go = (s) => this.setState({ screen: s });
+    return {
+      ...this.extra(screen, sc, T),
+      rootRef: this.rootRef, frameH: this.props.height ?? '100vh', isDesktop: bp === 'desktop', notDesktop: bp !== 'desktop', isPhone: bp === 'phone',
+      tabNav, railNav, screenTitle: titles[screen], phasePill: screen === 'lobby' ? 'AUCTION SAT 8 PM' : screen === 'retention' ? 'RETENTION' : 'SEASON LIVE', phases,
+      offline: sc === 'offline',
+      nav: (e) => go(e.currentTarget.dataset.s),
+      sOverview: screen === 'overview', sLobby: screen === 'lobby', sRetention: screen === 'retention',
+      countdown: `${pad(hh)}:${pad(mm)}:${pad(ss)}`, lobby, readyCount: lobby.filter((m) => m.status === 'READY').length,
+      toggleReady: () => this.setState({ ready: !this.state.ready }),
+      readyLabel: this.state.ready ? "You're ready. Paddle up." : "I'm ready", readyIcon: this.state.ready ? 'check_circle' : 'front_hand',
+      readyBg: this.state.ready ? 'var(--team-tint)' : 'var(--team)', readyInk: this.state.ready ? 'var(--team-ink)' : 'var(--on-team)', readyBorder: this.state.ready ? '2px solid var(--team)' : '0',
+      retain, retCount: r.length, retCapped: capN, retUncapped: unN, retRtm: Math.max(0, 6 - r.length), retPurse: '₹' + ((12000 - cost) / 100).toFixed(2) + ' Cr',
+      toggleRetain: (e) => { const i = Number(e.currentTarget.dataset.i); const on = r.includes(i); const p = prev[i];
+        if (!on) { if (r.length >= 6) return; if (p[2] === 'Capped' && capN >= 5) return; if (p[2] === 'Uncapped' && unN >= 2) return; }
+        this.setState({ retained: on ? r.filter((x) => x !== i) : [...r, i].sort((a, b) => a - b) }); }
+    };
+  }
+  extra(screen, sc, T) {
+    const slot = { BAT: 1, BOWL: 2, AR: 3, WK: 4 }; const bp = this.state.bp;
+    const fmt = (p) => p >= 100 ? '₹' + (p / 100).toFixed(2) + ' Cr' : '₹' + p + ' L';
+    const mine = [['Ravi Teja Nair', 'WK', 760, 312, 'Capped', 22], ['Pranav Joshi', 'WK', 110, 88, 'Uncapped', 9], ['Kiran Desai', 'BAT', 1150, 401, 'Capped', 23], ['Leo Fairbank', 'BAT', 875, 356, 'Overseas', 21], ['Aditya Rao', 'BAT', 640, 220, 'Capped', 19], ['Tomás Reyes', 'BAT', 520, 190, 'Overseas', 17], ['Ben Hartley', 'BAT', 210, 140, 'Overseas', 12], ['Varun Iyer', 'BAT', 95, 65, 'Uncapped', 8], ['Rohan Pillai', 'BAT', 30, 22, 'Uncapped', 3], ['Jaden Okoro', 'BOWL', 900, 377, 'Overseas', 22], ['Callum Webb', 'BOWL', 1025, 298, 'Overseas', 20], ['Harshit Malhotra', 'BOWL', 480, 251, 'Capped', 21], ['Imran Siddiqui', 'BOWL', 165, 160, 'Uncapped', 14], ['Deepak Varghese', 'BOWL', 75, 94, 'Uncapped', 10], ['Mohit Sen', 'BOWL', 30, 31, 'Uncapped', 4], ['Dwayne Pollard', 'AR', 1310, 420, 'Overseas', 23], ['Shreyas Gaitonde', 'AR', 300, 175, 'Capped', 18], ['Arnav Kulkarni', 'AR', 100, 70, 'Uncapped', 9]];
+    const teamId = this.state.sqTeam; const t = T[teamId]; const shift = Object.keys(T).indexOf(teamId);
+    const alt = ['Nikhil Sharma', 'Owen Parry', 'Faisal Khan', 'Rahul Menon', 'Marco Jansen-Lee', 'Kabir Anand', 'Sid Rao', 'Tariq Baig', 'Hugo Wells', 'Ishan Bhatt', 'Ajay Kumar', 'Liam Coetzee', 'Sameer Das', 'Yash Gupta', 'Ravi Bose', 'Chris Odell', 'Vikram Shetty', 'Dev Malik'];
+    const list = mine.map((p, i) => shift ? [alt[(i + shift * 3) % alt.length], p[1], Math.round(p[2] * (0.7 + ((i * 7 + shift) % 6) / 10)), Math.round(p[3] * (0.8 + ((i + shift) % 5) / 10)), p[4], p[5]] : p);
+    const spent = list.reduce((a, p) => a + p[2], 0); const pts = list.reduce((a, p) => a + p[3], 0);
+    const groups = ['WK', 'BAT', 'BOWL', 'AR'].map((role) => ({ role, bg: `var(--role${slot[role]}-bg)`, ink: `var(--role${slot[role]}-ink)`, players: list.filter((p) => p[1] === role).map((p) => ({ name: p[0], tags: p[4], xi: p[5] + '/23 XI', value: Math.round(p[3] / (p[2] / 100)) + ' pts/Cr', price: fmt(p[2]), pts: p[3], link: p[0] === 'Jaden Okoro' ? 'breakdown' : 'squad' })) }));
+    const sq = { id: teamId, name: t[0], mgr: t[1], bg: `oklch(0.56 0.15 ${t[2]})`, count: list.length, spent: fmt(spent), left: fmt(12000 - spent), pts: pts.toLocaleString('en-IN'), os: list.filter((p) => p[4] === 'Overseas').length,
+      roles: [['WK', 2], ['BAT', 5], ['BOWL', 5], ['AR', 3]].map(([k, m]) => ({ k, v: list.filter((p) => p[1] === k).length + '/' + m })), groups };
+    const teamChips = Object.keys(T).map((id) => ({ id, short: id === 'MR' ? 'You' : T[id][0].split(' ')[0], bg: `oklch(0.56 0.15 ${T[id][2]})`, chipBg: id === teamId ? 'var(--surface)' : 'var(--surface-2)', ring: id === teamId ? '0 0 0 2px var(--ink)' : 'none' }));
+    const st = [['CC', 3712, 168, '–', 0], ['MR', 3670, 142, '▲ 1', 1], ['BB', 3641, 131, '▼ 1', -1], ['SS', 3580, 155, '▲ 2', 1], ['HH', 3522, 96, '–', 0], ['DD', 3455, 74, '▼ 2', -1], ['KK', 3390, 119, '▲ 1', 1], ['GG', 3301, 88, '▼ 1', -1]];
+    const standings = st.map(([id, total, last, mv, d], i) => ({ id, rank: i + 1, name: T[id][0], mgr: T[id][1], bg: `oklch(0.56 0.15 ${T[id][2]})`, total: total.toLocaleString('en-IN'), last, mv, mvInk: d > 0 ? 'var(--ok)' : d < 0 ? 'var(--bad)' : 'var(--ink-3)', rowBg: id === 'MR' ? 'var(--team-tint)' : 'transparent',
+      trend: [0, 1, 2, 3, 4, 5].map((k) => ({ h: (30 + ((total + k * 37 + last) % 70)) + '%', o: k === 5 ? '1' : '0.45' })) }));
+    const topP = [['Dwayne Pollard', 'AR', 'MR', 420, 1310], ['Rishabh Kale', 'WK', 'CC', 414, 1400], ['Kiran Desai', 'BAT', 'MR', 401, 1150], ['Marco Jansen-Lee', 'AR', 'BB', 396, 1225], ['Jaden Okoro', 'BOWL', 'MR', 377, 900], ['Faisal Khan', 'BOWL', 'SS', 371, 640]];
+    const topV = [['Mohit Sen', 'BOWL', 'MR', 31, 30], ['Arnav Kulkarni', 'AR', 'MR', 70, 100], ['Sid Rao', 'BAT', 'KK', 118, 160], ['Imran Siddiqui', 'BOWL', 'MR', 160, 165], ['Yash Gupta', 'BOWL', 'GG', 92, 120], ['Deepak Varghese', 'BOWL', 'MR', 94, 75]].map((p) => [...p, Math.round(p[3] / (p[4] / 100))]).sort((a, b) => b[5] - a[5]);
+    const matches = [['24', 'MI vs CSK', 'Tonight 7:30 PM', '4 of your players', '—', 'upcoming', 'matches', false, 'var(--ink-3)'], ['23', 'RCB vs KKR', 'Yesterday', '4 played', '+142', '2nd of 8', 'match', false, 'var(--ok)'], ['22', 'DC vs PBKS', 'Thu 18 Apr', '3 played', '+96', '4th of 8', 'match', false, 'var(--ink)'], ['21', 'GT vs LSG', 'Wed 17 Apr', '2 played', '+118', '1st of 8', 'match', true, 'var(--ink)'], ['20', 'RR vs SRH', 'Tue 16 Apr', '5 played', '+61', '7th of 8', 'match', false, 'var(--ink)']]
+      .map(([n, teams, when, mineS, p, rank, link, manual, ptsInk]) => ({ n, teams, when, mine: mineS, pts: p, rank, link, manual, ptsInk }));
+    const mt = [['CC', 168, 5], ['MR', 142, 4], ['SS', 155, 4], ['BB', 131, 3], ['KK', 119, 4], ['HH', 96, 2], ['GG', 88, 3], ['DD', 74, 2]].sort((a, b) => b[1] - a[1]);
+    const matchTeams = mt.map(([id, p, n]) => ({ id, name: T[id][0], bg: `oklch(0.56 0.15 ${T[id][2]})`, pts: p, n, rowBg: id === 'MR' ? 'var(--team-tint)' : 'transparent' }));
+    const myMatch = [['Jaden Okoro', 'BOWL', '3 wkts, 22 runs off 4 overs, 1 catch', 109], ['Kiran Desai', 'BAT', '19 off 14, 2 fours', 27], ['Leo Fairbank', 'BAT', '2 off 5, caught', 2], ['Ravi Teja Nair', 'WK', 'Played, did not bat', 4]].map(([name, role, line, p]) => ({ name, role, line, pts: '+' + p, roleBg: `var(--role${slot[role]}-bg)`, roleInk: `var(--role${slot[role]}-ink)` }));
+    const breakdown = [['In playing XI', '+4'], ['Wickets × 3', '+75'], ['LBW / bowled bonus × 1', '+8'], ['3-wicket milestone', '+10'], ['Economy 5.5 (4 overs)', '+4'], ['Catch × 1', '+8']].map(([k, v]) => ({ k, v }));
+    return {
+      sSquad: screen === 'squad', sStandings: screen === 'standings', sPlayers: screen === 'players', sMatches: screen === 'matches', sMatch: screen === 'match', sBreakdown: screen === 'breakdown',
+      notPhone: bp !== 'phone', sq, teamChips, pickSquad: (e) => this.setState({ sqTeam: e.currentTarget.dataset.t }),
+      openTeam: (e) => this.setState({ sqTeam: e.currentTarget.dataset.t, screen: 'squad' }), standings,
+      topPts: topP.map((p, i) => ({ rank: i + 1, name: p[0], role: p[1], owner: p[2], bg: `oklch(0.56 0.15 ${T[p[2]][2]})`, pts: p[3], roleBg: `var(--role${slot[p[1]]}-bg)`, roleInk: `var(--role${slot[p[1]]}-ink)` })),
+      topVal: topV.map((p, i) => ({ rank: i + 1, name: p[0], owner: p[2], bg: `oklch(0.56 0.15 ${T[p[2]][2]})`, price: fmt(p[4]), value: p[5] })),
+      matches, matchesEmpty: sc === 'matchesEmpty', matchesFull: sc !== 'matchesEmpty', matchTeams, myMatch, breakdown,
+      ...this.extra2(screen, T, fmt)
+    };
+  }
+  extra2(screen, T, fmt) {
+    const bg = (id) => `oklch(0.56 0.15 ${T[id][2]})`;
+    const sumRaw = [['MR', 18, 8775, ''], ['CC', 21, 11460, ''], ['BB', 19, 10880, ''], ['SS', 20, 11720, ''], ['HH', 17, 9940, 'Needs 1 more player'], ['DD', 22, 11590, ''], ['KK', 20, 10310, ''], ['GG', 18, 11905, 'Needs 1 WK']];
+    const summary = sumRaw.map(([id, n, sp, flag]) => ({ id, name: T[id][0], bg: bg(id), squad: n, spent: fmt(sp), left: fmt(12000 - sp), flag: flag || 'All minimums met', flagInk: flag ? 'var(--bad)' : 'var(--ink-2)', flagW: flag ? '700' : '500', sqInk: n < 18 ? 'var(--bad)' : 'var(--ink)', rowBg: id === 'MR' ? 'var(--team-tint)' : flag ? 'var(--bad-tint)' : 'transparent' }));
+    const gc = (g) => g[0] === 'A' ? ['var(--ok)', '#fff'] : g[0] === 'B' ? ['var(--ok-tint)', 'var(--ok)'] : g[0] === 'C' ? ['var(--warn-tint)', 'var(--warn-ink)'] : ['var(--bad-tint)', 'var(--bad)'];
+    const gRaw = [['SS', 'A−', 'Projected 1st. Deep bowling, zero panic buys.'], ['MR', 'B+', 'Projected 2nd. Strong spine, a little top-heavy.'], ['CC', 'B', 'Projected 3rd. Paid up for stars.'], ['BB', 'B', 'Projected 4th. Balanced, light on keepers.'], ['DD', 'B−', 'Projected 5th. Five from one real team.'], ['KK', 'C+', 'Projected 6th. Great value, thin depth.'], ['HH', 'C', 'Projected 7th. Short a player.'], ['GG', 'D+', 'Projected 8th. Spent ₹38 Cr on two players.']];
+    const grades = gRaw.map(([id, g, line]) => ({ id, name: T[id][0], bg: bg(id), grade: g, line, gBg: gc(g)[0], gInk: gc(g)[1], rowBg: id === 'MR' ? 'var(--team-tint)' : 'transparent' }));
+    const criteria = [['Projected points', 'A−', '88%', 'var(--ok)'], ['Value per ₹', 'B', '70%', 'var(--ok)'], ['Depth', 'B+', '76%', 'var(--ok)'], ['Role balance', 'A', '92%', 'var(--ok)'], ['Concentration risk', 'C', '48%', 'var(--warn-ink)']].map(([k, g, w, c]) => ({ k, g, w, c }));
+    const advice = [['check_circle', 'var(--ok)', 'Lot 42 · Jaden Okoro', 'Analyst said stop at ₹9 Cr. You stopped at ₹9.00 Cr. Textbook.'], ['cancel', 'var(--bad)', 'Lot 57 · Callum Webb', 'Coach said No-Go. You paid ₹10.25 Cr anyway.'], ['check_circle', 'var(--ok)', 'Lot 88 · Harshit Malhotra', 'Rival Scan said nobody else needed a seamer. You got him for ₹4.80 Cr.']].map(([icon, c, lot, text]) => ({ icon, c, lot, text }));
+    const f = this.state.auditF;
+    const aRaw = [['23:48:02', 'admin', null, 'Commissioner closed the auction'], ['23:47:51', 'bid', 'KK', 'Kochi Kites won Lot 142 · Rohan Pillai for ₹30 L'], ['21:14:22', 'bid', 'MR', 'You won Lot 42 · Jaden Okoro for ₹9.00 Cr'], ['21:14:07', 'bid', 'CC', 'Chai Chargers bid ₹8.75 Cr · Lot 42'], ['21:14:02', 'lifeline', 'MR', 'You used Price Ceiling · Lot 42'], ['21:13:58', 'bid', 'MR', 'You bid ₹8.50 Cr · Lot 42'], ['21:12:30', 'rtm', 'BB', 'Bandra Blasters declined RTM · Lot 41'], ['21:09:40', 'admin', null, 'Commissioner re-opened Lot 39 · "timer bug on Zoya\'s phone"'], ['20:41:12', 'lifeline', 'SS', 'Spice Strikers used Rival Scan · Lot 27'], ['20:02:00', 'admin', null, 'Commissioner started the auction'], ['Apr 18 06:12', 'scoring', null, 'Match 22 scored from provider · 8 franchises updated'], ['Apr 17 09:30', 'scoring', null, 'Commissioner overrode Sid Rao · Match 21 (manual)']];
+    const typeInk = { bid: 'var(--ink-2)', lifeline: 'var(--analyst)', rtm: 'var(--warn-ink)', admin: 'var(--warn-ink)', scoring: 'var(--info)' };
+    const audit = aRaw.filter((a) => f === 'all' || a[1] === f).map(([t, type, id, text]) => ({ t, type: type.toUpperCase(), text, typeInk: typeInk[type],
+      bg: id ? bg(id) : 'var(--inverse)', ink: '#fff', mark: id || (type === 'scoring' ? 'calculate' : 'shield_person'), font: id ? 'inherit' : "'Material Symbols Rounded'", fs: id ? '9px' : '14px', rowBg: type === 'admin' ? 'var(--warn-tint)' : 'transparent' }));
+    const auditFilters = [['all', 'All'], ['bid', 'Bids'], ['lifeline', 'Lifelines'], ['rtm', 'RTM'], ['admin', 'Admin'], ['scoring', 'Scoring']].map(([k, label]) => ({ k, label, bg: k === f ? 'var(--ink)' : 'var(--surface)', ink: k === f ? 'var(--bg)' : 'var(--ink)' }));
+    const controls = [['pause', 'Pause'], ['skip_next', 'Skip lot'], ['undo', 'Re-open lot'], ['bedtime', 'Adjourn'], ['replay', 'Accelerated round'], ['person_remove', 'Remove manager']].map(([icon, label]) => ({ icon, label }));
+    const statFields = [['Runs', '46'], ['Balls faced', '29'], ['Fours', '5'], ['Sixes', '2'], ['Dismissal', 'Caught'], ['Catches', '1'], ['Run-outs (direct)', '0'], ['In playing XI', 'Yes']].map(([k, v], i) => ({ k, v, border: i === 0 ? 'var(--team)' : 'transparent' }));
+    return {
+      sSummary: screen === 'summary', sReport: screen === 'report', sAudit: screen === 'audit', sCommish: screen === 'commish',
+      summary, grades, criteria, advice, audit, auditFilters, setAudit: (e) => this.setState({ auditF: e.currentTarget.dataset.f }), controls, statFields
+    };
+  }
+}
+</script>
+</body>
+</html>

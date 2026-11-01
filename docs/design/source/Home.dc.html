@@ -1,0 +1,311 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<title>PaddleUp — Home, sign-in, join, create room</title>
+<link rel="icon" href="assets/favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=DM+Mono:wght@400;500&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@20..48,400..600,0..1,0&display=block">
+<script src="paddle.js"></script>
+<style>html,body{margin:0;padding:0}*{scrollbar-width:none}*::-webkit-scrollbar{display:none}body{font-family:'Plus Jakarta Sans',system-ui,sans-serif;-webkit-font-smoothing:antialiased}a{color:var(--brand-ink,#b8401f)}a:hover{color:var(--ink,#2a2420)}</style>
+</helmet>
+<div ref="{{ rootRef }}" style="--bg:oklch(0.975 0.006 75);--surface:oklch(0.995 0.003 75);--surface-2:oklch(0.955 0.007 75);--line:oklch(0.905 0.008 75);--ink:oklch(0.23 0.012 60);--ink-2:oklch(0.46 0.012 60);--ink-3:oklch(0.62 0.01 60);--brand:oklch(0.62 0.19 38);--brand-tint:oklch(0.95 0.035 45);--brand-ink:oklch(0.5 0.17 38);--ok:oklch(0.56 0.14 155);--ok-tint:oklch(0.95 0.04 155);--warn:oklch(0.72 0.15 75);--warn-ink:oklch(0.5 0.12 70);--warn-tint:oklch(0.96 0.05 85);--bad:oklch(0.57 0.2 25);--bad-tint:oklch(0.95 0.035 25);--info:oklch(0.55 0.13 245);--info-tint:oklch(0.95 0.03 245);--inverse:oklch(0.24 0.012 60);--inverse-2:oklch(0.31 0.012 60);--on-inverse:oklch(0.97 0.005 75);--on-inverse-2:oklch(0.78 0.01 70);--shadow:0 1px 2px oklch(0.3 0.02 60 / 0.06), 0 6px 20px oklch(0.3 0.02 60 / 0.07);--role1-bg:oklch(0.93 0.04 70);--role1-ink:oklch(0.4 0.09 70);--role2-bg:oklch(0.93 0.04 250);--role2-ink:oklch(0.4 0.1 250);--role3-bg:oklch(0.93 0.04 150);--role3-ink:oklch(0.4 0.09 150);--role4-bg:oklch(0.93 0.04 320);--role4-ink:oklch(0.42 0.1 320);position:relative;width:100%;height:{{ frameH }};display:flex;flex-direction:column;background:var(--bg);color:var(--ink);font-family:'Plus Jakarta Sans',system-ui,sans-serif;overflow:hidden">
+
+<sc-if value="{{ isSignin }}" hint-placeholder-val="{{ false }}">
+  <div style="flex:1;min-height:0;overflow:auto;display:flex;flex-wrap:wrap">
+    <div style="flex:1 1 360px;min-height:280px;background:var(--brand);color:#fffaf6;display:flex;flex-direction:column;justify-content:space-between;padding:32px;box-sizing:border-box;gap:24px">
+      <div style="display:flex;align-items:center;gap:10px"><svg width="34" height="34" viewBox="0 0 64 64"><g transform="rotate(-16 32 32)" fill="#fffaf6"><rect x="28" y="35" width="8" height="24" rx="4"></rect><circle cx="32" cy="23" r="18"></circle></g></svg><span style="font-size:24px;font-weight:800;letter-spacing:-0.03em">PaddleUp</span></div>
+      <div style="display:flex;flex-direction:column;gap:12px;max-width:440px"><div style="font-size:40px;line-height:1.05;font-weight:800;letter-spacing:-0.035em;text-wrap:balance">Run the auction. Own the season.</div><div style="font-size:16px;line-height:1.5;opacity:0.9;text-wrap:pretty">Private franchise auctions for your group of friends, then a season-long leaderboard scored from real matches.</div></div>
+      <div style="font-size:12px;opacity:0.8">No money. No prizes. Just bragging rights.</div>
+    </div>
+    <div style="flex:1 1 360px;display:flex;align-items:center;justify-content:center;padding:32px 24px;box-sizing:border-box">
+      <div style="width:100%;max-width:380px;display:flex;flex-direction:column;gap:16px">
+        <div style="font-size:26px;font-weight:800;letter-spacing:-0.025em">Sign in</div>
+        <button onClick="{{ goHub }}" style="height:52px;border:1px solid var(--line);border-radius:14px;background:var(--surface);color:var(--ink);font:inherit;font-weight:700;font-size:15px;display:flex;align-items:center;justify-content:center;gap:10px;cursor:pointer"><span style="width:20px;height:20px;border-radius:10px;background:var(--surface-2);font-size:12px;font-weight:800;display:flex;align-items:center;justify-content:center">G</span>Continue with Google</button>
+        <button onClick="{{ goHub }}" style="height:52px;border:1px solid var(--line);border-radius:14px;background:var(--surface);color:var(--ink);font:inherit;font-weight:700;font-size:15px;display:flex;align-items:center;justify-content:center;gap:10px;cursor:pointer"><span style="font-family:'Material Symbols Rounded';font-size:20px;line-height:1">phone_iphone</span>Continue with Apple</button>
+        <div style="display:flex;align-items:center;gap:10px;color:var(--ink-2);font-size:12px"><span style="flex:1;height:1px;background:var(--line)"></span>or email<span style="flex:1;height:1px;background:var(--line)"></span></div>
+        <label style="display:flex;flex-direction:column;gap:6px"><span style="font-size:13px;font-weight:700">Email</span><div style="height:48px;border-radius:14px;background:var(--surface-2);border:1.5px solid var(--brand);display:flex;align-items:center;padding:0 14px;font-size:15px;font-weight:500">shane@gmail.com</div></label>
+        <button onClick="{{ goHub }}" style="height:52px;border:0;border-radius:14px;background:var(--brand);color:#fffaf6;font:inherit;font-weight:700;font-size:16px;cursor:pointer">Send me a magic link</button>
+        <div style="font-size:12px;color:var(--ink-2);line-height:1.5">Got an invite link? Sign in first and we'll drop you straight into the room.</div>
+      </div>
+    </div>
+  </div>
+</sc-if>
+
+<sc-if value="{{ notSignin }}" hint-placeholder-val="{{ true }}">
+  <div style="flex-shrink:0;display:flex;align-items:center;gap:12px;padding:12px 20px;background:var(--surface);border-bottom:1px solid var(--line)">
+    <button onClick="{{ goHub }}" style="display:flex;align-items:center;gap:8px;border:0;background:transparent;padding:0;cursor:pointer;color:var(--ink);font:inherit"><svg width="28" height="28" viewBox="0 0 64 64"><g transform="rotate(-16 32 32)" fill="var(--brand)"><rect x="28" y="35" width="8" height="24" rx="4"></rect><circle cx="32" cy="23" r="18"></circle></g></svg><span style="font-size:20px;font-weight:800;letter-spacing:-0.03em">Paddle<span style="color:var(--brand)">Up</span></span></button>
+    <span style="flex:1"></span>
+    <span style="width:40px;height:40px;border-radius:12px;background:var(--surface-2);display:flex;align-items:center;justify-content:center;font-family:'Material Symbols Rounded';font-size:22px;color:var(--ink-2);position:relative">notifications<span style="position:absolute;top:8px;right:9px;width:8px;height:8px;border-radius:4px;background:var(--brand)"></span></span>
+    <span style="width:40px;height:40px;border-radius:20px;background:var(--brand-tint);color:var(--brand-ink);display:flex;align-items:center;justify-content:center;font-weight:800;font-size:14px">SR</span>
+  </div>
+</sc-if>
+
+<sc-if value="{{ isHub }}" hint-placeholder-val="{{ true }}">
+  <div style="flex:1;min-height:0;overflow:auto;padding:24px 20px 40px">
+    <div style="max-width:1040px;margin:0 auto;display:flex;flex-direction:column;gap:20px">
+      <div style="display:flex;flex-wrap:wrap;align-items:flex-end;justify-content:space-between;gap:16px">
+        <div style="display:flex;flex-direction:column;gap:4px"><span style="font-size:14px;color:var(--ink-2)">Evening, Shane.</span><span style="font-size:28px;font-weight:800;letter-spacing:-0.025em">Your rooms</span></div>
+        <div style="display:flex;gap:8px"><button onClick="{{ goJoin }}" style="height:44px;padding:0 16px;border:1px solid var(--line);border-radius:14px;background:var(--surface);color:var(--ink);font:inherit;font-weight:700;font-size:14px;display:flex;align-items:center;gap:6px;cursor:pointer"><span style="font-family:'Material Symbols Rounded';font-size:20px;line-height:1">key</span>Join with code</button><button onClick="{{ goWizard }}" style="height:44px;padding:0 16px;border:0;border-radius:14px;background:var(--brand);color:#fffaf6;font:inherit;font-weight:700;font-size:14px;display:flex;align-items:center;gap:6px;cursor:pointer"><span style="font-family:'Material Symbols Rounded';font-size:20px;line-height:1">add</span>Create a room</button></div>
+      </div>
+
+      <a href="Auction A Spotlight.dc.html" style="text-decoration:none;color:inherit">
+        <div style="border-radius:24px;overflow:hidden;background:oklch(0.56 0.15 195);color:oklch(0.99 0.005 195);display:flex;flex-wrap:wrap;align-items:center;gap:16px;padding:20px;box-shadow:var(--shadow)">
+          <div style="width:56px;height:56px;border-radius:17px;background:oklch(0.99 0.005 195);color:oklch(0.56 0.15 195);display:flex;align-items:center;justify-content:center;font-weight:800;font-size:20px;flex-shrink:0">MR</div>
+          <div style="flex:1 1 220px;display:flex;flex-direction:column;gap:4px;min-width:0"><div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap"><span style="font-size:20px;font-weight:800;letter-spacing:-0.02em">Monsoon League</span><span style="font-size:10px;font-weight:800;letter-spacing:0.05em;padding:4px 9px;border-radius:999px;background:var(--bad);color:#fff;display:flex;align-items:center;gap:5px"><span style="width:6px;height:6px;border-radius:3px;background:#fff"></span>AUCTION LIVE</span></div><span style="font-size:14px;opacity:0.9">Lot 42 is under the hammer. Chai Chargers just bid ₹8.20 Cr.</span></div>
+          <span style="height:48px;padding:0 20px;border-radius:14px;background:oklch(0.99 0.005 195);color:oklch(0.42 0.12 195);font-weight:800;font-size:15px;display:flex;align-items:center;gap:6px">Take your seat<span style="font-family:'Material Symbols Rounded';font-size:20px;line-height:1">arrow_forward</span></span>
+        </div>
+      </a>
+
+      <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,300px),1fr));gap:14px">
+        <a href="Room.dc.html" style="text-decoration:none;color:inherit"><div style="background:var(--surface);border-radius:24px;padding:18px;display:flex;flex-direction:column;gap:14px;box-shadow:var(--shadow);height:100%;box-sizing:border-box">
+          <div style="display:flex;align-items:center;gap:12px"><span style="width:44px;height:44px;border-radius:13px;background:oklch(0.56 0.15 255);color:#fff;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:15px">BB</span><div style="flex:1;display:flex;flex-direction:column;gap:2px;min-width:0"><span style="font-weight:800;font-size:16px">Office Nerds XI</span><span style="font-size:12px;color:var(--ink-2)">Byte Bashers · Cricket T20</span></div><span style="font-size:10px;font-weight:800;letter-spacing:0.05em;padding:4px 9px;border-radius:999px;background:var(--ok-tint);color:var(--ok)">SEASON LIVE</span></div>
+          <div style="display:flex;gap:8px"><div style="flex:1;background:var(--surface-2);border-radius:14px;padding:10px 12px;display:flex;flex-direction:column;gap:2px"><span style="font-size:10px;font-weight:700;letter-spacing:0.06em;color:var(--ink-2)">RANK</span><span style="font-family:'DM Mono',monospace;font-size:18px;font-weight:500">4<span style="font-size:13px;color:var(--ink-2)">/6</span></span></div><div style="flex:1;background:var(--surface-2);border-radius:14px;padding:10px 12px;display:flex;flex-direction:column;gap:2px"><span style="font-size:10px;font-weight:700;letter-spacing:0.06em;color:var(--ink-2)">LAST NIGHT</span><span style="font-family:'DM Mono',monospace;font-size:18px;font-weight:500;color:var(--ok)">+86</span></div><div style="flex:1;background:var(--surface-2);border-radius:14px;padding:10px 12px;display:flex;flex-direction:column;gap:2px"><span style="font-size:10px;font-weight:700;letter-spacing:0.06em;color:var(--ink-2)">MOVE</span><span style="font-family:'DM Mono',monospace;font-size:18px;font-weight:500;color:var(--ok)">▲ 1</span></div></div>
+          <span style="font-size:13px;color:var(--ink-2)">Next: MI vs CSK tonight, 7:30 PM. You have 4 players in it.</span>
+        </div></a>
+        <div onClick="{{ goInvite }}" style="background:var(--surface);border-radius:24px;padding:18px;display:flex;flex-direction:column;gap:14px;box-shadow:var(--shadow);cursor:pointer">
+          <div style="display:flex;align-items:center;gap:12px"><span style="width:44px;height:44px;border-radius:13px;background:var(--surface-2);color:var(--ink-2);display:flex;align-items:center;justify-content:center;font-family:'Material Symbols Rounded';font-size:22px">shield_person</span><div style="flex:1;display:flex;flex-direction:column;gap:2px;min-width:0"><span style="font-weight:800;font-size:16px">College Gang</span><span style="font-size:12px;color:var(--ink-2)">You're the commissioner</span></div><span style="font-size:10px;font-weight:800;letter-spacing:0.05em;padding:4px 9px;border-radius:999px;background:var(--surface-2);color:var(--ink-2)">SETUP</span></div>
+          <div style="display:flex;flex-direction:column;gap:6px"><div style="display:flex;justify-content:space-between;font-size:13px"><span style="color:var(--ink-2)">Managers joined</span><span style="font-family:'DM Mono',monospace">4 / 6 min</span></div><div style="height:8px;border-radius:4px;background:var(--surface-2);overflow:hidden"><div style="width:66%;height:100%;background:var(--brand)"></div></div></div>
+          <span style="font-size:13px;color:var(--ink-2)">Waiting on 2 more. Nudge the group chat.</span>
+        </div>
+        <div style="background:var(--surface);border-radius:24px;padding:18px;display:flex;flex-direction:column;gap:14px;box-shadow:var(--shadow)">
+          <div style="display:flex;align-items:center;gap:12px"><span style="width:44px;height:44px;border-radius:13px;background:oklch(0.56 0.15 315);color:#fff;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:15px">SR</span><div style="flex:1;display:flex;flex-direction:column;gap:2px;min-width:0"><span style="font-weight:800;font-size:16px">Family Cup 2026</span><span style="font-size:12px;color:var(--ink-2)">Shane's Raiders · finished 2nd</span></div><span style="font-size:10px;font-weight:800;letter-spacing:0.05em;padding:4px 9px;border-radius:999px;background:var(--inverse);color:var(--on-inverse)">COMPLETED</span></div>
+          <div style="display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:14px;background:var(--surface-2)"><span style="font-family:'Material Symbols Rounded';font-size:22px;line-height:1;color:var(--warn-ink);font-variation-settings:'FILL' 1">trophy</span><span style="font-size:13px;flex:1">Dad's Army won by 41 pts</span><span style="font-family:'DM Mono',monospace;font-size:13px">2,914</span></div>
+          <span style="font-size:13px;color:var(--ink-2)">Run it back next season? Retentions open when the commissioner starts season 2.</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</sc-if>
+
+<sc-if value="{{ isHubEmpty }}" hint-placeholder-val="{{ false }}">
+  <div style="flex:1;min-height:0;overflow:auto;padding:24px 20px;display:flex;align-items:center;justify-content:center">
+    <div style="max-width:420px;display:flex;flex-direction:column;align-items:center;gap:14px;text-align:center">
+      <span style="width:72px;height:72px;border-radius:22px;background:var(--brand-tint);display:flex;align-items:center;justify-content:center"><svg width="40" height="40" viewBox="0 0 64 64"><g transform="rotate(-16 32 32)" fill="var(--brand)"><rect x="28" y="35" width="8" height="24" rx="4"></rect><circle cx="32" cy="23" r="18"></circle></g></svg></span>
+      <span style="font-size:24px;font-weight:800;letter-spacing:-0.02em">No rooms yet</span>
+      <span style="font-size:15px;color:var(--ink-2);line-height:1.5">Start one and become the commissioner, or paste the invite code a friend sent you.</span>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;justify-content:center"><button onClick="{{ goWizard }}" style="height:48px;padding:0 18px;border:0;border-radius:14px;background:var(--brand);color:#fffaf6;font:inherit;font-weight:700;font-size:15px;cursor:pointer">Create a room</button><button onClick="{{ goJoin }}" style="height:48px;padding:0 18px;border:1px solid var(--line);border-radius:14px;background:var(--surface);color:var(--ink);font:inherit;font-weight:700;font-size:15px;cursor:pointer">Join with code</button></div>
+    </div>
+  </div>
+</sc-if>
+
+<sc-if value="{{ isJoin }}" hint-placeholder-val="{{ false }}">
+  <div style="flex:1;min-height:0;overflow:auto;padding:24px 20px 40px">
+    <div style="max-width:960px;margin:0 auto;display:flex;flex-wrap:wrap;gap:24px;align-items:flex-start">
+      <div style="flex:1 1 340px;display:flex;flex-direction:column;gap:18px">
+        <button onClick="{{ goHub }}" style="align-self:flex-start;border:0;background:transparent;color:var(--ink-2);font:inherit;font-size:14px;font-weight:700;display:flex;align-items:center;gap:4px;cursor:pointer;padding:0"><span style="font-family:'Material Symbols Rounded';font-size:20px;line-height:1">arrow_back</span>Rooms</button>
+        <div style="display:flex;flex-direction:column;gap:4px"><span style="font-size:13px;font-weight:700;color:var(--brand-ink)">INVITE · MNSN-4K7Q</span><span style="font-size:28px;font-weight:800;letter-spacing:-0.025em">Join Monsoon League</span><span style="font-size:14px;color:var(--ink-2)">Cricket T20 · IPL 2027 · 7 of 10 managers · auction Sat 2 Nov, 8:00 PM your time</span></div>
+        <label style="display:flex;flex-direction:column;gap:6px"><span style="font-size:13px;font-weight:700">Franchise name</span><div style="height:48px;border-radius:14px;background:var(--surface-2);border:1.5px solid var(--brand);display:flex;align-items:center;padding:0 14px;font-size:15px;font-weight:500">Monsoon Riders</div><span style="font-size:12px;color:var(--ink-2)">Up to 24 characters. Make it chantable.</span></label>
+        <label style="display:flex;flex-direction:column;gap:6px"><span style="font-size:13px;font-weight:700">Monogram</span><div style="height:48px;width:120px;border-radius:14px;background:var(--surface-2);display:flex;align-items:center;padding:0 14px;font-family:'DM Mono',monospace;font-size:16px;font-weight:500">MR</div><span style="font-size:12px;color:var(--ink-2)">2–3 letters, auto-filled from the name.</span></label>
+        <div style="display:flex;flex-direction:column;gap:8px"><span style="font-size:13px;font-weight:700">Team colour</span>
+          <div style="display:grid;grid-template-columns:repeat(6,44px);gap:8px">
+            <sc-for list="{{ swatches }}" as="s" hint-placeholder-count="12"><button data-hue="{{ s.hue }}" onClick="{{ pickHue }}" title="{{ s.name }}" style="width:44px;height:44px;border-radius:13px;border:0;background:{{ s.bg }};cursor:{{ s.cursor }};opacity:{{ s.opacity }};box-shadow:{{ s.ring }};display:flex;align-items:center;justify-content:center;color:#fff;font-family:'Material Symbols Rounded';font-size:18px">{{ s.icon }}</button></sc-for>
+          </div>
+          <span style="font-size:12px;color:var(--ink-2)">Crossed-out colours are taken in this room.</span>
+        </div>
+        <button onClick="{{ goRoomLink }}" style="height:52px;border:0;border-radius:14px;background:{{ pickBg }};color:#fff;font:inherit;font-weight:700;font-size:16px;cursor:pointer">Join as Monsoon Riders</button>
+      </div>
+      <div style="flex:1 1 300px;display:flex;flex-direction:column;gap:10px">
+        <span style="font-size:11px;font-weight:700;letter-spacing:0.06em;color:var(--ink-2)">PREVIEW · YOUR ROOM HEADER</span>
+        <div style="border-radius:24px;overflow:hidden;box-shadow:var(--shadow);background:{{ pickRoomBg }}">
+          <div style="background:{{ pickBg }};color:#fff;padding:18px;display:flex;flex-direction:column;gap:14px">
+            <div style="display:flex;align-items:center;gap:8px"><span style="font-family:'Material Symbols Rounded';font-size:22px;line-height:1">arrow_back</span><span style="font-weight:700;font-size:15px">Monsoon League</span></div>
+            <div style="display:flex;align-items:center;gap:12px"><div style="width:48px;height:48px;border-radius:14px;background:#fff;color:{{ pickBg }};display:flex;align-items:center;justify-content:center;font-weight:800;font-size:17px">MR</div><div style="display:flex;flex-direction:column;gap:2px"><div style="font-weight:800;font-size:20px;letter-spacing:-0.02em">Monsoon Riders</div><div style="font-size:13px;opacity:0.85">₹120 Cr purse · auction Sat</div></div></div>
+          </div>
+          <div style="padding:16px;display:flex;flex-direction:column;gap:10px"><div style="height:48px;border-radius:14px;background:{{ pickBg }};color:#fff;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:15px">I'm ready</div><div style="font-size:13px;color:var(--ink-2)">Your colour tints the whole room for you. Rivals see it on your monogram.</div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</sc-if>
+
+<sc-if value="{{ isWizard }}" hint-placeholder-val="{{ false }}">
+  <div style="flex:1;min-height:0;display:flex">
+    <sc-if value="{{ wide }}" hint-placeholder-val="{{ false }}">
+      <div style="width:280px;flex-shrink:0;background:var(--surface);border-right:1px solid var(--line);padding:24px 16px;box-sizing:border-box;display:flex;flex-direction:column;gap:4px">
+        <span style="font-size:11px;font-weight:700;letter-spacing:0.06em;color:var(--ink-2);padding:0 10px 10px">NEW ROOM</span>
+        <sc-for list="{{ steps }}" as="st" hint-placeholder-count="6"><button data-step="{{ st.n }}" onClick="{{ goStep }}" style="display:flex;align-items:center;gap:12px;padding:10px;border:0;border-radius:14px;background:{{ st.bg }};color:var(--ink);font:inherit;text-align:left;cursor:pointer"><span style="width:28px;height:28px;border-radius:9px;background:{{ st.dotBg }};color:{{ st.dotInk }};display:flex;align-items:center;justify-content:center;font-family:'DM Mono',monospace;font-size:13px;font-weight:500">{{ st.mark }}</span><span style="display:flex;flex-direction:column"><span style="font-size:14px;font-weight:{{ st.weight }}">{{ st.label }}</span><span style="font-size:12px;color:var(--ink-2)">{{ st.sub }}</span></span></button></sc-for>
+      </div>
+    </sc-if>
+    <div style="flex:1;min-width:0;display:flex;flex-direction:column">
+      <div style="flex-shrink:0;padding:16px 20px 0;display:flex;flex-direction:column;gap:12px">
+        <div style="display:flex;gap:6px"><sc-for list="{{ steps }}" as="st" hint-placeholder-count="6"><span style="flex:1;height:6px;border-radius:3px;background:{{ st.barBg }}"></span></sc-for></div>
+        <div style="display:flex;justify-content:space-between;align-items:baseline"><span style="font-size:24px;font-weight:800;letter-spacing:-0.025em">{{ stepTitle }}</span><span style="font-family:'DM Mono',monospace;font-size:12px;color:var(--ink-2)">{{ step }} of 6</span></div>
+      </div>
+      <div style="flex:1;min-height:0;overflow:auto;padding:16px 20px 24px">
+        <div style="max-width:640px;display:flex;flex-direction:column;gap:16px">
+
+          <sc-if value="{{ s1 }}" hint-placeholder-val="{{ false }}">
+            <div style="display:flex;flex-direction:column;gap:12px">
+              <span style="font-size:14px;color:var(--ink-2);line-height:1.5">The Sport Pack sets roles, stats, scoring and sensible defaults. You can tweak everything in the next steps. It locks once the auction is scheduled.</span>
+              <div style="border-radius:20px;border:2px solid var(--brand);background:var(--surface);padding:16px;display:flex;gap:14px;align-items:flex-start"><span style="width:48px;height:48px;border-radius:14px;background:var(--brand-tint);color:var(--brand-ink);display:flex;align-items:center;justify-content:center;font-family:'Material Symbols Rounded';font-size:26px;flex-shrink:0">sports_cricket</span><div style="flex:1;display:flex;flex-direction:column;gap:6px"><div style="display:flex;justify-content:space-between;gap:8px"><span style="font-weight:800;font-size:16px">Cricket T20</span><span style="font-family:'Material Symbols Rounded';font-size:22px;color:var(--brand);font-variation-settings:'FILL' 1">check_circle</span></div><span style="font-size:13px;color:var(--ink-2);line-height:1.5">IPL-style franchise league. Roles BAT · BOWL · AR · WK. ₹120 Cr purse, squads of 18–25, overseas cap of 8.</span><span style="font-family:'DM Mono',monospace;font-size:11px;color:var(--ink-2)">pack v1.0 · data: cricketdata.org</span></div></div>
+              <div style="border-radius:20px;border:1px dashed var(--line);padding:16px;display:flex;gap:14px;align-items:center;color:var(--ink-2)"><span style="width:48px;height:48px;border-radius:14px;background:var(--surface-2);display:flex;align-items:center;justify-content:center;font-family:'Material Symbols Rounded';font-size:26px">sports_soccer</span><div style="display:flex;flex-direction:column;gap:2px"><span style="font-weight:700;font-size:15px">More sports later</span><span style="font-size:13px">Football, basketball and kabaddi packs are on the list.</span></div></div>
+            </div>
+          </sc-if>
+
+          <sc-if value="{{ s2 }}" hint-placeholder-val="{{ false }}">
+            <div style="display:flex;flex-direction:column;gap:16px">
+              <label style="display:flex;flex-direction:column;gap:6px"><span style="font-size:13px;font-weight:700">Room name</span><div style="height:48px;border-radius:14px;background:var(--surface-2);border:1.5px solid var(--brand);display:flex;align-items:center;padding:0 14px;font-size:15px;font-weight:500">College Gang</div></label>
+              <label style="display:flex;flex-direction:column;gap:6px"><span style="font-size:13px;font-weight:700">Season</span><div style="height:48px;border-radius:14px;background:var(--surface-2);display:flex;align-items:center;justify-content:space-between;padding:0 14px;font-size:15px;font-weight:500">IPL 2027 · 74 matches<span style="font-family:'Material Symbols Rounded';font-size:20px;color:var(--ink-2)">expand_more</span></div></label>
+              <div style="display:flex;flex-direction:column;gap:6px"><span style="font-size:13px;font-weight:700">Managers</span>
+                <div style="display:flex;gap:10px;flex-wrap:wrap">
+                  <div style="flex:1 1 180px;height:48px;border-radius:14px;background:var(--surface-2);display:flex;align-items:center;justify-content:space-between;padding:0 4px"><button data-k="minM" data-d="-1" onClick="{{ adj }}" style="width:40px;height:40px;border:0;border-radius:11px;background:var(--surface);cursor:pointer;font-family:'Material Symbols Rounded';font-size:20px;color:var(--ink)">remove</button><span style="font-size:14px">Min <b style="font-family:'DM Mono',monospace;font-weight:500">{{ f.minM }}</b></span><button data-k="minM" data-d="1" onClick="{{ adj }}" style="width:40px;height:40px;border:0;border-radius:11px;background:var(--surface);cursor:pointer;font-family:'Material Symbols Rounded';font-size:20px;color:var(--ink)">add</button></div>
+                  <div style="flex:1 1 180px;height:48px;border-radius:14px;background:var(--surface-2);display:flex;align-items:center;justify-content:space-between;padding:0 4px"><button data-k="maxM" data-d="-1" onClick="{{ adj }}" style="width:40px;height:40px;border:0;border-radius:11px;background:var(--surface);cursor:pointer;font-family:'Material Symbols Rounded';font-size:20px;color:var(--ink)">remove</button><span style="font-size:14px">Max <b style="font-family:'DM Mono',monospace;font-weight:500">{{ f.maxM }}</b></span><button data-k="maxM" data-d="1" onClick="{{ adj }}" style="width:40px;height:40px;border:0;border-radius:11px;background:var(--surface);cursor:pointer;font-family:'Material Symbols Rounded';font-size:20px;color:var(--ink)">add</button></div>
+                </div>
+              </div>
+              <div style="display:flex;flex-direction:column;gap:6px"><span style="font-size:13px;font-weight:700">Auction start</span><div style="height:48px;border-radius:14px;background:var(--surface-2);display:flex;align-items:center;justify-content:space-between;padding:0 14px;font-size:15px;font-weight:500">Sat 14 Mar 2027 · 8:00 PM<span style="font-family:'Material Symbols Rounded';font-size:20px;color:var(--ink-2)">calendar_month</span></div>
+                <div style="display:flex;flex-direction:column;gap:4px;padding:10px 12px;border-radius:14px;background:var(--info-tint);font-size:13px"><span style="font-weight:700;color:var(--ink)">Everyone sees their own time</span><span style="color:var(--ink-2)">Bengaluru 8:00 PM · London 2:30 PM · Toronto 10:30 AM</span></div>
+              </div>
+              <div style="display:flex;flex-direction:column;gap:6px"><span style="font-size:13px;font-weight:700">Timers</span><div style="display:flex;gap:10px;flex-wrap:wrap"><div style="flex:1 1 160px;padding:12px 14px;border-radius:14px;background:var(--surface-2);display:flex;justify-content:space-between;font-size:14px"><span>Lot opens</span><b style="font-family:'DM Mono',monospace;font-weight:500">30s</b></div><div style="flex:1 1 160px;padding:12px 14px;border-radius:14px;background:var(--surface-2);display:flex;justify-content:space-between;font-size:14px"><span>After each bid</span><b style="font-family:'DM Mono',monospace;font-weight:500">15s</b></div></div></div>
+            </div>
+          </sc-if>
+
+          <sc-if value="{{ s3 }}" hint-placeholder-val="{{ false }}">
+            <div style="display:flex;flex-direction:column;gap:16px">
+              <div style="display:flex;gap:10px;flex-wrap:wrap">
+                <div style="flex:1 1 200px;display:flex;flex-direction:column;gap:6px"><span style="font-size:13px;font-weight:700">Purse</span><div style="height:48px;border-radius:14px;background:var(--surface-2);display:flex;align-items:center;justify-content:space-between;padding:0 4px"><button data-k="purse" data-d="-5" onClick="{{ adj }}" style="width:40px;height:40px;border:0;border-radius:11px;background:var(--surface);cursor:pointer;font-family:'Material Symbols Rounded';font-size:20px;color:var(--ink)">remove</button><span style="font-family:'DM Mono',monospace;font-size:16px;font-weight:500">₹{{ f.purse }} Cr</span><button data-k="purse" data-d="5" onClick="{{ adj }}" style="width:40px;height:40px;border:0;border-radius:11px;background:var(--surface);cursor:pointer;font-family:'Material Symbols Rounded';font-size:20px;color:var(--ink)">add</button></div></div>
+                <div style="flex:1 1 200px;display:flex;flex-direction:column;gap:6px"><span style="font-size:13px;font-weight:700">Squad size</span><div style="height:48px;border-radius:14px;background:var(--surface-2);display:flex;align-items:center;justify-content:space-between;padding:0 4px"><button data-k="sqMin" data-d="-1" onClick="{{ adj }}" style="width:40px;height:40px;border:0;border-radius:11px;background:var(--surface);cursor:pointer;font-family:'Material Symbols Rounded';font-size:20px;color:var(--ink)">remove</button><span style="font-family:'DM Mono',monospace;font-size:16px;font-weight:500">{{ f.sqMin }}–25</span><button data-k="sqMin" data-d="1" onClick="{{ adj }}" style="width:40px;height:40px;border:0;border-radius:11px;background:var(--surface);cursor:pointer;font-family:'Material Symbols Rounded';font-size:20px;color:var(--ink)">add</button></div></div>
+              </div>
+              <div style="display:flex;flex-direction:column;gap:8px"><div style="display:flex;justify-content:space-between;align-items:baseline"><span style="font-size:13px;font-weight:700">Role minimums</span><span style="font-family:'DM Mono',monospace;font-size:12px;color:{{ roleSumInk }}">{{ roleSum }} of {{ f.sqMin }} min</span></div>
+                <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:8px">
+                  <sc-for list="{{ roleRows }}" as="r" hint-placeholder-count="4"><div style="border-radius:16px;background:var(--surface);border:1px solid var(--line);padding:10px;display:flex;flex-direction:column;gap:8px;align-items:center"><span style="font-size:12px;font-weight:800;padding:4px 9px;border-radius:7px;background:{{ r.bg }};color:{{ r.ink }}">{{ r.k }}</span><div style="display:flex;align-items:center;gap:10px"><button data-k="{{ r.key }}" data-d="-1" onClick="{{ adj }}" style="width:36px;height:36px;border:0;border-radius:10px;background:var(--surface-2);cursor:pointer;font-family:'Material Symbols Rounded';font-size:18px;color:var(--ink)">remove</button><span style="font-family:'DM Mono',monospace;font-size:18px;font-weight:500;min-width:20px;text-align:center">{{ r.v }}</span><button data-k="{{ r.key }}" data-d="1" onClick="{{ adj }}" style="width:36px;height:36px;border:0;border-radius:10px;background:var(--surface-2);cursor:pointer;font-family:'Material Symbols Rounded';font-size:18px;color:var(--ink)">add</button></div></div></sc-for>
+                </div>
+                <sc-if value="{{ roleOver }}" hint-placeholder-val="{{ false }}"><div style="display:flex;gap:10px;align-items:flex-start;padding:12px;border-radius:14px;background:var(--bad-tint);font-size:13px"><span style="font-family:'Material Symbols Rounded';font-size:20px;line-height:1;color:var(--bad)">error</span><span>Role minimums add up to {{ roleSum }}, but the squad minimum is {{ f.sqMin }}. Drop a role or raise the squad size.</span></div></sc-if>
+              </div>
+              <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;padding:14px;border-radius:16px;background:var(--surface);border:1px solid var(--line)"><div style="display:flex;flex-direction:column;gap:2px"><span style="font-size:14px;font-weight:700">Overseas quota</span><span style="font-size:12px;color:var(--ink-2)">Restricted category from the pack</span></div><div style="display:flex;align-items:center;gap:10px"><button data-k="os" data-d="-1" onClick="{{ adj }}" style="width:36px;height:36px;border:0;border-radius:10px;background:var(--surface-2);cursor:pointer;font-family:'Material Symbols Rounded';font-size:18px;color:var(--ink)">remove</button><span style="font-family:'DM Mono',monospace;font-size:18px;font-weight:500">≤ {{ f.os }}</span><button data-k="os" data-d="1" onClick="{{ adj }}" style="width:36px;height:36px;border:0;border-radius:10px;background:var(--surface-2);cursor:pointer;font-family:'Material Symbols Rounded';font-size:18px;color:var(--ink)">add</button></div></div>
+              <div style="display:flex;flex-direction:column;gap:8px"><span style="font-size:13px;font-weight:700">Bid increments</span>
+                <div style="border-radius:16px;background:var(--surface);border:1px solid var(--line);overflow:hidden">
+                  <div style="display:flex;justify-content:space-between;padding:10px 14px;font-size:13px;border-bottom:1px solid var(--line)"><span style="color:var(--ink-2)">Up to ₹1 Cr</span><span style="font-family:'DM Mono',monospace">+₹5 L</span></div>
+                  <div style="display:flex;justify-content:space-between;padding:10px 14px;font-size:13px;border-bottom:1px solid var(--line)"><span style="color:var(--ink-2)">₹1–2 Cr</span><span style="font-family:'DM Mono',monospace">+₹10 L</span></div>
+                  <div style="display:flex;justify-content:space-between;padding:10px 14px;font-size:13px;border-bottom:1px solid var(--line)"><span style="color:var(--ink-2)">₹2–5 Cr</span><span style="font-family:'DM Mono',monospace">+₹20 L</span></div>
+                  <div style="display:flex;justify-content:space-between;padding:10px 14px;font-size:13px"><span style="color:var(--ink-2)">Above ₹5 Cr</span><span style="font-family:'DM Mono',monospace">+₹25 L</span></div>
+                </div>
+              </div>
+              <div style="display:flex;align-items:center;justify-content:space-between;gap:12px"><div style="display:flex;flex-direction:column;gap:2px"><span style="font-size:14px;font-weight:700">Proxy bids</span><span style="font-size:12px;color:var(--ink-2)">"Auto-bid up to X" for bad time zones</span></div><button data-k="proxy" onClick="{{ toggle }}" style="width:48px;height:28px;border:0;border-radius:999px;background:{{ proxyBg }};display:flex;align-items:center;justify-content:{{ proxyJustify }};padding:3px;box-sizing:border-box;cursor:pointer"><span style="width:22px;height:22px;border-radius:999px;background:var(--surface)"></span></button></div>
+            </div>
+          </sc-if>
+
+          <sc-if value="{{ s4 }}" hint-placeholder-val="{{ false }}">
+            <div style="display:flex;flex-direction:column;gap:14px">
+              <div style="height:44px;border-radius:14px;background:var(--surface-2);display:flex;padding:4px;gap:4px;max-width:360px"><button data-v="default" onClick="{{ setScoring }}" style="flex:1;border:0;border-radius:10px;background:{{ scDefBg }};box-shadow:{{ scDefSh }};font:inherit;font-size:13px;font-weight:700;color:var(--ink);cursor:pointer">Pack default</button><button data-v="custom" onClick="{{ setScoring }}" style="flex:1;border:0;border-radius:10px;background:{{ scCusBg }};box-shadow:{{ scCusSh }};font:inherit;font-size:13px;font-weight:700;color:var(--ink);cursor:pointer">Customise</button></div>
+              <span style="font-size:13px;color:var(--ink-2);line-height:1.5">Editable until the first match starts. After that, changes need every manager to agree.</span>
+              <sc-for list="{{ scoring }}" as="g" hint-placeholder-count="4">
+                <div style="border-radius:18px;background:var(--surface);border:1px solid var(--line);overflow:hidden">
+                  <div style="padding:12px 14px;font-weight:800;font-size:14px;border-bottom:1px solid var(--line);display:flex;justify-content:space-between"><span>{{ g.title }}</span><span style="font-size:12px;font-weight:600;color:var(--ink-2)">{{ g.note }}</span></div>
+                  <sc-for list="{{ g.rows }}" as="r" hint-placeholder-count="3"><div style="display:flex;justify-content:space-between;align-items:center;gap:10px;padding:9px 14px;font-size:13px;border-bottom:1px solid var(--line)"><span style="color:var(--ink-2)">{{ r.k }}</span><span style="font-family:'DM Mono',monospace;padding:4px 10px;border-radius:8px;background:{{ r.bg }};min-width:44px;text-align:center">{{ r.v }}</span></div></sc-for>
+                </div>
+              </sc-for>
+            </div>
+          </sc-if>
+
+          <sc-if value="{{ s5 }}" hint-placeholder-val="{{ false }}">
+            <div style="display:flex;flex-direction:column;gap:14px">
+              <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;padding:16px;border-radius:18px;background:var(--inverse);color:var(--on-inverse)"><div style="display:flex;gap:12px;align-items:center"><span style="font-family:'Material Symbols Rounded';font-size:26px;line-height:1;color:oklch(0.78 0.14 70)">forum</span><div style="display:flex;flex-direction:column;gap:2px"><span style="font-size:15px;font-weight:800">Team Table advisor</span><span style="font-size:12px;color:var(--on-inverse-2)">Rationed AI advice. It never bids or sees upcoming lots.</span></div></div><button data-k="ai" onClick="{{ toggle }}" style="width:48px;height:28px;border:0;border-radius:999px;background:{{ aiBg }};display:flex;align-items:center;justify-content:{{ aiJustify }};padding:3px;box-sizing:border-box;cursor:pointer;flex-shrink:0"><span style="width:22px;height:22px;border-radius:999px;background:#fff"></span></button></div>
+              <sc-if value="{{ f.ai }}" hint-placeholder-val="{{ true }}">
+                <div style="display:flex;flex-direction:column;gap:8px"><span style="font-size:13px;font-weight:700">Lifelines per manager</span>
+                  <sc-for list="{{ lifeRows }}" as="l" hint-placeholder-count="3"><div style="display:flex;align-items:center;gap:12px;padding:12px 14px;border-radius:16px;background:var(--surface);border:1px solid var(--line)"><span style="font-family:'Material Symbols Rounded';font-size:22px;line-height:1;color:var(--ink-2)">{{ l.icon }}</span><div style="flex:1;display:flex;flex-direction:column;gap:2px;min-width:0"><span style="font-size:14px;font-weight:700">{{ l.label }}</span><span style="font-size:12px;color:var(--ink-2)">{{ l.desc }}</span></div><div style="display:flex;align-items:center;gap:8px"><button data-k="{{ l.key }}" data-d="-1" onClick="{{ adj }}" style="width:36px;height:36px;border:0;border-radius:10px;background:var(--surface-2);cursor:pointer;font-family:'Material Symbols Rounded';font-size:18px;color:var(--ink)">remove</button><span style="font-family:'DM Mono',monospace;font-size:18px;font-weight:500;min-width:16px;text-align:center">{{ l.v }}</span><button data-k="{{ l.key }}" data-d="1" onClick="{{ adj }}" style="width:36px;height:36px;border:0;border-radius:10px;background:var(--surface-2);cursor:pointer;font-family:'Material Symbols Rounded';font-size:18px;color:var(--ink)">add</button></div></div></sc-for>
+                  <span style="font-size:12px;color:var(--ink-2)">Set a type to 0 to switch it off.</span>
+                </div>
+                <div style="display:flex;flex-direction:column;gap:8px"><span style="font-size:13px;font-weight:700">Auction Report Card</span><div style="height:44px;border-radius:14px;background:var(--surface-2);display:flex;padding:4px;gap:4px;max-width:360px"><span style="flex:1;border-radius:10px;background:var(--surface);box-shadow:var(--shadow);display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700">Whole room</span><span style="flex:1;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:600;color:var(--ink-2)">Owner only</span></div><span style="font-size:12px;color:var(--ink-2)">Each manager's "advice vs action" section stays private unless they share it.</span></div>
+              </sc-if>
+            </div>
+          </sc-if>
+
+          <sc-if value="{{ s6 }}" hint-placeholder-val="{{ false }}">
+            <div style="display:flex;flex-direction:column;gap:16px">
+              <div style="border-radius:24px;background:var(--brand);color:#fffaf6;padding:22px;display:flex;flex-direction:column;gap:14px">
+                <span style="font-size:12px;font-weight:700;opacity:0.85;letter-spacing:0.06em">INVITE CODE</span>
+                <span style="font-family:'DM Mono',monospace;font-size:40px;font-weight:500;letter-spacing:0.06em">CLGG-82XD</span>
+                <div style="display:flex;gap:8px;flex-wrap:wrap"><span style="height:44px;padding:0 16px;border-radius:14px;background:#fffaf6;color:var(--brand-ink);display:flex;align-items:center;gap:6px;font-weight:700;font-size:14px"><span style="font-family:'Material Symbols Rounded';font-size:20px;line-height:1">share</span>Share link</span><span style="height:44px;padding:0 16px;border-radius:14px;background:oklch(1 0 0 / 0.18);display:flex;align-items:center;gap:6px;font-weight:700;font-size:14px"><span style="font-family:'Material Symbols Rounded';font-size:20px;line-height:1">content_copy</span>Copy code</span></div>
+              </div>
+              <div style="display:flex;flex-direction:column;gap:4px;border-radius:20px;background:var(--surface);border:1px solid var(--line);padding:8px">
+                <div style="display:flex;justify-content:space-between;padding:8px 10px"><span style="font-size:11px;font-weight:700;letter-spacing:0.06em;color:var(--ink-2)">JOINED · 4 OF 4–10</span><span style="font-size:12px;font-weight:700;color:var(--brand-ink)">Revoke code</span></div>
+                <div style="display:flex;align-items:center;gap:10px;padding:8px 10px"><span style="width:32px;height:32px;border-radius:10px;background:oklch(0.56 0.15 15);color:#fff;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:11px">SR</span><span style="flex:1;font-size:14px;font-weight:600">Shane's Raiders <span style="font-weight:500;color:var(--ink-2)">· you, commissioner</span></span></div>
+                <div style="display:flex;align-items:center;gap:10px;padding:8px 10px"><span style="width:32px;height:32px;border-radius:10px;background:oklch(0.56 0.15 165);color:#fff;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:11px">LL</span><span style="flex:1;font-size:14px;font-weight:600">Library Legends <span style="font-weight:500;color:var(--ink-2)">· Neha</span></span><span style="font-size:12px;font-weight:700;color:var(--bad)">Remove</span></div>
+                <div style="display:flex;align-items:center;gap:10px;padding:8px 10px"><span style="width:32px;height:32px;border-radius:10px;background:oklch(0.56 0.15 255);color:#fff;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:11px">CK</span><span style="flex:1;font-size:14px;font-weight:600">Canteen Kings <span style="font-weight:500;color:var(--ink-2)">· Aman</span></span><span style="font-size:12px;font-weight:700;color:var(--bad)">Remove</span></div>
+                <div style="display:flex;align-items:center;gap:10px;padding:8px 10px"><span style="width:32px;height:32px;border-radius:10px;background:oklch(0.56 0.15 285);color:#fff;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:11px">HB</span><span style="flex:1;font-size:14px;font-weight:600">Hostel Bombers <span style="font-weight:500;color:var(--ink-2)">· Rhea</span></span><span style="font-size:12px;font-weight:700;color:var(--bad)">Remove</span></div>
+              </div>
+              <div style="display:flex;gap:10px;align-items:flex-start;padding:12px;border-radius:14px;background:var(--warn-tint);font-size:13px;line-height:1.45"><span style="font-family:'Material Symbols Rounded';font-size:20px;line-height:1;color:var(--warn-ink)">lock_clock</span><span>Scheduling the auction locks the Sport Pack. Config stays editable until you start the auction.</span></div>
+            </div>
+          </sc-if>
+        </div>
+      </div>
+      <div style="flex-shrink:0;display:flex;gap:10px;padding:12px 20px 16px;border-top:1px solid var(--line);background:var(--surface)">
+        <button onClick="{{ back }}" style="height:52px;padding:0 20px;border:1px solid var(--line);border-radius:14px;background:var(--surface);color:var(--ink);font:inherit;font-weight:700;font-size:15px;cursor:pointer">{{ backLabel }}</button>
+        <button onClick="{{ next }}" style="flex:1;max-width:420px;margin-left:auto;height:52px;border:0;border-radius:14px;background:{{ nextBg }};color:{{ nextInk }};font:inherit;font-weight:700;font-size:16px;cursor:pointer">{{ nextLabel }}</button>
+      </div>
+    </div>
+  </div>
+</sc-if>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;screen&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;signin&quot;,&quot;hub&quot;,&quot;empty&quot;,&quot;join&quot;,&quot;wizard:1&quot;,&quot;wizard:2&quot;,&quot;wizard:3&quot;,&quot;wizard:4&quot;,&quot;wizard:5&quot;,&quot;wizard:6&quot;],&quot;default&quot;:&quot;hub&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;Prototype&quot;},&quot;mode&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;light&quot;,&quot;dark&quot;],&quot;default&quot;:&quot;light&quot;,&quot;tsType&quot;:&quot;'light'|'dark'&quot;,&quot;section&quot;:&quot;Theme&quot;},&quot;height&quot;:{&quot;editor&quot;:null,&quot;tsType&quot;:&quot;string&quot;}}">
+class Component extends DCLogic {
+  state = { screen: null, step: 1, bp: 'phone', hue: 195,
+    f: { minM: 4, maxM: 10, purse: 120, sqMin: 18, WK: 2, BAT: 5, BOWL: 5, AR: 3, os: 8, proxy: false, ai: true, fit: 1, ceil: 1, scan: 1, scoring: 'default' } };
+  rootRef = React.createRef();
+  componentDidMount() {
+    const go = () => {
+      if (!window.PaddleSim) { this.t = setTimeout(go, 40); return; }
+      PaddleSim.applyTheme(this.rootRef.current, this.props.mode ?? 'light', 195);
+      this.unw = PaddleSim.watchWidth(this.rootRef.current, (bp) => bp !== this.state.bp && this.setState({ bp }));
+    };
+    go();
+  }
+  componentDidUpdate(pp) { if (pp.mode !== this.props.mode && window.PaddleSim) PaddleSim.applyTheme(this.rootRef.current, this.props.mode ?? 'light', 195); if (pp.screen !== this.props.screen) this.setState({ screen: null }); }
+  componentWillUnmount() { clearTimeout(this.t); this.unw && this.unw(); }
+  renderVals() {
+    const sc = this.state.screen ?? this.props.screen ?? 'hub';
+    const [scr, stepStr] = sc.split(':');
+    const step = scr === 'wizard' ? (this.state.screen ? this.state.step : Number(stepStr || this.state.step)) : this.state.step;
+    const f = this.state.f; const wide = this.state.bp !== 'phone';
+    const labels = [['Sport', 'Pick a Sport Pack'], ['Basics', 'Name, season, time'], ['Squad rules', 'Purse, roles, quotas'], ['Scoring', 'Points per stat'], ['AI', 'Lifelines, report card'], ['Invite', 'Get friends in']];
+    const steps = labels.map((l, i) => { const n = i + 1, done = n < step, cur = n === step; return { n, label: l[0], sub: l[1], mark: done ? '✓' : String(n), bg: cur ? 'var(--brand-tint)' : 'transparent', dotBg: done || cur ? 'var(--brand)' : 'var(--surface-2)', dotInk: done || cur ? '#fffaf6' : 'var(--ink-2)', weight: cur ? '800' : '600', barBg: n <= step ? 'var(--brand)' : 'var(--line)' }; });
+    const roleSum = f.WK + f.BAT + f.BOWL + f.AR; const roleOver = roleSum > f.sqMin;
+    const custom = f.scoring === 'custom'; const ed = custom ? 'var(--brand-tint)' : 'var(--surface-2)';
+    const scoring = [
+      { title: 'Batting', note: 'BAT · WK · AR for duck', rows: [['Per run', '+1'], ['Four (bonus)', '+2'], ['Six (bonus)', '+4'], ['50 milestone', '+10'], ['100 milestone (additional)', '+20'], ['Duck', '−5']] },
+      { title: 'Strike rate', note: 'min 10 balls', rows: [['Above 170', '+6'], ['150–170', '+4'], ['130–150', '+2'], ['Below 70', '−2'], ['Below 60', '−4']] },
+      { title: 'Bowling', note: 'economy: min 2 overs', rows: [['Per wicket', '+25'], ['LBW / bowled bonus', '+8'], ['3 wickets', '+10'], ['5 wickets (additional)', '+20'], ['Maiden', '+12'], ['Economy below 5', '+6']] },
+      { title: 'Fielding & other', note: '', rows: [['Catch', '+8'], ['3+ catches bonus', '+4'], ['Stumping', '+12'], ['Run-out direct / assisted', '+12 / +6'], ['Player of the Match', '+25'], ['In playing XI', '+4']] }
+    ].map((g) => ({ ...g, rows: g.rows.map((r) => ({ k: r[0], v: r[1], bg: ed })) }));
+    const TAKEN = { 45: 1, 15: 1, 135: 1, 315: 1, 255: 1, 285: 1, 75: 1 };
+    const NAMES = { 15: 'Crimson', 45: 'Tangerine', 75: 'Bronze', 105: 'Olive', 135: 'Fern', 165: 'Emerald', 195: 'Teal', 225: 'Sky', 255: 'Cobalt', 285: 'Iris', 315: 'Orchid', 345: 'Rose' };
+    const swatches = [15, 45, 75, 105, 135, 165, 195, 225, 255, 285, 315, 345].map((h) => ({ hue: h, name: NAMES[h], bg: `oklch(0.56 0.15 ${h})`, opacity: TAKEN[h] ? '0.3' : '1', cursor: TAKEN[h] ? 'not-allowed' : 'pointer', icon: TAKEN[h] ? 'close' : h === this.state.hue ? 'check' : '', ring: h === this.state.hue ? '0 0 0 3px var(--bg), 0 0 0 5px var(--ink)' : 'none' }));
+    const set = (o) => this.setState({ f: { ...this.state.f, ...o } });
+    const lim = { minM: [2, 12], maxM: [2, 12], purse: [20, 500], sqMin: [11, 25], WK: [0, 6], BAT: [0, 10], BOWL: [0, 10], AR: [0, 8], os: [0, 12], fit: [0, 5], ceil: [0, 5], scan: [0, 5] };
+    return {
+      rootRef: this.rootRef, frameH: this.props.height ?? '100vh', wide,
+      isSignin: scr === 'signin', notSignin: scr !== 'signin', isHub: scr === 'hub', isHubEmpty: scr === 'empty', isJoin: scr === 'join', isWizard: scr === 'wizard',
+      goHub: () => this.setState({ screen: 'hub' }), goJoin: () => this.setState({ screen: 'join' }), goWizard: () => this.setState({ screen: 'wizard', step: 1 }), goInvite: () => this.setState({ screen: 'wizard', step: 6 }),
+      goRoomLink: () => { window.location.href = 'Room.dc.html'; },
+      swatches, pickHue: (e) => { const h = Number(e.currentTarget.dataset.hue); if (!TAKEN[h]) this.setState({ hue: h }); },
+      pickBg: `oklch(0.56 0.15 ${this.state.hue})`, pickRoomBg: `oklch(0.972 0.014 ${this.state.hue})`,
+      step, steps, stepTitle: ['Choose a sport', 'Room basics', 'Squad rules', 'Scoring', 'AI settings', 'Invite your friends'][step - 1],
+      s1: step === 1, s2: step === 2, s3: step === 3, s4: step === 4, s5: step === 5, s6: step === 6,
+      goStep: (e) => this.setState({ screen: 'wizard', step: Number(e.currentTarget.dataset.step) }),
+      back: () => step === 1 ? this.setState({ screen: 'hub' }) : this.setState({ screen: 'wizard', step: step - 1 }),
+      next: () => { if (step === 3 && roleOver) return; step === 6 ? this.setState({ screen: 'hub' }) : this.setState({ screen: 'wizard', step: step + 1 }); },
+      backLabel: step === 1 ? 'Cancel' : 'Back', nextLabel: step === 6 ? 'Schedule auction' : step === 5 ? 'Create room' : 'Continue',
+      nextBg: step === 3 && roleOver ? 'var(--surface-2)' : 'var(--brand)', nextInk: step === 3 && roleOver ? 'var(--ink-3)' : '#fffaf6',
+      f, roleSum, roleOver, roleSumInk: roleOver ? 'var(--bad)' : 'var(--ink-2)',
+      roleRows: [['WK', 4], ['BAT', 1], ['BOWL', 2], ['AR', 3]].map(([k, s]) => ({ k, key: k, v: f[k], bg: `var(--role${s}-bg)`, ink: `var(--role${s}-ink)` })),
+      lifeRows: [['fit', 'Fit Check', 'fact_check', 'Go/No-Go on your own squad'], ['ceil', 'Price Ceiling', 'vertical_align_top', 'Max sensible bid for this lot'], ['scan', 'Rival Scan', 'radar', 'Who needs and can afford him']].map(([key, label, icon, desc]) => ({ key, label, icon, desc, v: f[key] })),
+      adj: (e) => { const k = e.currentTarget.dataset.k, d = Number(e.currentTarget.dataset.d); const [lo, hi] = lim[k] || [0, 999]; set({ [k]: Math.max(lo, Math.min(hi, f[k] + d)) }); },
+      toggle: (e) => { const k = e.currentTarget.dataset.k; set({ [k]: !f[k] }); },
+      proxyBg: f.proxy ? 'var(--brand)' : 'var(--line)', proxyJustify: f.proxy ? 'flex-end' : 'flex-start',
+      aiBg: f.ai ? 'var(--ok)' : 'var(--inverse-2)', aiJustify: f.ai ? 'flex-end' : 'flex-start',
+      setScoring: (e) => set({ scoring: e.currentTarget.dataset.v }), scoring,
+      scDefBg: custom ? 'transparent' : 'var(--surface)', scDefSh: custom ? 'none' : 'var(--shadow)', scCusBg: custom ? 'var(--surface)' : 'transparent', scCusSh: custom ? 'var(--shadow)' : 'none'
+    };
+  }
+}
+</script>
+</body>
+</html>

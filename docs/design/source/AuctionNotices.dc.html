@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<div style="display:flex;flex-direction:column;gap:8px;width:100%;font-family:'Plus Jakarta Sans',system-ui,sans-serif;pointer-events:auto">
+  <sc-if value="{{ v.isOffline }}" hint-placeholder-val="{{ false }}">
+    <div style="display:flex;align-items:center;gap:12px;padding:12px 14px;border-radius:16px;background:var(--inverse);color:var(--on-inverse);box-shadow:var(--shadow)"><span style="font-family:'Material Symbols Rounded';font-size:22px;line-height:1">wifi_off</span><div style="flex:1;display:flex;flex-direction:column;gap:2px"><span style="font-weight:700;font-size:14px">Reconnecting…</span><span style="font-size:12px;color:var(--on-inverse-2)">Bidding's locked until you're back. Nothing is lost.</span></div><button onClick="{{ onReconnect }}" style="height:32px;padding:0 12px;border:0;border-radius:10px;background:var(--inverse-2);color:var(--on-inverse);font:inherit;font-size:12px;font-weight:700;cursor:pointer">Retry</button></div>
+  </sc-if>
+  <sc-if value="{{ v.isPaused }}" hint-placeholder-val="{{ false }}">
+    <div style="display:flex;align-items:center;gap:12px;padding:12px 14px;border-radius:16px;background:var(--warn-tint);color:var(--ink);box-shadow:var(--shadow)"><span style="font-family:'Material Symbols Rounded';font-size:22px;line-height:1;color:var(--warn-ink)">pause_circle</span><div style="flex:1;display:flex;flex-direction:column;gap:2px"><span style="font-weight:700;font-size:14px">Commish hit pause</span><span style="font-size:12px;color:var(--ink-2)">Timer frozen at {{ v.time }}. Stretch, hydrate, trash-talk.</span></div></div>
+  </sc-if>
+  <sc-if value="{{ v.isRtm }}" hint-placeholder-val="{{ false }}">
+    <div style="display:flex;align-items:center;gap:12px;padding:12px 14px;border-radius:16px;background:var(--warn-tint);color:var(--ink);box-shadow:var(--shadow)"><span style="font-family:'Material Symbols Rounded';font-size:22px;line-height:1;color:var(--warn-ink)">swap_horiz</span><div style="flex:1;display:flex;flex-direction:column;gap:2px"><span style="font-weight:700;font-size:14px">RTM in play</span><span style="font-size:12px;color:var(--ink-2)">Lot held while the Right to Match plays out.</span></div></div>
+  </sc-if>
+  <sc-if value="{{ v.toast.show }}" hint-placeholder-val="{{ false }}">
+    <div style="display:flex;flex-direction:column">
+      <sc-if value="{{ v.toast.isOutbid }}" hint-placeholder-val="{{ false }}">
+        <div style="display:flex;align-items:center;gap:12px;padding:12px 14px;border-radius:16px;background:var(--surface);border:2px solid var(--bad);box-shadow:var(--shadow)"><span style="width:32px;height:32px;border-radius:10px;background:{{ v.toast.leaderBg }};color:#fff;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:11px;flex-shrink:0">{{ v.toast.leaderId }}</span><div style="flex:1;display:flex;flex-direction:column;gap:2px"><span style="font-weight:800;font-size:14px;color:var(--bad)">{{ v.toast.title }}</span><span style="font-size:13px;color:var(--ink-2)">{{ v.toast.body }}</span></div><button onClick="{{ onDismiss }}" style="border:0;background:transparent;color:var(--ink-2);cursor:pointer;font-family:'Material Symbols Rounded';font-size:20px">close</button></div>
+      </sc-if>
+      <sc-if value="{{ v.toast.isRejected }}" hint-placeholder-val="{{ false }}">
+        <div style="display:flex;align-items:flex-start;gap:12px;padding:12px 14px;border-radius:16px;background:var(--bad-tint);box-shadow:var(--shadow);color:var(--ink)"><span style="font-family:'Material Symbols Rounded';font-size:22px;line-height:1;color:var(--bad)">block</span><div style="flex:1;display:flex;flex-direction:column;gap:2px"><span style="font-weight:700;font-size:14px">{{ v.toast.title }}</span><span style="font-size:13px;color:var(--ink-2);line-height:1.45">{{ v.toast.body }}</span></div><button onClick="{{ onDismiss }}" style="border:0;background:transparent;color:var(--ink-2);cursor:pointer;font-family:'Material Symbols Rounded';font-size:20px">close</button></div>
+      </sc-if>
+      <sc-if value="{{ v.toast.isWon }}" hint-placeholder-val="{{ false }}">
+        <div style="display:flex;align-items:center;gap:12px;padding:12px 14px;border-radius:16px;background:var(--ok-tint);box-shadow:var(--shadow);color:var(--ink)"><span style="font-family:'Material Symbols Rounded';font-size:22px;line-height:1;color:var(--ok);font-variation-settings:'FILL' 1">celebration</span><div style="flex:1;display:flex;flex-direction:column;gap:2px"><span style="font-weight:700;font-size:14px">{{ v.toast.title }}</span><span style="font-size:13px;color:var(--ink-2)">{{ v.toast.body }}</span></div></div>
+      </sc-if>
+      <sc-if value="{{ v.toast.isRefund }}" hint-placeholder-val="{{ false }}">
+        <div style="display:flex;align-items:center;gap:12px;padding:12px 14px;border-radius:16px;background:var(--inverse);color:var(--on-inverse);box-shadow:var(--shadow)"><span style="font-family:'Material Symbols Rounded';font-size:22px;line-height:1;color:var(--ok)">replay</span><div style="flex:1;display:flex;flex-direction:column;gap:2px"><span style="font-weight:700;font-size:14px">{{ v.toast.title }}</span><span style="font-size:12px;color:var(--on-inverse-2)">{{ v.toast.body }}</span></div></div>
+      </sc-if>
+    </div>
+  </sc-if>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:390,&quot;height&quot;:200},&quot;v&quot;:{&quot;editor&quot;:null,&quot;tsType&quot;:&quot;AuctionView&quot;},&quot;onReconnect&quot;:{&quot;editor&quot;:null,&quot;tsType&quot;:&quot;() =&gt; void&quot;},&quot;onDismiss&quot;:{&quot;editor&quot;:null,&quot;tsType&quot;:&quot;() =&gt; void&quot;}}"></script>
+</body>
+</html>
