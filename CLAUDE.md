@@ -8,8 +8,8 @@ Product spec: docs/PaddleUp_PRD.md. UI source of truth: docs/design/README.md.
 Not: real-money play, public lobbies, native apps, AI that bids or acts for a manager.
 
 ## Stack
-- server/: Java 21, Spring Boot 3 modular monolith, Maven wrapper. Modules: rooms, auction,
-  scoring, packs, advisor. STOMP over WebSocket for live auction. PostgreSQL + Flyway.
+- server/: Java 21, Spring Boot 3 modular monolith, Maven wrapper. Modules: accounts, rooms,
+  auction, scoring, packs, advisor. STOMP over WebSocket for live auction. PostgreSQL + Flyway.
 - Spring AI with an OpenAI-compatible client (configurable base_url/model; Ollama for local dev).
 - web/: Next.js + TypeScript installable PWA. API types generated from springdoc OpenAPI.
 - packs/: versioned JSON Sport Packs, validated on load. A stub football pack lives in tests.
@@ -21,7 +21,8 @@ Not: real-money play, public lobbies, native apps, AI that bids or acts for a ma
 - make dev     local Postgres + server + web
 
 ## Conventions
-- Server code organised by module package; module internals not referenced across modules.
+- Server code organised by module package; inside each module, MVCS sub-packages controller,
+  service, repository, model, dto. Other modules use only a module's service and dto packages.
 - REST for commands and queries, WebSocket for auction broadcasts only.
 - Every schema change is a Flyway migration; never edit an applied one.
 - Times stored UTC (Instant), rendered local.
@@ -45,5 +46,6 @@ Not: real-money play, public lobbies, native apps, AI that bids or acts for a ma
 
 ## rx
 Workflow: /rx:feature <name>, then /rx:next.
-Specs live in specs/<id>/.
+Specs live in specs/<id>/. All P0/P1 specs are pre-seeded; build order and how to start one
+are in docs/roadmap.md (git switch -c feature/<id> main, then /rx:next; not /rx:feature).
 Formats are in the rx-spec skill.
