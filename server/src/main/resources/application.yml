@@ -1,0 +1,15 @@
+spring:
+  application:
+    name: paddleup-server
+  datasource:
+    url: ${DATASOURCE_URL:jdbc:postgresql://localhost:${POSTGRES_PORT:5432}/paddleup}
+    username: ${DATASOURCE_USER:paddleup}
+    password: ${DATASOURCE_PASSWORD:paddleup}
+  flyway:
+    enabled: true
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health

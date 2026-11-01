@@ -1,0 +1,47 @@
+:root {
+  --bg: oklch(0.975 0.006 75);
+  --ink: oklch(0.23 0.012 60);
+  --ink-2: oklch(0.46 0.012 60);
+  --brand: oklch(0.62 0.19 38);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: oklch(0.17 0.008 60);
+    --ink: oklch(0.96 0.006 75);
+    --ink-2: oklch(0.76 0.01 70);
+    --brand: oklch(0.66 0.18 38);
+  }
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  min-height: 100%;
+  background: var(--bg);
+  color: var(--ink);
+  font-family: system-ui, sans-serif;
+}
+
+main {
+  display: grid;
+  min-height: 100vh;
+  place-content: center;
+  gap: 0.5rem;
+  padding: 1.5rem;
+  text-align: center;
+}
+
+h1 {
+  margin: 0;
+  color: var(--brand);
+}
+
+p {
+  margin: 0;
+  color: var(--ink-2);
+}

@@ -1,0 +1,28 @@
+# Architecture
+
+Source: specs/2026-11-01-project-scaffold/plan.md (proposed; pending review).
+
+## Repo layout
+- `server/`: Spring Boot modular monolith, single Maven module (Java 21, Maven wrapper).
+- `web/`: Next.js + TypeScript installable PWA.
+- `packs/`: versioned Sport Pack JSON.
+- Root: `Makefile`, `compose.yaml`, `scripts/`, `README.md`.
+
+## Server modules
+- Base package `com.paddleup`, one top-level package per module: `accounts`, `rooms`, `auction`, `scoring`, `packs`, `advisor`.
+- Inside each module, MVCS layers as sub-packages: `controller` (REST/STOMP entry points) -> `service` (logic, transactions) -> `repository` (Spring JDBC); `model` (domain types, rows) and `dto` (request/response/event payloads).
+- Calls flow controller -> service -> repository only. Controllers return dtos, never model types.
+- Cross-module: a module may use another module's `service` and `dto` packages only, never its controller, repository or model. Enforcement (ArchUnit / Spring Modulith) is deferred.
+- Feature build order and module ownership per feature: `docs/roadmap.md`.
+
+## Persistence
+- PostgreSQL 17: local via docker compose, tests via Testcontainers (same image).
+- Schema changes only through Flyway migrations in `server/src/main/resources/db/migration`, starting from a no-op `V1__baseline.sql`.
+
+## Local dev topology
+- Postgres in Docker on 5432 (`POSTGRES_PORT` overrides).
+- Server on 8080 and web on 3000, both on the host, started together by `make dev` (`make -j2`).
+
+## Quality gates
+- `make lint` = Spotless check (server) + ESLint (web) + `scripts/check-agnostic.sh` (sport/role/stat/currency term grep over `server/src/main` and `web/src`).
+- `make test` = `./mvnw verify` (JUnit 5 + Testcontainers) then Vitest.
