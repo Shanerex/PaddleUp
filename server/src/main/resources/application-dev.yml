@@ -1,0 +1,6 @@
+# Local development: plain http cookies, sign-in emails go to the console.
+paddleup:
+  auth:
+    cookie-secure: false
+    throttle:
+      trusted-proxy-hops: 0

@@ -14,8 +14,10 @@ for root in "${ROOTS[@]}"; do
   hits=$(grep -rniE -w "$WORDS" "$root" \
     --exclude='*.test.*' --exclude-dir=test --exclude-dir=node_modules --exclude-dir=.next \
     --exclude='*.png' --exclude='*.ico' 2>/dev/null || true)
-  # Allowlist: the framework entry point SpringApplication.run( is not a domain term.
-  hits=$(printf '%s\n' "$hits" | sed 's/SpringApplication\.run(//' | grep -iE -w "$WORDS" || true)
+  # Allowlist: the framework entry point SpringApplication.run( and the design-source tagline
+  # "Run the auction" (verb, from docs/design/source/Home.dc.html) are not domain terms.
+  hits=$(printf '%s\n' "$hits" | sed -e 's/SpringApplication\.run(//' -e 's/Run the auction\.//' \
+    | grep -iE -w "$WORDS" || true)
   sym=$(grep -rn "$SYMBOLS" "$root" --exclude='*.test.*' --exclude-dir=test 2>/dev/null || true)
   if [ -n "$hits$sym" ]; then
     printf '%s\n%s\n' "$hits" "$sym" | sed '/^$/d'
