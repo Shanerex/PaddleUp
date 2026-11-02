@@ -11,6 +11,7 @@ lint: web-install
 	cd server && ./mvnw -q spotless:check
 	cd web && npm run lint
 	./scripts/check-agnostic.sh
+	./scripts/test-check-agnostic.sh
 
 db-up:
 	docker compose up -d --wait

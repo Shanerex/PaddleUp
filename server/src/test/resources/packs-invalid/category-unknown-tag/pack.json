@@ -1,0 +1,198 @@
+{
+  "schemaVersion": 1,
+  "id": "stub-football",
+  "version": "1.0.0",
+  "roles": [
+    {
+      "id": "gk",
+      "label": "Goalkeeper"
+    },
+    {
+      "id": "def",
+      "label": "Defender"
+    },
+    {
+      "id": "mid",
+      "label": "Midfielder"
+    },
+    {
+      "id": "fwd",
+      "label": "Forward"
+    }
+  ],
+  "tags": [
+    {
+      "id": "local",
+      "label": "Local"
+    },
+    {
+      "id": "foreign",
+      "label": "Foreign"
+    }
+  ],
+  "restrictedCategories": [
+    {
+      "id": "foreign-cap",
+      "label": "Foreign players",
+      "tag": "visitor",
+      "max": 4
+    }
+  ],
+  "presets": [
+    {
+      "id": "standard",
+      "label": "Standard league",
+      "purse": 100000000,
+      "currencyCode": "EUR",
+      "displayUnit": {
+        "label": "M",
+        "divisor": 1000000
+      },
+      "incrementLadder": [
+        {
+          "from": 0,
+          "step": 100000
+        },
+        {
+          "from": 5000000,
+          "step": 250000
+        }
+      ],
+      "squadMin": 11,
+      "squadMax": 18,
+      "roleMinimums": {
+        "gk": 1,
+        "def": 3,
+        "mid": 3,
+        "fwd": 2
+      },
+      "retention": {
+        "maxRetentions": 2,
+        "rtmCards": 1
+      }
+    }
+  ],
+  "statSchema": [
+    {
+      "id": "goals",
+      "label": "Goals",
+      "kind": "count",
+      "eventTypes": [
+        "open-play",
+        "penalty"
+      ]
+    },
+    {
+      "id": "assists",
+      "label": "Assists",
+      "kind": "count"
+    },
+    {
+      "id": "saves",
+      "label": "Saves",
+      "kind": "count"
+    },
+    {
+      "id": "passes-completed",
+      "label": "Passes completed",
+      "kind": "count"
+    },
+    {
+      "id": "passes-attempted",
+      "label": "Passes attempted",
+      "kind": "count"
+    },
+    {
+      "id": "minutes",
+      "label": "Minutes played",
+      "kind": "count"
+    }
+  ],
+  "defaultRuleSet": {
+    "rules": [
+      {
+        "type": "per-unit",
+        "id": "assist-points",
+        "stat": "assists",
+        "points": 3
+      },
+      {
+        "type": "threshold-bonus",
+        "id": "save-bonus",
+        "stat": "saves",
+        "tiers": [
+          {
+            "atLeast": 5,
+            "points": 2
+          },
+          {
+            "atLeast": 8,
+            "points": 4.5
+          }
+        ]
+      },
+      {
+        "type": "banded-rate",
+        "id": "pass-accuracy",
+        "numerator": "passes-completed",
+        "denominator": "passes-attempted",
+        "scale": 100,
+        "minVolume": {
+          "stat": "passes-attempted",
+          "atLeast": 20
+        },
+        "bands": [
+          {
+            "from": 0,
+            "to": 60,
+            "points": -1
+          },
+          {
+            "from": 60,
+            "to": 90,
+            "points": 0
+          },
+          {
+            "from": 90,
+            "to": 101,
+            "points": 2
+          }
+        ]
+      },
+      {
+        "type": "role-conditional",
+        "id": "keeper-saves",
+        "roles": [
+          "gk"
+        ],
+        "rule": {
+          "type": "per-unit",
+          "id": "keeper-save-points",
+          "stat": "saves",
+          "points": 1
+        }
+      },
+      {
+        "type": "event-type-bonus",
+        "id": "penalty-goal",
+        "stat": "goals",
+        "eventType": "penalty",
+        "points": 4
+      },
+      {
+        "type": "appearance-bonus",
+        "id": "appearance",
+        "points": 1
+      }
+    ]
+  },
+  "appearanceRule": {
+    "stat": "minutes",
+    "atLeast": 1
+  },
+  "terminology": {
+    "squad": "Matchday squad",
+    "match": "Fixture"
+  },
+  "aiDomainContext": "A football league where goals and assists drive points."
+}

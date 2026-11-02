@@ -30,6 +30,9 @@ management:
         include: health
 
 paddleup:
+  packs:
+    # Directory of sport pack JSON files, read once at startup (default: the repo packs/ dir).
+    dir: ${PADDLEUP_PACKS_DIR:../packs}
   auth:
     token-ttl: 15m
     max-code-attempts: 5
