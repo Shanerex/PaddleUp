@@ -15,8 +15,11 @@ lint: web-install
 db-up:
 	docker compose up -d --wait
 
+# Local settings and secrets come from server/.env.local; the profile falls back to dev
+# (console email, non-Secure cookie) when neither that file nor the shell sets one.
 server-dev:
-	cd server && ./mvnw spring-boot:run
+	cd server && set -a && if [ -f .env.local ]; then . ./.env.local; fi && set +a && \
+		SPRING_PROFILES_ACTIVE=$${SPRING_PROFILES_ACTIVE:-dev} ./mvnw spring-boot:run
 
 web-dev: web-install
 	cd web && npm run dev

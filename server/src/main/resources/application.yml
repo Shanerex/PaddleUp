@@ -7,9 +7,47 @@ spring:
     password: ${DATASOURCE_PASSWORD:paddleup}
   flyway:
     enabled: true
+  security:
+    oauth2:
+      client:
+        registration:
+          google:
+            # Placeholders keep startup working without Google configured; sign-in then fails.
+            client-id: ${GOOGLE_CLIENT_ID:not-configured}
+            client-secret: ${GOOGLE_CLIENT_SECRET:not-configured}
+            scope: openid,email,profile
+            redirect-uri: ${paddleup.auth.web-base-url}/api/login/oauth2/code/google
+  session:
+    # Flyway (V2__spring_session.sql) is the only schema owner.
+    jdbc:
+      initialize-schema: never
+    timeout: 30d
 
 management:
   endpoints:
     web:
       exposure:
         include: health
+
+paddleup:
+  auth:
+    token-ttl: 15m
+    max-code-attempts: 5
+    web-base-url: ${PADDLEUP_WEB_BASE_URL:http://localhost:3000}
+    avatar-preset-count: 12
+    cookie-secure: true
+    # Sliding-window sign-in limits (Postgres-backed). trusted-proxy-hops: proxies in front of the
+    # server; 0 trusts only the socket peer, n reads the client from the nth-from-right
+    # X-Forwarded-For entry. Set it to match the real chain and check the logged entries before relying on it.
+    throttle:
+      start-per-email: 3
+      start-per-ip: 10
+      start-window: 15m
+      failed-codes-per-email: 5
+      failed-per-ip: 20
+      failure-window: 1h
+      trusted-proxy-hops: ${PADDLEUP_TRUSTED_PROXY_HOPS:0}
+  email:
+    resend:
+      api-key: ${RESEND_API_KEY:}
+      from: ${RESEND_FROM:PaddleUp <onboarding@resend.dev>}
