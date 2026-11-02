@@ -2,3 +2,5 @@
 paddleup:
   auth:
     cookie-secure: false
+    throttle:
+      trusted-proxy-hops: 0

@@ -44,6 +44,7 @@ class SecurityConfig {
                         "/api/auth/sign-out",
                         "/api/oauth2/**",
                         "/api/login/oauth2/**",
+                        "/error", // ERROR dispatch: keeps the original status for anonymous callers
                         "/actuator/health",
                         "/v3/api-docs",
                         "/v3/api-docs/**")

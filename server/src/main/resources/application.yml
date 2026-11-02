@@ -38,7 +38,10 @@ paddleup:
     cookie-secure: true
     # Sliding-window sign-in limits (Postgres-backed). trusted-proxy-hops: proxies in front of the
     # server; 0 trusts only the socket peer, n reads the client from the nth-from-right
-    # X-Forwarded-For entry. Set it to match the real chain and check the logged entries before relying on it.
+    # X-Forwarded-For entry. Default 2 = Vercel rewrite + Fly proxy (Vercel sets the client address,
+    # Fly appends Vercel's); the dev profile sets 0. Too many hops falls back to the socket peer, so
+    # a wrong value costs per-client buckets, never lets a client pick its own address. Check the
+    # real X-Forwarded-For after deploying.
     throttle:
       start-per-email: 3
       start-per-ip: 10
@@ -46,7 +49,7 @@ paddleup:
       failed-codes-per-email: 5
       failed-per-ip: 20
       failure-window: 1h
-      trusted-proxy-hops: ${PADDLEUP_TRUSTED_PROXY_HOPS:0}
+      trusted-proxy-hops: ${PADDLEUP_TRUSTED_PROXY_HOPS:2}
   email:
     resend:
       api-key: ${RESEND_API_KEY:}

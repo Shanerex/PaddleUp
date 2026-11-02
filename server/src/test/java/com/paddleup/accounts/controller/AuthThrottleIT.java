@@ -112,7 +112,8 @@ class AuthThrottleIT extends AbstractPostgresIT {
             Map.of("email", email, "code", mail.codeTo(email)),
             freshIp());
 
-    assertThat(locked.getStatusCode()).isEqualTo(HttpStatus.UNAUTHORIZED);
+    assertThat(locked.getStatusCode()).isEqualTo(HttpStatus.TOO_MANY_REQUESTS);
+    assertThat(locked.getHeaders().getFirst(HttpHeaders.RETRY_AFTER)).matches("\\d+");
     assertThat(locked.getHeaders().get(HttpHeaders.SET_COOKIE)).isNull();
   }
 

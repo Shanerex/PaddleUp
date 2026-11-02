@@ -10,12 +10,10 @@ const apiBase = process.env.API_BASE_URL ?? "http://localhost:8080";
 export async function middleware(request: NextRequest) {
   const session = await checkSession(request.cookies.get(SESSION_COOKIE)?.value, apiBase);
   const target = signInRedirect(request.nextUrl.pathname, session);
-  const response = target
-    ? NextResponse.redirect(new URL(target, request.url))
-    : NextResponse.next();
-  // A cookie the server rejected is dead weight; drop it so later requests skip the round trip.
-  if (session === "invalid") response.cookies.delete(SESSION_COOKIE);
-  return response;
+  // Never clear the cookie on a 401: pu_session also carries the anonymous session that holds an
+  // in-flight Google sign-in, which a second tab would otherwise destroy. A stale cookie is
+  // replaced by the next sign-in.
+  return target ? NextResponse.redirect(new URL(target, request.url)) : NextResponse.next();
 }
 
 export const config = {

@@ -20,6 +20,7 @@ import java.util.Locale;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.regex.Pattern;
+import org.springframework.dao.DuplicateKeyException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.support.TransactionTemplate;
 
@@ -155,9 +156,7 @@ public class EmailSignInService {
   }
 
   private boolean spendCode(String email, String code, String clientIp) {
-    if (throttle.beginVerify(email, clientIp)) {
-      return false; // locked: do not even compare, and do not extend the lock
-    }
+    throttle.beginVerify(email, clientIp); // throws when locked: no compare, no extended lock
     Instant now = clock.instant();
     Optional<LoginToken> open = tokens.findLatestOpenForUpdate(email, now);
     if (open.isEmpty()) {
@@ -184,6 +183,15 @@ public class EmailSignInService {
   }
 
   private User findOrCreate(String email) {
+    try {
+      return tx.execute(status -> findOrInsert(email));
+    } catch (DuplicateKeyException race) {
+      // A concurrent first sign-in for the same email won; the second attempt finds its row.
+      return tx.execute(status -> findOrInsert(email));
+    }
+  }
+
+  private User findOrInsert(String email) {
     return users
         .findByEmail(email)
         .orElseGet(

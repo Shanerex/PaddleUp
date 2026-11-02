@@ -57,11 +57,11 @@ class AuthThrottle {
   }
 
   /**
-   * Opens a verification attempt. Throws when the address has used up its failures. Returns true
-   * when the email (null for a link) has used up its wrong-code budget, so the caller must not
-   * compare the code.
+   * Opens a verification attempt. Throws when the address has used up its failures, or when the
+   * email (null for a link) has used up its wrong-code budget; the caller must then not compare the
+   * code, so a locked email neither extends its own lock nor answers a guess.
    */
-  boolean beginVerify(String email, String clientIp) {
+  void beginVerify(String email, String clientIp) {
     Instant now = clock.instant();
     String ipKey = hash(ipKey(clientIp));
     String emailKey = email == null ? null : hash(email);
@@ -70,9 +70,9 @@ class AuthThrottle {
     }
     events.lock(FAIL_IP + ":" + ipKey);
     require(FAIL_IP, ipKey, limits.failedPerIp(), limits.failureWindow(), now);
-    return emailKey != null
-        && events.usage(CODE_FAIL_EMAIL, emailKey, now.minus(limits.failureWindow())).count()
-            >= limits.failedCodesPerEmail();
+    if (emailKey != null) {
+      require(CODE_FAIL_EMAIL, emailKey, limits.failedCodesPerEmail(), limits.failureWindow(), now);
+    }
   }
 
   /** Counts a failed attempt against the address, and against the email when it has one. */

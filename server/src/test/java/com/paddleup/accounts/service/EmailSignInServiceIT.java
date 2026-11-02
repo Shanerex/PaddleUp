@@ -4,9 +4,14 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import com.paddleup.accounts.exception.InvalidLoginException;
+import com.paddleup.accounts.exception.TooManyRequestsException;
 import com.paddleup.accounts.model.User;
 import com.paddleup.support.AbstractPostgresIT;
+import java.util.List;
 import java.util.UUID;
+import java.util.concurrent.Callable;
+import java.util.concurrent.CyclicBarrier;
+import java.util.concurrent.Executors;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.jdbc.core.JdbcTemplate;
@@ -123,7 +128,39 @@ class EmailSignInServiceIT extends AbstractPostgresIT {
     }
 
     assertThatThrownBy(() -> redeemCode(email, issued.code()))
-        .isInstanceOf(InvalidLoginException.class);
+        .isInstanceOf(TooManyRequestsException.class);
+  }
+
+  @Test
+  void firstSignInsRacingForOneEmailBothSucceedWithOneAccount() throws Exception {
+    var pool = Executors.newFixedThreadPool(2);
+    try {
+      for (int round = 0; round < 15; round++) {
+        String email = email();
+        String a = service.issue(email).token();
+        String b = service.issue(email).token();
+        var barrier = new CyclicBarrier(2);
+        Callable<User> first = () -> raced(barrier, a);
+        Callable<User> second = () -> raced(barrier, b);
+
+        var results = pool.invokeAll(List.of(first, second));
+
+        assertThat(results.get(0).get().id()).isEqualTo(results.get(1).get().id());
+        assertThat(
+                jdbc.queryForObject(
+                    "SELECT count(*) FROM users WHERE email = ?",
+                    Integer.class,
+                    email.toLowerCase()))
+            .isEqualTo(1);
+      }
+    } finally {
+      pool.shutdownNow();
+    }
+  }
+
+  private User raced(CyclicBarrier barrier, String token) throws Exception {
+    barrier.await();
+    return redeemLink(token);
   }
 
   @Test

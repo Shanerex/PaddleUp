@@ -148,7 +148,11 @@ class EmailSignInThrottleIT extends AbstractPostgresIT {
 
     // Five misses in the window lock the email, even for a fresh token and the right code.
     assertThatThrownBy(() -> service.redeemCode(email, third.code(), ip))
-        .isInstanceOf(InvalidLoginException.class);
+        .isInstanceOf(TooManyRequestsException.class)
+        .satisfies(
+            e ->
+                assertThat(((TooManyRequestsException) e).retryAfter().toSeconds())
+                    .isBetween(1L, 60L * 60));
     assertThat(
             jdbc.queryForObject(
                 "SELECT count(*) FROM login_tokens WHERE email = ? AND used_at IS NOT NULL",
@@ -171,7 +175,7 @@ class EmailSignInThrottleIT extends AbstractPostgresIT {
     int locked = failEvents();
     for (int i = 0; i < 7; i++) {
       assertThatThrownBy(() -> service.redeemCode(email, wrongFor(issued.code()), ip()))
-          .isInstanceOf(InvalidLoginException.class);
+          .isInstanceOf(TooManyRequestsException.class);
     }
 
     assertThat(failEvents()).isEqualTo(locked);

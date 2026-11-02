@@ -19,11 +19,6 @@ class AccountsExceptionHandler {
     return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(Map.of("error", "invalid_login"));
   }
 
-  @ExceptionHandler(NotSignedInException.class)
-  ResponseEntity<Map<String, String>> notSignedIn() {
-    return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(Map.of("error", "unauthorised"));
-  }
-
   @ExceptionHandler(InvalidRequestException.class)
   ResponseEntity<Map<String, String>> invalidRequest(InvalidRequestException e) {
     return ResponseEntity.badRequest()
