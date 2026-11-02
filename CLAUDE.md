@@ -22,7 +22,9 @@ Not: real-money play, public lobbies, native apps, AI that bids or acts for a ma
 
 ## Conventions
 - Server code organised by module package; inside each module, MVCS sub-packages controller,
-  service, repository, model, dto. Other modules use only a module's service and dto packages.
+  service, repository, model, dto, plus exception (module error types and its @RestControllerAdvice),
+  config (@Configuration and @ConfigurationProperties) and util (stateless helpers). Other modules
+  use only a module's service, dto and exception packages; config and util stay module-private.
 - REST for commands and queries, WebSocket for auction broadcasts only.
 - Every schema change is a Flyway migration; never edit an applied one.
 - Times stored UTC (Instant), rendered local.
@@ -49,3 +51,6 @@ Workflow: /rx:feature <name>, then /rx:next.
 Specs live in specs/<id>/. All P0/P1 specs are pre-seeded; build order and how to start one
 are in docs/roadmap.md (git switch -c feature/<id> main, then /rx:next; not /rx:feature).
 Formats are in the rx-spec skill.
+Requirements: anything with a lifetime gets a state x entry-point matrix before its ACs
+(learnings/2026-11-02-state-matrix-for-lifecycles). Verify: besides the AC tests, run the
+changed user flows in a real browser (Playwright, make dev) incl. new tab and stale state.

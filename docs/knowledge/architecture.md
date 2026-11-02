@@ -10,7 +10,7 @@ Source: specs/2026-11-01-project-scaffold/plan.md (proposed; pending review).
 
 ## Server modules
 - Base package `com.paddleup`, one top-level package per module: `accounts`, `rooms`, `auction`, `scoring`, `packs`, `advisor`.
-- Inside each module, MVCS layers as sub-packages: `controller` (REST/STOMP entry points) -> `service` (logic, transactions) -> `repository` (Spring JDBC); `model` (domain types, rows) and `dto` (request/response/event payloads).
+- Inside each module, MVCS layers as sub-packages: `controller` (REST/STOMP entry points) -> `service` (logic, transactions) -> `repository` (Spring JDBC); `model` (domain types, rows) and `dto` (request/response/event payloads). Three support packages sit beside them: `exception` (module error types and its `@RestControllerAdvice`), `config` (`@Configuration` and `@ConfigurationProperties`) and `util` (stateless helpers). Other modules use only a module's `service`, `dto` and `exception` packages; `config` and `util` are module-private.
 - Calls flow controller -> service -> repository only. Controllers return dtos, never model types.
 - Cross-module: a module may use another module's `service` and `dto` packages only, never its controller, repository or model. Enforcement (ArchUnit / Spring Modulith) is deferred.
 - Feature build order and module ownership per feature: `docs/roadmap.md`.
