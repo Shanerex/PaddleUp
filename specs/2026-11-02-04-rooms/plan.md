@@ -75,6 +75,8 @@ Tests:
 - Boundaries: an ArchUnit test at `server/src/test/java/com/paddleup/ModuleBoundariesTest.java`.
 - Web: Vitest, co-located `*.test.tsx`.
 
+Design refs (added 2026-11-03, design-fidelity loop): every web task cites its docs/design/source screen in tasks.md (T-26..T-32); gap screens are drawn there first.
+
 ## Architecture changes
 Approved by the human in pass 2; to apply to docs/knowledge/architecture.md:
 1. New "Rooms" section:

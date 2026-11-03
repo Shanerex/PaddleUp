@@ -1,12 +1,12 @@
 ---
 feature: 2026-11-02-04-rooms
-phase: verify
-status: awaiting-human
+phase: build
+status: in-progress
 g1: approved:Shanerex:2026-11-03
 g2: approved:Shanerex:2026-11-03
 g3: none
 bump: minor
-next: /rx:next, human gives g3
+next: design-fidelity rebuild T-26..T-32, then re-verify and g3
 ---
 # State: 2026-11-02-04-rooms
 
@@ -20,10 +20,6 @@ next: /rx:next, human gives g3
 - 2026-11-03 plan: two-pass architect (25 tasks, V5, option A JSONB snapshot, all defaults); invites kept code/link only (in-app invite future idea); g2 approved by Shanerex
 - 2026-11-03 build: 25/25 tasks, make test + lint green, Playwright flow checked; deviations accepted by qa (source-scan ModuleBoundariesTest, RoomState in dto, packs endpoint); phase verify
 - 2026-11-03 verify: qa pass (19/19 AC), security pass (S-1..S-4 minor); review.md final; awaiting g3 + bump
-- 2026-11-03 verify: human chose fix S-1..S-4 before g3; bump minor
-- 2026-11-03 fix: S-1..S-4 fixed test-first (loop 1), re-verify pass, new minor S-6; make test + lint green
-- 2026-11-03 fix: human chose S-6 (loop 2); fixed test-first (50-entry caps on nested roles/tiers/bands, role-conditional nesting <= 3, Jackson nesting depth 64); make test + lint green
-- 2026-11-03 verify: pass 3 (human-directed: S-7, S-8, JSON limits to app config) FAIL on T-3/S-9 stored config readback bricks room
-- 2026-11-03 verify: human directed fix of T-3/S-9 in two layers (uncapped DB-read mapper + saved-size cap) + S-10
-- 2026-11-03 fix: T-3/S-9/S-10 test-first: StoredJson (rooms.util) reads jsonb without request limits, writes NON_NULL, refuses config >64 KB with invalid_config; scale lower bound -6; make test + lint green
+- 2026-11-03 fix: human-directed loops 1-3 closed S-1..S-10 and T-3/S-9 test-first (caps, StoredJson jsonb readback, 64 KB config cap); make test + lint green
 - 2026-11-03 verify: pass 4 PASS (437 server, 103 web); T-3/S-9/S-10 closed; review.md final; awaiting g3
+- 2026-11-03 build: human-directed design-fidelity loop: web UI drifted from docs/design/source; rebuild to mocks, gap screens drawn in source and approved first (T-26..T-32); decision 2026-11-03-design-source-fidelity
