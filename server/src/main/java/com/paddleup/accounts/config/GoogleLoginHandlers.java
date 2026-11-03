@@ -60,7 +60,7 @@ class GoogleLoginHandlers {
                     oidc.getPicture()));
         // Replaces the OIDC authentication so the session holds the user id only.
         sessions.signIn(user.id(), request, response);
-        response.sendRedirect(props.webBaseUrl() + "/profile");
+        response.sendRedirect(props.webBaseUrl() + "/auth/continue");
       } catch (UnverifiedEmailException e) {
         reject(request, response, "unverified_email");
       } catch (RuntimeException e) {

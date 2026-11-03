@@ -14,9 +14,9 @@ function PaddleMark({ className, size }: { className?: string; size?: number }) 
 export default async function SignInPage({
   searchParams,
 }: {
-  searchParams: Promise<{ error?: string }>;
+  searchParams: Promise<{ error?: string; next?: string }>;
 }) {
-  const { error } = await searchParams;
+  const { error, next } = await searchParams;
   return (
     <main className="auth">
       <aside className="auth-brand">
@@ -34,7 +34,7 @@ export default async function SignInPage({
         </div>
         <p className="fine">No money. No prizes. Just bragging rights.</p>
       </aside>
-      <SignInForm error={error} />
+      <SignInForm error={error} next={next} />
     </main>
   );
 }

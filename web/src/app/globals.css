@@ -431,3 +431,318 @@ p {
     padding: 48px;
   }
 }
+
+/* Rooms: wizard, room page and join screen. Tokens from docs/design/README.md. */
+:root {
+  --ok: oklch(0.56 0.14 155);
+  --ok-tint: oklch(0.95 0.04 155);
+  --warn-ink: oklch(0.5 0.12 70);
+  --warn-tint: oklch(0.96 0.05 85);
+  --info: oklch(0.55 0.13 245);
+  --info-tint: oklch(0.95 0.03 245);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --ok: oklch(0.72 0.14 155);
+    --ok-tint: oklch(0.28 0.05 155);
+    --warn-ink: oklch(0.85 0.12 80);
+    --warn-tint: oklch(0.3 0.05 80);
+    --info: oklch(0.74 0.11 245);
+    --info-tint: oklch(0.28 0.05 245);
+  }
+}
+
+/* Franchise colour world: set --h (the hue angle) on an element with the team class. */
+.team {
+  --team: oklch(0.56 0.15 var(--h));
+  --team-strong: oklch(0.48 0.14 var(--h));
+  --team-tint: oklch(0.955 0.03 var(--h));
+  --team-tint-2: oklch(0.9 0.06 var(--h));
+  --team-ink: oklch(0.42 0.12 var(--h));
+  --on-team: oklch(0.99 0.005 var(--h));
+}
+
+@media (prefers-color-scheme: dark) {
+  .team {
+    --team: oklch(0.6 0.15 var(--h));
+    --team-strong: oklch(0.66 0.15 var(--h));
+    --team-tint: oklch(0.28 0.05 var(--h));
+    --team-tint-2: oklch(0.36 0.07 var(--h));
+    --team-ink: oklch(0.82 0.1 var(--h));
+  }
+}
+
+main.page {
+  display: block;
+  place-content: initial;
+  max-width: 760px;
+  margin: 0 auto;
+  padding: 24px 16px 48px;
+  text-align: left;
+}
+
+.page-stack {
+  display: grid;
+  gap: 16px;
+}
+
+.page h1 {
+  font-size: 28px;
+  line-height: 34px;
+  font-weight: 800;
+}
+
+.page h2 {
+  margin: 0;
+  font-size: 22px;
+  line-height: 28px;
+  font-weight: 800;
+  color: var(--ink);
+}
+
+.page h3 {
+  margin: 0;
+  font-size: 17px;
+  line-height: 24px;
+  font-weight: 700;
+  color: var(--ink);
+}
+
+.card {
+  display: grid;
+  gap: 16px;
+  padding: 24px;
+  border: 1px solid var(--line);
+  border-radius: 24px;
+  background: var(--surface);
+}
+
+.row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px;
+}
+
+.row.between {
+  justify-content: space-between;
+}
+
+.grid-2 {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: 12px;
+}
+
+.steps {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.steps li {
+  padding: 4px 12px;
+  border-radius: 999px;
+  background: var(--surface-2);
+  color: var(--ink-2);
+  font-size: 13px;
+  line-height: 18px;
+  font-weight: 700;
+}
+
+.steps li[aria-current="step"] {
+  background: var(--brand);
+  color: var(--on-brand);
+}
+
+.field select,
+.field textarea {
+  min-height: 44px;
+  padding: 0 12px;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  background: var(--bg);
+  color: var(--ink);
+  font: inherit;
+  font-size: 15px;
+}
+
+.field input[type="checkbox"] {
+  width: 20px;
+  min-height: 20px;
+}
+
+.field .num,
+input.num {
+  font-family: var(--font-mono), ui-monospace, monospace;
+  font-variant-numeric: tabular-nums;
+}
+
+.choice {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 12px 16px;
+  border: 1.5px solid var(--line);
+  border-radius: 20px;
+  background: var(--surface);
+  cursor: pointer;
+}
+
+.choice:has(input:checked) {
+  border-color: var(--brand);
+  background: var(--brand-tint);
+}
+
+.choice input {
+  margin-top: 4px;
+}
+
+.badge {
+  display: inline-flex;
+  align-items: center;
+  min-height: 28px;
+  padding: 0 12px;
+  border-radius: 999px;
+  background: var(--team-tint, var(--brand-tint));
+  color: var(--team-ink, var(--brand-ink));
+  font-size: 11px;
+  line-height: 14px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.badge-live {
+  background: var(--ok-tint);
+  color: var(--ok);
+}
+
+.code-box {
+  display: grid;
+  gap: 8px;
+  padding: 16px;
+  border-radius: 20px;
+  background: var(--surface-2);
+}
+
+.code-box .code {
+  font-family: var(--font-mono), ui-monospace, monospace;
+  font-size: 28px;
+  font-weight: 500;
+  letter-spacing: 0.12em;
+  color: var(--ink);
+  overflow-wrap: anywhere;
+}
+
+.code-box .link {
+  font-size: 13px;
+  line-height: 18px;
+  color: var(--ink-2);
+  overflow-wrap: anywhere;
+}
+
+.monogram {
+  display: inline-grid;
+  place-content: center;
+  width: 44px;
+  height: 44px;
+  border-radius: 30%;
+  background: var(--team);
+  color: var(--on-team);
+  font-size: 15px;
+  font-weight: 800;
+}
+
+.hue-grid {
+  display: grid;
+  grid-template-columns: repeat(6, minmax(44px, 1fr));
+  gap: 8px;
+}
+
+.hue-option {
+  display: grid;
+  place-content: center;
+  min-width: 44px;
+  min-height: 44px;
+  padding: 0;
+  border: 2px solid transparent;
+  border-radius: 30%;
+  background: var(--team);
+  color: var(--on-team);
+  font-size: 11px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.hue-option[aria-pressed="true"] {
+  border-color: var(--ink);
+}
+
+.hue-option:disabled {
+  opacity: 0.25;
+  cursor: not-allowed;
+}
+
+.members {
+  display: grid;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.members li {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px;
+  padding: 12px;
+  border-radius: 20px;
+  background: var(--surface-2);
+}
+
+.members .grow {
+  flex: 1 1 160px;
+}
+
+.room-header {
+  display: grid;
+  gap: 12px;
+  padding: 24px;
+  border-radius: 24px;
+  background: var(--surface);
+  border: 1px solid var(--line);
+}
+
+.history {
+  display: grid;
+  gap: 4px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  font-size: 13px;
+  line-height: 18px;
+  color: var(--ink-2);
+}
+
+.btn-danger {
+  border-color: transparent;
+  background: var(--bad-tint);
+  color: var(--bad);
+}
+
+.rules {
+  display: grid;
+  gap: 4px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  font-size: 13px;
+  line-height: 18px;
+  color: var(--ink-2);
+}

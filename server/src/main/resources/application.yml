@@ -53,6 +53,18 @@ paddleup:
       failed-per-ip: 20
       failure-window: 1h
       trusted-proxy-hops: ${PADDLEUP_TRUSTED_PROXY_HOPS:2}
+  rooms:
+    invite-ttl: 7d
+    code-length: 12
+    default-min-managers: 2
+    default-max-managers: 10
+    web-base-url: ${paddleup.auth.web-base-url}
+    # Failed invite-code attempts per window; a limit that is used up refuses every redeem, even a
+    # valid code. The client address uses paddleup.auth.throttle.trusted-proxy-hops.
+    join-throttle:
+      failed-per-user: 5
+      failed-per-ip: 20
+      window: 1m
   email:
     resend:
       api-key: ${RESEND_API_KEY:}

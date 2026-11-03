@@ -3,7 +3,7 @@
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { verifyLink } from "../../../api/client";
-import { HOME } from "../../../auth/redirect";
+import { afterSignIn } from "../../../auth/redirect";
 
 /**
  * The emailed link lands here. The token is only spent when the visitor confirms, so mail scanners
@@ -19,7 +19,7 @@ export function VerifyLink({ token }: { token?: string }) {
     setBusy(true);
     try {
       await verifyLink(token);
-      router.push(HOME);
+      router.push(afterSignIn());
     } catch {
       setFailed(true);
       setBusy(false);

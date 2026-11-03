@@ -173,7 +173,7 @@ class GoogleLoginIT extends AbstractPostgresIT {
     var callback = googleCallback(sub, email, true);
 
     assertThat(callback.statusCode()).isEqualTo(302);
-    assertThat(callback.headers().firstValue("Location")).contains(WEB + "/profile");
+    assertThat(callback.headers().firstValue("Location")).contains(WEB + "/auth/continue");
     String cookie = cookieOf(callback);
     var me = me(cookie);
     assertThat(me.statusCode()).isEqualTo(200);

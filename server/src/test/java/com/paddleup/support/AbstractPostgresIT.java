@@ -14,11 +14,15 @@ import org.testcontainers.containers.PostgreSQLContainer;
 @TestPropertySource(
     properties = {
       "paddleup.auth.throttle.start-per-ip=100000",
-      "paddleup.auth.throttle.failed-per-ip=100000"
+      "paddleup.auth.throttle.failed-per-ip=100000",
+      "paddleup.rooms.join-throttle.failed-per-ip=100000"
     })
 public abstract class AbstractPostgresIT {
 
-  static final PostgreSQLContainer<?> POSTGRES = new PostgreSQLContainer<>("postgres:17");
+  // Every distinct Spring context stays cached with its own connection pool, so the default of 100
+  // connections runs out once enough test configurations exist.
+  static final PostgreSQLContainer<?> POSTGRES =
+      new PostgreSQLContainer<>("postgres:17").withCommand("postgres", "-c", "max_connections=400");
 
   static {
     POSTGRES.start();

@@ -14,11 +14,13 @@ vi.mock("../../api/client", async (importOriginal) => ({
 }));
 
 import { ApiError, startEmail, verifyCode } from "../../api/client";
+import { NEXT_KEY } from "../../auth/redirect";
 import { SignInForm } from "./sign-in-form";
 
 const profile = { id: "1", email: "ann@example.test", displayName: "ann", avatar: "preset-01" };
 
 beforeEach(() => {
+  localStorage.clear();
   vi.mocked(startEmail).mockResolvedValue();
   vi.mocked(verifyCode).mockResolvedValue(profile);
 });
@@ -96,5 +98,31 @@ describe("SignInForm", () => {
     await user.click(screen.getByRole("button", { name: /email me/i }));
 
     expect(await screen.findByText(/could not send/i)).toBeTruthy();
+  });
+
+  it("remembers the page the visitor was heading for and returns there after the code", async () => {
+    const user = userEvent.setup();
+    render(<SignInForm next="/join/ABCDEFGHJKMN" />);
+
+    expect(JSON.parse(localStorage.getItem(NEXT_KEY) ?? "{}").next).toBe("/join/ABCDEFGHJKMN");
+    await user.type(screen.getByLabelText(/email/i), "ann@example.test");
+    await user.click(screen.getByRole("button", { name: /email me/i }));
+    await user.type(await screen.findByLabelText(/code/i), "123456");
+    await user.click(screen.getByRole("button", { name: /sign in/i }));
+
+    await waitFor(() => expect(push).toHaveBeenCalledWith("/join/ABCDEFGHJKMN"));
+  });
+
+  it("refuses to remember an address that leaves the site", async () => {
+    const user = userEvent.setup();
+    render(<SignInForm next="https://evil.test/steal" />);
+
+    expect(localStorage.getItem(NEXT_KEY)).toBeNull();
+    await user.type(screen.getByLabelText(/email/i), "ann@example.test");
+    await user.click(screen.getByRole("button", { name: /email me/i }));
+    await user.type(await screen.findByLabelText(/code/i), "123456");
+    await user.click(screen.getByRole("button", { name: /sign in/i }));
+
+    await waitFor(() => expect(push).toHaveBeenCalledWith("/profile"));
   });
 });
