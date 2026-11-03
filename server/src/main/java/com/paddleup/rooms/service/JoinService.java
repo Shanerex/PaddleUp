@@ -90,7 +90,11 @@ public class JoinService {
               all.stream().map(Franchise::colour).toList(),
               all.size() >= room.config().maxManagers(),
               mine.isPresent(),
-              mine.map(f -> room.id()).orElse(null));
+              mine.map(f -> room.id()).orElse(null),
+              room.packSnapshot().packName(),
+              room.config().competition() == null ? "" : room.config().competition(),
+              all.size(),
+              room.config().maxManagers());
         });
   }
 

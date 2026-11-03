@@ -13,6 +13,7 @@ import {
   handOver,
   issueInvite,
   joinRoom,
+  listMyRooms,
   listPacks,
   previewJoin,
   removeFranchise,
@@ -97,6 +98,7 @@ describe("room api", () => {
     vi.stubGlobal("fetch", fetchMock);
     const config = { name: "Friends" } as RoomConfig;
 
+    await listMyRooms();
     await listPacks();
     await createRoom({ packId: "p", presetId: "standard", name: "Friends" });
     await getRoom("r1");
@@ -114,6 +116,7 @@ describe("room api", () => {
     await joinRoom("ABC123", franchise);
 
     expect(calls(fetchMock)).toEqual([
+      ["/api/rooms", "GET", undefined],
       ["/api/rooms/packs", "GET", undefined],
       ["/api/rooms", "POST", JSON.stringify({ packId: "p", presetId: "standard", name: "Friends" })],
       ["/api/rooms/r1", "GET", undefined],

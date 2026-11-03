@@ -18,7 +18,8 @@ public record PackDto(
     AppearanceRuleDto appearanceRule,
     Optional<String> adapterKey,
     Map<String, String> terminology,
-    String aiDomainContext) {
+    String aiDomainContext,
+    PackDisplayDto display) {
 
   public PackDto {
     roles = roles == null ? List.of() : List.copyOf(roles);
@@ -29,6 +30,39 @@ public record PackDto(
     statSchema = statSchema == null ? List.of() : List.copyOf(statSchema);
     adapterKey = adapterKey == null ? Optional.empty() : adapterKey;
     terminology = terminology == null ? Map.of() : Map.copyOf(terminology);
+    display = display == null ? PackDisplayDto.EMPTY : display;
+  }
+
+  /** The constructor from before the optional display section. */
+  public PackDto(
+      int schemaVersion,
+      String id,
+      String version,
+      List<RoleDto> roles,
+      List<TagDto> tags,
+      List<RestrictedCategoryDto> restrictedCategories,
+      List<PresetDto> presets,
+      List<StatDto> statSchema,
+      RuleSetDto defaultRuleSet,
+      AppearanceRuleDto appearanceRule,
+      Optional<String> adapterKey,
+      Map<String, String> terminology,
+      String aiDomainContext) {
+    this(
+        schemaVersion,
+        id,
+        version,
+        roles,
+        tags,
+        restrictedCategories,
+        presets,
+        statSchema,
+        defaultRuleSet,
+        appearanceRule,
+        adapterKey,
+        terminology,
+        aiDomainContext,
+        PackDisplayDto.EMPTY);
   }
 
   /** True when the pack names no data adapter, so stats arrive only by manual entry. */

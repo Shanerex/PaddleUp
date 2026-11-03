@@ -4,6 +4,7 @@ import com.paddleup.accounts.service.CurrentUser;
 import com.paddleup.rooms.dto.CreateRoomRequest;
 import com.paddleup.rooms.dto.PackChoiceDto;
 import com.paddleup.rooms.dto.RoomDto;
+import com.paddleup.rooms.dto.RoomSummaryDto;
 import com.paddleup.rooms.dto.SaveConfigRequest;
 import com.paddleup.rooms.service.RoomService;
 import java.util.List;
@@ -29,6 +30,12 @@ class RoomController {
   RoomController(CurrentUser currentUser, RoomService rooms) {
     this.currentUser = currentUser;
     this.rooms = rooms;
+  }
+
+  /** The caller's rooms for the home hub, most recently changed first. */
+  @GetMapping
+  List<RoomSummaryDto> mine() {
+    return rooms.listMine(currentUser.require());
   }
 
   /** The packs a new room can start from. */

@@ -5,6 +5,7 @@ export type ProfileUpdate = components["schemas"]["UpdateProfileRequest"];
 export type AvatarPresets = components["schemas"]["AvatarPresetsDto"];
 
 export type Room = components["schemas"]["RoomDto"];
+export type RoomSummary = components["schemas"]["RoomSummaryDto"];
 export type RoomConfig = components["schemas"]["RoomConfigDto"];
 export type RoomState = Room["state"];
 export type PackChoice = components["schemas"]["PackChoiceDto"];
@@ -79,6 +80,11 @@ export async function signOut(): Promise<void> {
 export const GOOGLE_SIGN_IN_URL = "/api/oauth2/authorization/google";
 
 const room = (id: string) => `/api/rooms/${encodeURIComponent(id)}`;
+
+/** The caller's rooms for the home hub, most recently changed first. */
+export async function listMyRooms(): Promise<RoomSummary[]> {
+  return (await request("/api/rooms")).json();
+}
 
 /** The packs a new room can start from, each with its presets. */
 export async function listPacks(): Promise<PackChoice[]> {

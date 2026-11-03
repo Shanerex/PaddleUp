@@ -29,7 +29,7 @@ status: final
 - [x] T-23 (AC-19): sign-in return: redirect.ts adds a safe `next` (stored in localStorage), honoured by sign-in-form/verify-link and the new /auth/continue; GoogleLoginHandlers success redirects to /auth/continue; Vitest including open-redirect rejection
 - [x] T-24 (AC-19, AC-3): rooms/errors.ts maps 409 room_locked/stale_version/illegal_state to a clear message and a refetch; Vitest for a stale tab after auction_live
 - [x] T-25 (AC-18, AC-19): browser check via make dev + Playwright: wizard end to end, a second member's tab after a transition and reload, the join link signed out, a stale tab
-- [ ] T-26 (AC-18, AC-19): gap screens drawn in docs/design/source and approved by the human before code. Design refs: Home joinCode/joinError/wizard:6 + hub cards, Room setup/sheets/editFranchise/notFound; copy matches spec limits
+- [x] T-26 (AC-18, AC-19): gap screens drawn in docs/design/source and approved by the human before code. Design refs: Home joinCode/joinError/wizard:6 + hub cards, Room setup/sheets/editFranchise/notFound; copy matches spec limits
 - [ ] T-27 (AC-18): web foundation: styles/tokens.css mirrors source/paddle.js (parity test), ui/ primitives (DS 07, 08, 11, 13), AppTopBar, WizardShell, RoomShell. Design refs: Design System.dc.html, Home 41-48 + 130-140 + 239-242, Room 18-42 + 341-346
 - [ ] T-28 (AC-18): GET /api/rooms lists the caller's rooms (RoomSummaryDto, removed members excluded); IT; regenerate generated.ts. Design refs: Home hub
 - [ ] T-29 (AC-18): / is the Home hub + empty state (HOME = /); profile from the avatar. Design refs: Home hub, empty

@@ -2,6 +2,7 @@
   "schemaVersion": 1,
   "id": "cricket-t20",
   "version": "1.0.0",
+  "display": {"name": "Cricket T20", "summary": "IPL-style franchise league. Four roles, an overseas cap and a crore purse.", "icon": "sports_cricket"},
   "roles": [
     {"id": "BAT", "label": "Batter"},
     {"id": "BOWL", "label": "Bowler"},

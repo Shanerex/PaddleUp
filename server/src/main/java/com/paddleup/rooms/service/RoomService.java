@@ -11,6 +11,7 @@ import com.paddleup.rooms.dto.PackChoiceDto;
 import com.paddleup.rooms.dto.RoomConfigDto;
 import com.paddleup.rooms.dto.RoomDto;
 import com.paddleup.rooms.dto.RoomState;
+import com.paddleup.rooms.dto.RoomSummaryDto;
 import com.paddleup.rooms.dto.SaveConfigRequest;
 import com.paddleup.rooms.dto.Violation;
 import com.paddleup.rooms.exception.InvalidConfigException;
@@ -64,6 +65,39 @@ public class RoomService {
     this.clock = clock;
   }
 
+  /** Rooms on the caller's home hub; only rooms they are a member of (R-12). */
+  @Transactional(readOnly = true)
+  public List<RoomSummaryDto> listMine(UserId caller) {
+    UUID me = caller.value();
+    return rooms.findForMember(me, MY_ROOMS_LIMIT).stream()
+        .map(
+            room -> {
+              var all = franchises.findByRoom(room.id());
+              var mine =
+                  all.stream()
+                      .filter(f -> f.ownerUserId().equals(me))
+                      .findFirst()
+                      .map(FranchiseService::toDto)
+                      .orElse(null);
+              return new RoomSummaryDto(
+                  room.id(),
+                  room.config().name(),
+                  room.config().competition() == null ? "" : room.config().competition(),
+                  room.state(),
+                  room.packId(),
+                  room.packSnapshot().packName(),
+                  room.commissionerUserId().equals(me),
+                  all.size(),
+                  room.config().minManagers(),
+                  room.config().maxManagers(),
+                  mine,
+                  room.updatedAt());
+            })
+        .toList();
+  }
+
+  private static final int MY_ROOMS_LIMIT = 100;
+
   /** The packs a room can start from, each with its presets. */
   public List<PackChoiceDto> packChoices() {
     return packs.list().stream()
@@ -75,7 +109,10 @@ public class RoomService {
                     pack.version(),
                     pack.presets().stream()
                         .map(p -> new PackChoiceDto.Preset(p.id(), p.label()))
-                        .toList()))
+                        .toList(),
+                    pack.display().name(),
+                    pack.display().summary(),
+                    pack.display().icon()))
         .toList();
   }
 

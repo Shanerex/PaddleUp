@@ -2,6 +2,7 @@
   "schemaVersion": 1,
   "id": "stub-football",
   "version": "1.0.0",
+  "display": {"name": "Stub Football", "summary": "Test pack for a second sport.", "icon": "sports_soccer"},
   "roles": [
     {"id": "gk", "label": "Goalkeeper"},
     {"id": "def", "label": "Defender"},

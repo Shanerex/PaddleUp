@@ -67,6 +67,7 @@ class RoomConfigFactory {
         pack.tags(),
         pack.restrictedCategories(),
         pack.statSchema(),
-        pack.terminology());
+        pack.terminology(),
+        pack.display().name());
   }
 }

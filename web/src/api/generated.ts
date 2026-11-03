@@ -27,7 +27,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        get?: never;
+        get: operations["mine"];
         put?: never;
         post: operations["create"];
         delete?: never;
@@ -404,6 +404,7 @@ export interface components {
             terminology: {
                 [key: string]: string;
             };
+            packName?: string | null;
         };
         RestrictedCategoryDto: {
             id?: string;
@@ -517,6 +518,12 @@ export interface components {
             alreadyJoined: boolean;
             /** Format: uuid */
             roomId?: string | null;
+            packName?: string | null;
+            competition: string;
+            /** Format: int32 */
+            franchiseCount: number;
+            /** Format: int32 */
+            maxManagers: number;
         };
         EmailVerifyRequest: {
             token?: string;
@@ -538,6 +545,26 @@ export interface components {
             displayName?: string;
             avatar?: string;
         };
+        RoomSummaryDto: {
+            /** Format: uuid */
+            id: string;
+            name: string;
+            competition: string;
+            /** @enum {string} */
+            state: "setup" | "retention" | "auction_scheduled" | "auction_live" | "season_live" | "completed";
+            packId: string;
+            packName?: string | null;
+            commissioner: boolean;
+            /** Format: int32 */
+            franchiseCount: number;
+            /** Format: int32 */
+            minManagers: number;
+            /** Format: int32 */
+            maxManagers: number;
+            myFranchise?: components["schemas"]["FranchiseDto"];
+            /** Format: date-time */
+            updatedAt: string;
+        };
         MemberDto: {
             /** Format: uuid */
             userId: string;
@@ -550,6 +577,9 @@ export interface components {
             id: string;
             version: string;
             presets: components["schemas"]["Preset"][];
+            name?: string | null;
+            summary?: string | null;
+            icon?: string | null;
         };
         Preset: {
             id: string;
@@ -589,6 +619,26 @@ export interface operations {
                 };
                 content: {
                     "*/*": components["schemas"]["RoomDto"];
+                };
+            };
+        };
+    };
+    mine: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["RoomSummaryDto"][];
                 };
             };
         };

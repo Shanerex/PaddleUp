@@ -23,3 +23,4 @@ next: design-fidelity rebuild T-26..T-32, then re-verify and g3
 - 2026-11-03 fix: human-directed loops 1-3 closed S-1..S-10 and T-3/S-9 test-first (caps, StoredJson jsonb readback, 64 KB config cap); make test + lint green
 - 2026-11-03 verify: pass 4 PASS (437 server, 103 web); T-3/S-9/S-10 closed; review.md final; awaiting g3
 - 2026-11-03 build: human-directed design-fidelity loop: web UI drifted from docs/design/source; rebuild to mocks, gap screens drawn in source and approved first (T-26..T-32); decision 2026-11-03-design-source-fidelity
+- 2026-11-03 build: T-26 gap frames approved by Shanerex (App Screens turn 6); human chose optional pack name/summary/icon and richer join preview

@@ -22,7 +22,8 @@ public record PackLabelsDto(
     @Schema(requiredMode = REQUIRED) List<TagDto> tags,
     @Schema(requiredMode = REQUIRED) List<RestrictedCategoryDto> restrictedCategories,
     @Schema(requiredMode = REQUIRED) List<StatDto> stats,
-    @Schema(requiredMode = REQUIRED) Map<String, String> terminology) {
+    @Schema(requiredMode = REQUIRED) Map<String, String> terminology,
+    @Schema(nullable = true) String packName) {
 
   public PackLabelsDto {
     roles = roles == null ? List.of() : List.copyOf(roles);
@@ -31,5 +32,17 @@ public record PackLabelsDto(
         restrictedCategories == null ? List.of() : List.copyOf(restrictedCategories);
     stats = stats == null ? List.of() : List.copyOf(stats);
     terminology = terminology == null ? Map.of() : new LinkedHashMap<>(terminology);
+  }
+
+  /** The constructor from before the pack display name was snapshotted. */
+  public PackLabelsDto(
+      String packId,
+      String packVersion,
+      List<RoleDto> roles,
+      List<TagDto> tags,
+      List<RestrictedCategoryDto> restrictedCategories,
+      List<StatDto> stats,
+      Map<String, String> terminology) {
+    this(packId, packVersion, roles, tags, restrictedCategories, stats, terminology, null);
   }
 }

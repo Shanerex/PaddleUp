@@ -9,7 +9,10 @@ import java.util.List;
 public record PackChoiceDto(
     @Schema(requiredMode = REQUIRED) String id,
     @Schema(requiredMode = REQUIRED) String version,
-    @Schema(requiredMode = REQUIRED) List<Preset> presets) {
+    @Schema(requiredMode = REQUIRED) List<Preset> presets,
+    @Schema(nullable = true) String name,
+    @Schema(nullable = true) String summary,
+    @Schema(nullable = true) String icon) {
 
   public record Preset(
       @Schema(requiredMode = REQUIRED) String id, @Schema(requiredMode = REQUIRED) String label) {}

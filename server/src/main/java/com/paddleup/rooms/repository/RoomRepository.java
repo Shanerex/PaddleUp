@@ -9,6 +9,7 @@ import com.paddleup.rooms.util.Sql;
 import com.paddleup.rooms.util.StoredJson;
 import java.sql.SQLException;
 import java.time.Instant;
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 import org.springframework.jdbc.core.RowMapper;
@@ -67,6 +68,19 @@ public class RoomRepository {
             Sql.utc(room.createdAt()),
             Sql.utc(room.updatedAt()))
         .update();
+  }
+
+  /** Rooms the user commissions or owns a franchise in, most recently changed first. */
+  public List<Room> findForMember(UUID userId, int limit) {
+    return jdbc.sql(
+            "SELECT * FROM rooms WHERE commissioner_user_id = ? OR id IN"
+                + " (SELECT room_id FROM franchises WHERE owner_user_id = ?)"
+                + " ORDER BY updated_at DESC, id LIMIT ?")
+        .param(userId)
+        .param(userId)
+        .param(limit)
+        .query(mapper)
+        .list();
   }
 
   public Optional<Room> find(UUID id) {

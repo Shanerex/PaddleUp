@@ -251,6 +251,10 @@ class JoinIT extends AbstractRoomsIT {
     assertThat(preview.get("full").asBoolean()).isFalse();
     assertThat(preview.get("alreadyJoined").asBoolean()).isFalse();
     assertThat(preview.has("roomId") && !preview.get("roomId").isNull()).isFalse();
+    assertThat(preview.get("packName").asText()).isEqualTo("Cricket T20");
+    assertThat(preview.get("franchiseCount").asInt()).isEqualTo(1);
+    assertThat(preview.get("maxManagers").asInt()).isEqualTo(10);
+    assertThat(preview.has("competition")).isTrue();
     assertThat(franchiseCount(roomId)).isEqualTo(1);
     assertThat(post(visitor, "/api/join/preview", Map.of("code", "ZZZZZZZZZZZZ")).getStatusCode())
         .isEqualTo(HttpStatus.NOT_FOUND);
