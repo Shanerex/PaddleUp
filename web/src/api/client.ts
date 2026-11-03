@@ -24,6 +24,8 @@ export class ApiError extends Error {
   constructor(
     readonly status: number,
     readonly body: unknown,
+    /** Seconds from a Retry-After header (429), when the server sent one. */
+    readonly retryAfter: number | null = null,
   ) {
     super(`Request failed with status ${status}`);
   }
@@ -33,7 +35,12 @@ async function request(path: string, init: RequestInit = {}): Promise<Response> 
   const headers = init.body ? { "Content-Type": "application/json" } : undefined;
   const response = await fetch(path, { credentials: "same-origin", headers, ...init });
   if (!response.ok) {
-    throw new ApiError(response.status, await response.json().catch(() => null));
+    const retry = Number(response.headers?.get?.("Retry-After"));
+    throw new ApiError(
+      response.status,
+      await response.json().catch(() => null),
+      Number.isFinite(retry) && retry > 0 ? retry : null,
+    );
   }
   return response;
 }

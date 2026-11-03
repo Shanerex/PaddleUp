@@ -4,7 +4,7 @@ import { afterSignIn, HOME, NEXT_KEY, rememberNext, safeNext, SESSION_COOKIE, si
 describe("signInRedirect", () => {
   it("sends a visitor with no session cookie to sign-in", () => {
     expect(signInRedirect("/", "absent")).toBe("/sign-in");
-    expect(signInRedirect("/profile", "absent")).toBe("/sign-in");
+    expect(signInRedirect("/profile", "absent")).toBe("/sign-in?next=%2Fprofile");
   });
 
   it("remembers the page a signed-out visitor asked for", () => {
@@ -22,7 +22,7 @@ describe("signInRedirect", () => {
 
   it("sends a visitor whose cookie the server rejects to sign-in", () => {
     expect(signInRedirect("/", "invalid")).toBe("/sign-in");
-    expect(signInRedirect("/profile", "invalid")).toBe("/sign-in");
+    expect(signInRedirect("/profile", "invalid")).toBe("/sign-in?next=%2Fprofile");
   });
 
   it("lets a signed-in visitor through, in any tab", () => {

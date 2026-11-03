@@ -153,7 +153,8 @@ public class PackParser {
     return new Parsed<>(pack, violations, in.partial);
   }
 
-  private static final java.util.regex.Pattern ICON = java.util.regex.Pattern.compile("[a-z0-9_]{1,40}");
+  private static final java.util.regex.Pattern ICON =
+      java.util.regex.Pattern.compile("[a-z0-9_]{1,40}");
 
   /** Reads the optional display section; bad values become violations and read as null. */
   private static PackDisplayDto readDisplay(
@@ -164,7 +165,8 @@ public class PackParser {
     }
     if (!node.isObject()) {
       violations.add(
-          new PackViolation(file, packId, "invalid-section", "section 'display' must be an object"));
+          new PackViolation(
+              file, packId, "invalid-section", "section 'display' must be an object"));
       return PackDisplayDto.EMPTY;
     }
     String name = displayText(node, "name", 40, file, packId, violations);
@@ -196,7 +198,8 @@ public class PackParser {
               file,
               packId,
               "invalid-section",
-              "display.%s must be a non-blank string of at most %d characters".formatted(field, max)));
+              "display.%s must be a non-blank string of at most %d characters"
+                  .formatted(field, max)));
       return null;
     }
     return value.asText().strip();

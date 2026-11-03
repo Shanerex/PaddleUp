@@ -3,8 +3,16 @@ import { act, cleanup, render, screen, waitFor, within } from "@testing-library/
 import userEvent from "@testing-library/user-event";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
+vi.mock("next/link", () => ({
+  default: ({ href, children, ...rest }: { href: string; children: React.ReactNode }) => (
+    <a href={href} {...rest}>
+      {children}
+    </a>
+  ),
+}));
 vi.mock("../../../api/client", async (importOriginal) => ({
   ...(await importOriginal<typeof import("../../../api/client")>()),
+  getMe: vi.fn().mockResolvedValue(null),
   getRoom: vi.fn(),
   getMembers: vi.fn(),
   getTransitions: vi.fn(),
@@ -14,11 +22,15 @@ vi.mock("../../../api/client", async (importOriginal) => ({
   revokeInvite: vi.fn(),
   removeFranchise: vi.fn(),
   handOver: vi.fn(),
+  createOwnFranchise: vi.fn(),
+  editFranchise: vi.fn(),
 }));
 
 import {
   advanceRoom,
   ApiError,
+  createOwnFranchise,
+  editFranchise,
   getInvite,
   getMembers,
   getRoom,
@@ -33,6 +45,24 @@ import {
 } from "../../../api/client";
 import { RoomView } from "./room-view";
 
+const config = {
+  name: "Friends",
+  competition: "Season 1",
+  minManagers: 2,
+  maxManagers: 10,
+  purse: 10000,
+  currencyCode: "EUR",
+  displayUnit: { label: "M", divisor: 100 },
+  incrementLadder: [{ from: 0, step: 5 }],
+  squadMin: 11,
+  squadMax: 18,
+  roleMinimums: { a: 1, b: 2 },
+  categoryQuotas: { c: 3 },
+  retention: {},
+  scoringRules: { rules: [] },
+  ai: { enabled: true, lifelines: { "fit-check": 1 }, reportCardVisibility: "room" },
+};
+
 function room(state: RoomState, overrides: Record<string, unknown> = {}): Room {
   return {
     id: "room-1",
@@ -42,10 +72,18 @@ function room(state: RoomState, overrides: Record<string, unknown> = {}): Room {
     configVersion: 1,
     franchiseCount: 2,
     myFranchiseId: null,
-    advanceTo: state === "setup" ? ["retention", "auction_scheduled"] : [],
+    advanceTo: state === "setup" ? ["retention", "auction_scheduled"] : state === "retention" ? ["auction_scheduled"] : [],
     createdAt: "2031-01-01T00:00:00Z",
-    packLabels: { packId: "p", packVersion: "1", roles: [], tags: [], restrictedCategories: [], stats: [], terminology: {} },
-    config: { name: "Friends", competition: "Season 1", minManagers: 2, maxManagers: 10 },
+    packLabels: {
+      packId: "p",
+      packVersion: "1",
+      roles: [],
+      tags: [],
+      restrictedCategories: [{ id: "c", label: "Limited" }],
+      stats: [],
+      terminology: {},
+    },
+    config,
     ...overrides,
   } as unknown as Room;
 }
@@ -83,161 +121,210 @@ afterEach(() => {
   vi.clearAllMocks();
 });
 
-describe("RoomView as a manager", () => {
+const membersList = () => within(screen.getByRole("region", { name: "Members" }));
+
+describe("RoomView as a manager (Room `setupManager`)", () => {
   beforeEach(() => {
-    vi.mocked(getRoom).mockResolvedValue(
-      room("auction_scheduled", { myRole: "manager", myFranchiseId: "f-ben", advanceTo: [] }),
-    );
+    vi.mocked(getRoom).mockResolvedValue(room("auction_scheduled", { myRole: "manager", myFranchiseId: "f-ben", advanceTo: [] }));
   });
 
-  it("shows the state and the members but no Commissioner controls", async () => {
+  it("shows the state, the house rules and the members, but no Commissioner controls", async () => {
     render(<RoomView roomId="room-1" />);
 
-    expect((await screen.findByTestId("room-state")).textContent).toBe("Auction scheduled");
-    expect(screen.getByText("Ben XI")).toBeTruthy();
-    expect(screen.getByText(/Commissioner: Ann/)).toBeTruthy();
-    expect(screen.queryByLabelText("Commissioner controls")).toBeNull();
-    expect(screen.queryByRole("button", { name: /remove/i })).toBeNull();
+    expect((await screen.findByTestId("room-state")).textContent).toBe("AUCTION NEXT");
+    expect(screen.getByRole("heading", { name: "Friends" })).toBeTruthy();
+    expect(screen.getByText("The auction is next")).toBeTruthy();
+    expect(screen.getByText("€100 M")).toBeTruthy();
+    expect(screen.getByText("LIMITED")).toBeTruthy();
+    expect(membersList().getByText("Ben XI")).toBeTruthy();
+    expect(screen.queryByRole("region", { name: "Invite code" })).toBeNull();
+    expect(screen.queryByRole("button", { name: /Manage/ })).toBeNull();
     expect(getInvite).not.toHaveBeenCalled();
   });
 
-  it("shows the new state after a transition when the tab is focused again", async () => {
-    render(<RoomView roomId="room-1" />);
-    expect((await screen.findByTestId("room-state")).textContent).toBe("Auction scheduled");
+  it("paints the room in the manager's own franchise colour", async () => {
+    const { container } = render(<RoomView roomId="room-1" />);
+    await screen.findByTestId("room-state");
 
-    vi.mocked(getRoom).mockResolvedValue(
-      room("auction_live", { myRole: "manager", myFranchiseId: "f-ben", advanceTo: [] }),
-    );
+    expect((container.firstChild as HTMLElement).style.getPropertyValue("--h")).toBe("225");
+  });
+
+  it("shows the new state after a transition when the tab becomes visible again", async () => {
+    render(<RoomView roomId="room-1" />);
+    await screen.findByText("AUCTION NEXT");
+    vi.mocked(getRoom).mockResolvedValue(room("auction_live", { myRole: "manager", myFranchiseId: "f-ben", advanceTo: [] }));
     vi.mocked(getTransitions).mockResolvedValue([
-      {
-        from: "auction_scheduled",
-        to: "auction_live",
-        actor: { id: "u-ann", displayName: "Ann" },
-        occurredAt: "2031-01-02T10:00:00Z",
-      },
+      { from: "auction_scheduled", to: "auction_live", actor: { id: "u-ann", displayName: "Ann" }, occurredAt: "2031-01-02T10:00:00Z" },
     ]);
-    act(() => {
-      window.dispatchEvent(new Event("focus"));
+
+    await act(async () => {
+      document.dispatchEvent(new Event("visibilitychange"));
     });
 
-    await waitFor(() => expect(screen.getByTestId("room-state").textContent).toBe("Auction live"));
-    expect(screen.getByText(/Auction scheduled to Auction live by Ann/)).toBeTruthy();
+    expect(await screen.findByText("AUCTION LIVE")).toBeTruthy();
+    expect(screen.getByText("Ann started the auction")).toBeTruthy();
   });
 
   it("tells a removed manager the room is gone on the next refresh", async () => {
     render(<RoomView roomId="room-1" />);
-    await screen.findByTestId("room-state");
+    await screen.findByText("AUCTION NEXT");
+    vi.mocked(getRoom).mockRejectedValue(new ApiError(404, { error: "not_found" }));
 
-    vi.mocked(getRoom).mockRejectedValue(new ApiError(404, { error: "room_not_found" }));
-    act(() => {
-      window.dispatchEvent(new Event("focus"));
+    await act(async () => {
+      document.dispatchEvent(new Event("visibilitychange"));
     });
 
-    expect(await screen.findByText(/could not find that room/i)).toBeTruthy();
-    expect(screen.queryByTestId("room-state")).toBeNull();
+    expect(await screen.findByRole("heading", { name: "Can't find that room" })).toBeTruthy();
+  });
+
+  it("edits the franchise in a sheet", async () => {
+    vi.mocked(editFranchise).mockResolvedValue(members[1].franchise!);
+    const user = userEvent.setup();
+    render(<RoomView roomId="room-1" />);
+    await screen.findByText("AUCTION NEXT");
+
+    await user.click(screen.getByRole("button", { name: "Edit your franchise" }));
+    const sheet = within(screen.getByRole("dialog", { name: "Edit your franchise" }));
+    await user.clear(sheet.getByLabelText("Franchise name"));
+    await user.type(sheet.getByLabelText("Franchise name"), "Ben Eleven");
+    await user.click(sheet.getByRole("button", { name: "Save changes" }));
+
+    await waitFor(() =>
+      expect(editFranchise).toHaveBeenCalledWith("room-1", "f-ben", { name: "Ben Eleven", monogram: "BX", colour: "sky" }),
+    );
+    await waitFor(() => expect(screen.queryByRole("dialog")).toBeNull());
+  });
+
+  it("answers a stale tab clearly: the auction went live, so it says so and reloads", async () => {
+    vi.mocked(editFranchise).mockRejectedValue(new ApiError(409, { error: "room_locked" }));
+    const user = userEvent.setup();
+    render(<RoomView roomId="room-1" />);
+    await screen.findByText("AUCTION NEXT");
+    vi.mocked(getRoom).mockResolvedValue(room("auction_live", { myRole: "manager", myFranchiseId: "f-ben", advanceTo: [] }));
+
+    await user.click(screen.getByRole("button", { name: "Edit your franchise" }));
+    await user.click(screen.getByRole("button", { name: "Save changes" }));
+
+    expect(await screen.findByText("Too late for that.")).toBeTruthy();
+    expect(await screen.findByText("AUCTION LIVE")).toBeTruthy();
+    expect(screen.queryByRole("dialog")).toBeNull();
   });
 });
 
-describe("RoomView as the Commissioner", () => {
-  it("offers the next states and reloads after advancing", async () => {
-    vi.mocked(advanceRoom).mockResolvedValue({
-      from: "setup",
-      to: "retention",
-      occurredAt: "2031-01-02T10:00:00Z",
-    });
+describe("RoomView as the Commissioner (Room `setup`, `setupReady`, `setupAdmin`)", () => {
+  it("counts managers against the minimum and offers the next states after a confirmation", async () => {
+    vi.mocked(advanceRoom).mockResolvedValue({ from: "setup", to: "retention", occurredAt: "2031-01-02T00:00:00Z" });
     const user = userEvent.setup();
     render(<RoomView roomId="room-1" />);
-    await screen.findByLabelText("Commissioner controls");
-    expect(screen.getByRole("button", { name: "Move to Auction scheduled" })).toBeTruthy();
-    vi.mocked(getRoom).mockResolvedValue(room("retention", { advanceTo: ["auction_scheduled"] }));
 
-    await user.click(screen.getByRole("button", { name: "Move to Retention" }));
+    expect(await screen.findByText("That's enough to start. Room for 8 more.")).toBeTruthy();
+    vi.mocked(getRoom).mockResolvedValue(room("retention"));
+    await user.click(screen.getByRole("button", { name: "Open retention" }));
+    const sheet = within(screen.getByRole("dialog", { name: "Open retention?" }));
+    await user.click(sheet.getByRole("button", { name: "Open retention" }));
 
-    expect(advanceRoom).toHaveBeenCalledWith("room-1", "retention");
-    await waitFor(() => expect(screen.getByTestId("room-state").textContent).toBe("Retention"));
+    await waitFor(() => expect(advanceRoom).toHaveBeenCalledWith("room-1", "retention"));
+    await waitFor(() => expect(screen.getByTestId("room-state").textContent).toBe("RETENTION"));
   });
 
-  it("shows the invite code, link and expiry, and can replace or revoke it", async () => {
-    vi.mocked(issueInvite).mockResolvedValue({ code: "NEWCODE12345", link: "l", expiresAt: "t" });
-    vi.mocked(revokeInvite).mockResolvedValue();
+  it("disables moving on until enough franchises have joined", async () => {
+    vi.mocked(getRoom).mockResolvedValue(room("setup", { franchiseCount: 1, config: { ...config, minManagers: 3 } }));
+    render(<RoomView roomId="room-1" />);
+
+    expect(await screen.findByText("2 more to go. Share the invite code.")).toBeTruthy();
+    expect((screen.getByRole("button", { name: "Open retention" }) as HTMLButtonElement).disabled).toBe(true);
+    expect((screen.getByRole("button", { name: "Schedule auction" }) as HTMLButtonElement).disabled).toBe(true);
+    expect(screen.getByText("Needs 3 managers to move on. Only franchises count.")).toBeTruthy();
+  });
+
+  it("shows the invite code and expiry, and can replace or revoke it", async () => {
+    vi.mocked(issueInvite).mockResolvedValue({ code: "NEWCODE12345", link: "l", expiresAt: "2031-01-09T00:00:00Z" });
     const user = userEvent.setup();
     render(<RoomView roomId="room-1" />);
 
-    expect((await screen.findByTestId("room-invite-code")).textContent).toBe("ABCDEFGHJKMN");
-    expect(screen.getByText("http://localhost:3000/join/ABCDEFGHJKMN")).toBeTruthy();
+    expect((await screen.findByTestId("room-invite-code")).textContent).toBe("ABCD-EFGH-JKMN");
+    expect(screen.getByText(/Works until/)).toBeTruthy();
     await user.click(screen.getByRole("button", { name: "New code" }));
-    expect(issueInvite).toHaveBeenCalledWith("room-1");
+    await waitFor(() => expect(issueInvite).toHaveBeenCalledWith("room-1"));
 
-    vi.mocked(getInvite).mockResolvedValue(null);
     await user.click(screen.getByRole("button", { name: "Revoke" }));
-    expect(revokeInvite).toHaveBeenCalledWith("room-1");
-    expect(await screen.findByText("There is no active invite.")).toBeTruthy();
-    expect(screen.getByRole("button", { name: "Create invite" })).toBeTruthy();
+    await user.click(within(screen.getByRole("dialog")).getByRole("button", { name: "Revoke" }));
+    await waitFor(() => expect(revokeInvite).toHaveBeenCalledWith("room-1"));
+  });
+
+  it("keeps the page when the invite cannot be read", async () => {
+    vi.mocked(getInvite).mockRejectedValue(new ApiError(403, null));
+    render(<RoomView roomId="room-1" />);
+
+    expect(await screen.findByText("There is no active invite. Make one to bring friends in.")).toBeTruthy();
+    expect(membersList().getByText("Ben XI")).toBeTruthy();
   });
 
   it("removes a manager only after a confirmation", async () => {
-    vi.mocked(removeFranchise).mockResolvedValue([members[0], members[2]]);
+    vi.mocked(removeFranchise).mockResolvedValue(members.filter((m) => m.userId !== "u-ben"));
     const user = userEvent.setup();
     render(<RoomView roomId="room-1" />);
-    await screen.findByText("Ben XI");
 
-    await user.click(screen.getByRole("button", { name: "Remove Ben XI" }));
+    await user.click(await screen.findByRole("button", { name: "Manage Ben XI" }));
+    await user.click(screen.getByRole("button", { name: /Remove from room/ }));
     expect(removeFranchise).not.toHaveBeenCalled();
-    await user.click(screen.getByRole("button", { name: "Confirm remove" }));
+    await user.click(within(screen.getByRole("dialog", { name: "Remove Ben XI?" })).getByRole("button", { name: "Remove" }));
 
-    expect(removeFranchise).toHaveBeenCalledWith("room-1", "f-ben");
+    await waitFor(() => expect(removeFranchise).toHaveBeenCalledWith("room-1", "f-ben"));
   });
 
-  it("hands over the role after a confirmation", async () => {
+  it("hands over the role after a confirmation and warns an admin-only Commissioner they will leave", async () => {
     vi.mocked(handOver).mockResolvedValue({ commissioner: { id: "u-cat", displayName: "Cat" }, stillMember: false });
     const user = userEvent.setup();
     render(<RoomView roomId="room-1" />);
-    await screen.findByText("Cat XI");
 
-    await user.click(screen.getByRole("button", { name: "Make Cat XI Commissioner" }));
-    await user.click(screen.getByRole("button", { name: "Confirm handover" }));
+    await user.click(await screen.findByRole("button", { name: "Manage Cat XI" }));
+    await user.click(screen.getByRole("button", { name: /Make Commissioner/ }));
+    const sheet = within(screen.getByRole("dialog", { name: "Make Cat the Commissioner?" }));
+    expect(sheet.getByText(/you'll leave the room/)).toBeTruthy();
+    await user.click(sheet.getByRole("button", { name: "Make Commissioner" }));
 
-    expect(handOver).toHaveBeenCalledWith("room-1", "f-cat");
+    await waitFor(() => expect(handOver).toHaveBeenCalledWith("room-1", "f-cat"));
   });
 
-  it("shows an admin-only Commissioner by name and offers no remove for them", async () => {
-    render(<RoomView roomId="room-1" />);
-    const list = await screen.findByRole("list");
-    const first = within(list).getAllByRole("listitem")[0];
+  it("shows an admin-only Commissioner with the brand colour and offers them a franchise", async () => {
+    vi.mocked(createOwnFranchise).mockResolvedValue({ id: "f-ann", ownerUserId: "u-ann", name: "Ann XI", colour: "tangerine", monogram: "AX" });
+    const user = userEvent.setup();
+    const { container } = render(<RoomView roomId="room-1" />);
 
-    expect(first.textContent).toContain("Ann");
-    expect(first.textContent).toContain("admin only");
-    expect(within(first).queryByRole("button")).toBeNull();
+    expect(await screen.findByText("Commissioner · no franchise")).toBeTruthy();
+    expect((container.firstChild as HTMLElement).style.getPropertyValue("--h")).toBe("38");
+    expect(membersList().queryByRole("button", { name: "Manage Ann" })).toBeNull();
+
+    await user.click(screen.getByRole("button", { name: "Create my franchise" }));
+    const sheet = within(screen.getByRole("dialog", { name: "Create your franchise" }));
+    await user.type(sheet.getByLabelText("Franchise name"), "Ann XI");
+    await user.click(sheet.getByRole("button", { name: "Create franchise" }));
+
+    await waitFor(() =>
+      expect(createOwnFranchise).toHaveBeenCalledWith("room-1", { name: "Ann XI", monogram: "AX", colour: "crimson" }),
+    );
   });
 
   it("tells a stale tab that removing is locked once the auction is live, and reloads", async () => {
     vi.mocked(removeFranchise).mockRejectedValue(new ApiError(409, { error: "room_locked" }));
     const user = userEvent.setup();
     render(<RoomView roomId="room-1" />);
-    await screen.findByText("Ben XI");
+    await user.click(await screen.findByRole("button", { name: "Manage Ben XI" }));
     vi.mocked(getRoom).mockResolvedValue(room("auction_live"));
 
-    await user.click(screen.getByRole("button", { name: "Remove Ben XI" }));
-    await user.click(screen.getByRole("button", { name: "Confirm remove" }));
+    await user.click(screen.getByRole("button", { name: /Remove from room/ }));
+    await user.click(within(screen.getByRole("dialog")).getByRole("button", { name: "Remove" }));
 
-    expect(await screen.findByText(/The auction is live, so this can no longer be changed/)).toBeTruthy();
-    await waitFor(() => expect(screen.getByTestId("room-state").textContent).toBe("Auction live"));
-    expect(screen.queryByRole("button", { name: /^Remove/ })).toBeNull();
-    expect(removeFranchise).toHaveBeenCalledTimes(1);
+    expect(await screen.findByText("Too late for that.")).toBeTruthy();
+    expect(await screen.findByText("AUCTION LIVE")).toBeTruthy();
   });
 
-  it("answers a stale tab clearly: the auction went live, so it says so and reloads", async () => {
-    vi.mocked(advanceRoom).mockRejectedValue(new ApiError(409, { error: "illegal_state", message: "A room cannot move from auction_live to retention" }));
-    const user = userEvent.setup();
+  it("shows a retry when the room cannot be loaded at all", async () => {
+    vi.mocked(getRoom).mockRejectedValue(new TypeError("offline"));
     render(<RoomView roomId="room-1" />);
-    await screen.findByLabelText("Commissioner controls");
-    vi.mocked(getRoom).mockResolvedValue(room("auction_live"));
 
-    await user.click(screen.getByRole("button", { name: "Move to Retention" }));
-
-    expect(await screen.findByText(/A room cannot move from auction_live to retention/)).toBeTruthy();
-    await waitFor(() => expect(screen.getByTestId("room-state").textContent).toBe("Auction live"));
-    expect(screen.queryByRole("button", { name: "Move to Retention" })).toBeNull();
-    expect(screen.queryByRole("button", { name: /Remove/ })).toBeNull();
+    expect(await screen.findByText("Couldn't load the room.")).toBeTruthy();
+    expect(screen.getByRole("button", { name: "Try again" })).toBeTruthy();
   });
 });

@@ -40,7 +40,8 @@ class PackParserDisplayTest {
   void displayFieldsAreRead() throws Exception {
     var result =
         parser.parsePack(
-            withDisplay("{\"name\":\"Five-a-side\",\"summary\":\"Small pitch.\",\"icon\":\"sports\"}"),
+            withDisplay(
+                "{\"name\":\"Five-a-side\",\"summary\":\"Small pitch.\",\"icon\":\"sports\"}"),
             "p.json");
     assertThat(result.violations()).isEmpty();
     assertThat(result.value().display())

@@ -1,0 +1,615 @@
+/* Home `wizard:1-6` (Home.dc.html 128-245). Room setup uses --brand: no franchise yet. */
+.frame {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+}
+
+.rail {
+  display: none;
+}
+
+@media (min-width: 640px) {
+  .rail {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    width: 280px;
+    flex-shrink: 0;
+    padding: 24px 16px;
+    background: var(--surface);
+    border-right: 1px solid var(--line);
+  }
+}
+
+.railLabel {
+  padding: 0 10px 10px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  color: var(--ink-2);
+}
+
+.railStep {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px;
+  border: 0;
+  border-radius: 14px;
+  background: transparent;
+  color: var(--ink);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.railStep[aria-current="step"] {
+  background: var(--brand-tint);
+}
+
+.railStep:disabled {
+  cursor: default;
+}
+
+.dot {
+  display: inline-flex;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 9px;
+  background: var(--surface-2);
+  color: var(--ink-2);
+  font-family: var(--font-num);
+  font-size: 13px;
+  font-weight: 500;
+}
+
+.dotOn {
+  background: var(--brand);
+  color: var(--on-brand);
+}
+
+.stepText {
+  display: flex;
+  flex-direction: column;
+}
+
+.stepName {
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.railStep[aria-current="step"] .stepName {
+  font-weight: 800;
+}
+
+.stepSub {
+  font-size: 12px;
+  color: var(--ink-2);
+}
+
+.column {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.top {
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 16px 20px 0;
+}
+
+.bars {
+  display: flex;
+  gap: 6px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.barSeg {
+  flex: 1;
+  height: 6px;
+  border-radius: 3px;
+  background: var(--line);
+}
+
+.barOn {
+  background: var(--brand);
+}
+
+.titleRow {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+}
+
+.title {
+  font-size: 24px;
+  font-weight: 800;
+  letter-spacing: -0.025em;
+}
+
+.count {
+  font-family: var(--font-num);
+  font-size: 12px;
+  color: var(--ink-2);
+}
+
+.body {
+  flex: 1;
+  padding: 16px 20px 24px;
+}
+
+.content {
+  max-width: 640px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.footer {
+  position: sticky;
+  bottom: 0;
+  flex-shrink: 0;
+  display: flex;
+  gap: 10px;
+  padding: 12px 20px 16px;
+  border-top: 1px solid var(--line);
+  background: var(--surface);
+}
+
+.next {
+  flex: 1;
+  max-width: 420px;
+  margin-left: auto;
+}
+
+.intro {
+  font-size: 14px;
+  line-height: 1.5;
+  color: var(--ink-2);
+}
+
+/* Step 1 pack card + presets. */
+.pack {
+  display: flex;
+  align-items: flex-start;
+  gap: 14px;
+  padding: 16px;
+  border: 2px solid var(--brand);
+  border-radius: 20px;
+  background: var(--surface);
+  color: var(--ink);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.packOff {
+  border: 1px solid var(--line);
+}
+
+.packTile {
+  display: inline-flex;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  width: 48px;
+  height: 48px;
+  border-radius: 14px;
+  background: var(--brand-tint);
+  color: var(--brand-ink);
+}
+
+.packText {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.packHead {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  font-size: 16px;
+  font-weight: 800;
+}
+
+.packSummary {
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--ink-2);
+}
+
+.packVersion {
+  font-family: var(--font-num);
+  font-size: 11px;
+  color: var(--ink-2);
+}
+
+.later {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 16px;
+  border: 1px dashed var(--line);
+  border-radius: 20px;
+  color: var(--ink-2);
+}
+
+.laterTile {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 48px;
+  height: 48px;
+  border-radius: 14px;
+  background: var(--surface-2);
+}
+
+.group {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.groupHead {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+}
+
+.label {
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.helper {
+  font-size: 12px;
+  color: var(--ink-2);
+}
+
+.preset {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px;
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  background: var(--surface);
+  color: var(--ink);
+  font: inherit;
+  font-size: 15px;
+  font-weight: 600;
+  text-align: left;
+  cursor: pointer;
+}
+
+.preset[aria-checked="true"] {
+  border: 2px solid var(--brand);
+  font-weight: 800;
+}
+
+.preset:disabled {
+  cursor: default;
+}
+
+.radio {
+  display: inline-flex;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  border: 2px solid var(--line);
+  border-radius: 11px;
+}
+
+.preset[aria-checked="true"] .radio {
+  border: 0;
+  background: var(--brand);
+}
+
+.preset[aria-checked="true"] .radio::after {
+  content: "";
+  width: 8px;
+  height: 8px;
+  border-radius: 4px;
+  background: var(--on-brand);
+}
+
+.pair {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.pair > * {
+  flex: 1 1 180px;
+}
+
+/* Step 3 roles, quotas, ladder. */
+.roles {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+  gap: 8px;
+}
+
+.roleCard {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  padding: 10px;
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  background: var(--surface);
+}
+
+.roleChip {
+  padding: 4px 9px;
+  border-radius: 7px;
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.quota {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 14px;
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  background: var(--surface);
+}
+
+.quotaText {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.quotaName {
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.table {
+  overflow: hidden;
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  background: var(--surface);
+}
+
+.tableRow {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 10px 14px;
+  font-size: 13px;
+  border-bottom: 1px solid var(--line);
+}
+
+.tableRow:last-child {
+  border-bottom: 0;
+}
+
+.tableKey {
+  color: var(--ink-2);
+}
+
+/* Step 4 scoring tables. */
+.scoreCard {
+  overflow: hidden;
+  border: 1px solid var(--line);
+  border-radius: 18px;
+  background: var(--surface);
+}
+
+.scoreHead {
+  display: flex;
+  justify-content: space-between;
+  padding: 12px 14px;
+  border-bottom: 1px solid var(--line);
+  font-size: 14px;
+  font-weight: 800;
+}
+
+.scoreNote {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--ink-2);
+}
+
+.scoreRow {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 10px;
+  padding: 9px 14px;
+  font-size: 13px;
+  border-bottom: 1px solid var(--line);
+}
+
+.scoreRow:last-child {
+  border-bottom: 0;
+}
+
+.points {
+  min-width: 44px;
+  padding: 4px 10px;
+  border-radius: 8px;
+  background: var(--surface-2);
+  font-family: var(--font-num);
+  text-align: center;
+}
+
+/* Step 5 AI. */
+.ai {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 16px;
+  border-radius: 18px;
+  background: var(--inverse);
+  color: var(--on-inverse);
+}
+
+.aiText {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.aiTitle {
+  font-size: 15px;
+  font-weight: 800;
+}
+
+.aiSub {
+  font-size: 12px;
+  color: var(--on-inverse-2);
+}
+
+.lifeline {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 14px;
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  background: var(--surface);
+}
+
+.lifeText {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+/* Step 6 invite. */
+.invite {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  padding: 22px;
+  border-radius: 24px;
+  background: var(--brand);
+  color: var(--on-brand);
+}
+
+.inviteLabel {
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  opacity: 0.85;
+}
+
+.inviteCode {
+  font-family: var(--font-num);
+  font-size: clamp(26px, 8.5vw, 34px);
+  font-weight: 500;
+  letter-spacing: 0.04em;
+  white-space: nowrap;
+}
+
+.inviteExpiry {
+  font-size: 13px;
+  opacity: 0.85;
+}
+
+.callout {
+  display: flex;
+  align-items: flex-start;
+  gap: 14px;
+  padding: 16px;
+  border: 1px solid var(--line);
+  border-radius: 20px;
+  background: var(--surface);
+}
+
+.calloutTile {
+  display: inline-flex;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  border-radius: 13px;
+  background: var(--brand-tint);
+  color: var(--brand-ink);
+}
+
+.calloutText {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  align-items: flex-start;
+}
+
+.joined {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 8px;
+  border: 1px solid var(--line);
+  border-radius: 20px;
+  background: var(--surface);
+}
+
+.joinedHead {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px 10px;
+}
+
+.linkBtn {
+  padding: 0;
+  border: 0;
+  background: transparent;
+  font: inherit;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.member {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 10px;
+  margin: 0;
+  list-style: none;
+}
+
+.memberName {
+  flex: 1;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.memberWho {
+  font-weight: 500;
+  color: var(--ink-2);
+}
+
+.list {
+  margin: 0;
+  padding: 0;
+}

@@ -1,6 +1,5 @@
 "use client";
 
-import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useState, type FormEvent } from "react";
 import {
@@ -137,10 +136,6 @@ export function ProfileView() {
           Save
         </button>
       </form>
-
-      <Link className="btn" href="/rooms/new">
-        Create a room
-      </Link>
 
       <button type="button" className="btn btn-quiet" onClick={leave}>
         Sign out

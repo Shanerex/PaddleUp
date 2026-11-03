@@ -2,7 +2,7 @@
 export const SESSION_COOKIE = "pu_session";
 
 /** Where a signed-in visitor lands. */
-export const HOME = "/profile";
+export const HOME = "/";
 
 /**
  * What the server said about the visitor's session: no cookie, a session it knows, a cookie it

@@ -9,7 +9,8 @@ import java.util.UUID;
 /**
  * What a valid code leads to: the room's name, the colours already taken, whether the room is full
  * and whether the caller already has a franchise there ({@code roomId} is set only then), plus the
- * pack name, competition and seat counts for the join screen. The caller already holds a valid code.
+ * pack name, competition and seat counts for the join screen. The caller already holds a valid
+ * code.
  */
 public record JoinPreviewDto(
     @Schema(requiredMode = REQUIRED) String roomName,

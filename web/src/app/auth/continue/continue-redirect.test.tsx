@@ -27,7 +27,7 @@ describe("ContinueRedirect", () => {
   it("goes home when there is nothing to return to", () => {
     render(<ContinueRedirect />);
 
-    expect(replace).toHaveBeenCalledWith("/profile");
+    expect(replace).toHaveBeenCalledWith("/");
   });
 
   it("ignores an unsafe address that was planted in storage", () => {
@@ -35,6 +35,6 @@ describe("ContinueRedirect", () => {
 
     render(<ContinueRedirect />);
 
-    expect(replace).toHaveBeenCalledWith("/profile");
+    expect(replace).toHaveBeenCalledWith("/");
   });
 });

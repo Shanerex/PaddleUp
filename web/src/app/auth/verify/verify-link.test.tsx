@@ -37,14 +37,14 @@ describe("VerifyLink", () => {
     expect(verifyLink).not.toHaveBeenCalled();
   });
 
-  it("posts the token on confirm and goes to the profile", async () => {
+  it("posts the token on confirm and goes home", async () => {
     const user = userEvent.setup();
     render(<VerifyLink token="tok" />);
 
     await user.click(screen.getByRole("button", { name: /confirm/i }));
 
     await waitFor(() => expect(verifyLink).toHaveBeenCalledWith("tok"));
-    expect(push).toHaveBeenCalledWith("/profile");
+    expect(push).toHaveBeenCalledWith("/");
   });
 
   it("returns to the page remembered by the sign-in tab, even though this is another tab", async () => {

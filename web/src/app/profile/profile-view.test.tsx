@@ -115,11 +115,4 @@ describe("ProfileView", () => {
     await waitFor(() => expect(signOut).toHaveBeenCalled());
     expect(push).toHaveBeenCalledWith("/sign-in");
   });
-
-  it("links to creating a room", async () => {
-    render(<ProfileView />);
-
-    const link = await screen.findByRole("link", { name: /create a room/i });
-    expect(link.getAttribute("href")).toBe("/rooms/new");
-  });
 });

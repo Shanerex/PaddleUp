@@ -23,14 +23,20 @@ Ran (human-directed pass 4): `make test` (437 server tests: surefire 240 + fails
 - AC-15 pass: TransitionIT log readable by members; RoomsSchemaIT trigger blocks UPDATE/DELETE.
 - AC-16 pass: MembershipIT every endpoint (404 non-member, 403 manager on Commissioner endpoints).
 - AC-17 pass: check-agnostic ok, StubPackRoomIT, RoomsSchemaIT timestamptz.
-- AC-18 pass (unit): room-wizard.test, room-view.test; real-browser run reported by dev (T-25), not re-run by QA.
-- AC-19 pass (unit): join-form, redirect, continue-redirect, stale-tab tests; real-browser run reported by dev, not re-run by QA.
+- AC-18 pass (design loop, dev-run): room-wizard/room-view/home-hub tests; Playwright on make dev: wizard end to end, reload at step 3 resumed the same room, second member tab showed the new state.
+- AC-19 pass (design loop, dev-run): signed-out join link to sign-in?next and back, joined; invalid code screen; stale tab after auction_live (set in DB) showed "Too late for that." and reloaded.
 - T-18 deviation accepted: ModuleBoundariesTest is a source scan with a self-test, not ArchUnit (pom.xml protected); record in decision.
 - Deviation accepted: RoomState in rooms.dto (other modules need it; model is private).
-- Deviation accepted: GET /api/rooms/packs, profile "Create a room" link, ClientAddress.limitKey, MutableClock, max_connections=400.
+- Deviation accepted: GET /api/rooms/packs, ClientAddress.limitKey, MutableClock, max_connections=400. Profile link removed (Home hub is the entry).
 - Deviation accepted: GET invite Commissioner-only (stricter than plan; R-12/AC-16 hold).
 - T-18 fixed: JSON limits moved to app-level com.paddleup.config.JsonLimitsConfig; ModuleBoundariesTest exempts only top-level `config` and still flags it reaching module-private packages; JsonLimitsIT covers accounts and rooms.
 - Follow-up (non-AC, before ship): docs/knowledge/architecture.md lacks the Rooms section and still says enforcement deferred; plan Architecture changes 1-4 unapplied (human-owned file).
+
+## Design fidelity (T-26..T-32, decision 2026-11-03-design-source-fidelity)
+Gap frames drawn in docs/design/source (App Screens turn 6) and approved by Shanerex. Added: GET /api/rooms (MyRoomsIT), pack display fields, richer join preview, tokens.css parity test. Pairs (mock vs app, 390 + 1440) in .playwright-mcp/shots/cmp-*.png:
+- Match: hub + empty, joinCode, join, joinError invalid, wizard 1-6, room setup/admin/ready/manager, sheets (member, remove, advance, edit franchise), toast, stale banner.
+- Data-only differences: pack display unit "Crore" (mock "Cr"), increments in the display unit, role labels instead of ids, pack role order.
+make test (449 server, 128 web) and make lint green. QA/security agents have not re-run on the loop diff.
 
 ## Security
 Scope: uncommitted working tree against main (no commits on branch yet).
@@ -48,4 +54,4 @@ Scope: uncommitted working tree against main (no commits on branch yet).
 - Checked clean: SecureRandom codes, throttle before lookup, ClientAddress hop trust, 404 before 403, Commissioner-only actions, row locks plus version CAS, append-only room_log, parameterised JDBC, name sanitising, safe `next` redirect.
 
 ## Verdict
-pass (after human-directed pass 4). Blocking: none. Open: S-5 accepted; AC-18/19 real-browser run dev-reported only; architecture.md follow-up before ship (human-owned).
+pass (after human-directed pass 4) plus design-fidelity loop. Blocking: none. Open: S-5 accepted; re-verify the loop diff with /rx:next (qa + security); architecture.md follow-up before ship (human-owned).

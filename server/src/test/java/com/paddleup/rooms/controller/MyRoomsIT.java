@@ -72,7 +72,9 @@ class MyRoomsIT extends AbstractRoomsIT {
     Person ann = joinNew(roomId, code, "sky");
     String franchiseId =
         jdbc.queryForObject(
-            "SELECT id::text FROM franchises WHERE room_id = ?", String.class, UUID.fromString(roomId));
+            "SELECT id::text FROM franchises WHERE room_id = ?",
+            String.class,
+            UUID.fromString(roomId));
 
     delete(commissioner, "/api/rooms/" + roomId + "/franchises/" + franchiseId);
 
@@ -87,7 +89,8 @@ class MyRoomsIT extends AbstractRoomsIT {
     put(
         commissioner,
         "/api/rooms/" + first + "/config",
-        Map.of("version", configVersion(commissioner, first), "config", config(commissioner, first)));
+        Map.of(
+            "version", configVersion(commissioner, first), "config", config(commissioner, first)));
 
     JsonNode list = mine(commissioner);
 

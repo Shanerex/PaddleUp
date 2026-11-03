@@ -1,0 +1,156 @@
+/* Design System 07: buttons. L 52 / M 44 / S 36, radius 14 (S 12), press 80ms scale .97. */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  height: 44px;
+  padding: 0 16px;
+  border: 0;
+  border-radius: 14px;
+  font: inherit;
+  font-size: 14px;
+  font-weight: 700;
+  text-decoration: none;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: transform 80ms ease-out, background-color 120ms ease-out;
+}
+
+.btn:active:not(:disabled) {
+  transform: scale(0.97);
+}
+
+.btn:disabled,
+.btn[aria-disabled="true"] {
+  cursor: default;
+}
+
+.L {
+  height: 52px;
+  padding: 0 20px;
+  font-size: 16px;
+}
+
+.M48 {
+  height: 48px;
+  padding: 0 18px;
+  font-size: 15px;
+}
+
+.S {
+  height: 36px;
+  padding: 0 14px;
+  border-radius: 12px;
+  font-size: 13px;
+}
+
+.block {
+  width: 100%;
+}
+
+/* Outside a room. */
+.brand {
+  background: var(--brand);
+  color: var(--on-brand);
+}
+
+/* Inside a room: the franchise colour. */
+.primary {
+  background: var(--team);
+  color: var(--on-team);
+}
+
+.primary:hover:not(:disabled) {
+  background: var(--team-strong);
+}
+
+.secondary {
+  background: var(--team-tint);
+  color: var(--team-ink);
+}
+
+.secondary:hover:not(:disabled) {
+  background: var(--team-tint-2);
+}
+
+.brandSoft {
+  background: var(--brand-tint);
+  color: var(--brand-ink);
+}
+
+.outline {
+  border: 1px solid var(--line);
+  background: var(--surface);
+  color: var(--ink);
+}
+
+.outline:hover:not(:disabled) {
+  background: var(--surface-2);
+}
+
+.ghost {
+  background: transparent;
+  color: var(--ink-2);
+  padding: 0 12px;
+}
+
+.ghostBad {
+  background: transparent;
+  color: var(--bad);
+  padding: 0 12px;
+}
+
+.danger {
+  background: var(--bad-tint);
+  color: var(--bad);
+}
+
+/* On a --team hero card. */
+.onTeam {
+  background: var(--on-team);
+  color: var(--team-ink);
+}
+
+.glass {
+  background: var(--glass);
+  color: var(--on-team);
+}
+
+/* On a --brand card (wizard invite). */
+.onBrand {
+  background: var(--on-brand);
+  color: var(--brand-ink);
+}
+
+.glassBrand {
+  background: var(--glass);
+  color: var(--on-brand);
+}
+
+/* Design System 07 disabled: surface-2 / ink-3. */
+.btn:disabled:not(.glass):not(.onTeam) {
+  background: var(--surface-2);
+  color: var(--ink-3);
+}
+
+.glass:disabled,
+.onTeam:disabled {
+  background: var(--glass);
+  color: var(--on-team);
+  opacity: 0.6;
+}
+
+.busy {
+  opacity: 0.7;
+}
+
+.spin {
+  animation: spin 900ms linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}

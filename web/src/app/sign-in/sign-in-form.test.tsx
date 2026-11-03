@@ -49,7 +49,7 @@ describe("SignInForm", () => {
     await user.click(screen.getByRole("button", { name: /sign in/i }));
 
     await waitFor(() => expect(verifyCode).toHaveBeenCalledWith("ann@example.test", "123456"));
-    expect(push).toHaveBeenCalledWith("/profile");
+    expect(push).toHaveBeenCalledWith("/");
   });
 
   it("shows an error and stays on the page when the code is wrong", async () => {
@@ -123,6 +123,6 @@ describe("SignInForm", () => {
     await user.type(await screen.findByLabelText(/code/i), "123456");
     await user.click(screen.getByRole("button", { name: /sign in/i }));
 
-    await waitFor(() => expect(push).toHaveBeenCalledWith("/profile"));
+    await waitFor(() => expect(push).toHaveBeenCalledWith("/"));
   });
 });
