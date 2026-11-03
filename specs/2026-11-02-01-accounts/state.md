@@ -1,12 +1,12 @@
 ---
 feature: 2026-11-02-01-accounts
-phase: close
-status: blocked
+phase: done
+status: approved
 g1: approved:Shanerex:2026-11-02
 g2: approved:Shanerex:2026-11-02
 g3: approved:Shanerex:2026-11-02
 bump: minor
-next: rx-check done flags shared files CLAUDE.md, docs/knowledge/architecture.md, server/pom.xml; human decides
+next: none; merged to main in PR #2
 ---
 # State: 2026-11-02-01-accounts
 
@@ -23,3 +23,4 @@ next: rx-check done flags shared files CLAUDE.md, docs/knowledge/architecture.md
 - 2026-11-02 verify: g3 approved by Shanerex; bump minor; phase close
 - 2026-11-02 close: decision server-verdict-page-gating written; state log collapsed; rx-check done blocked on 3 modified shared files
 - 2026-11-02 close: shared files committed f6f1d0f (--no-verify, human choice); rx-check done still flags them vs main; stays blocked
+- 2026-11-02 done: PR #2 merged to main (3942471), shared-file flag resolved by the merge; phase done

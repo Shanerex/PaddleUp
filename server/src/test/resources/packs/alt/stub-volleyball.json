@@ -1,0 +1,58 @@
+{
+  "schemaVersion": 1,
+  "id": "stub-volleyball",
+  "version": "0.3.0",
+  "roles": [
+    {"id": "setter", "label": "Setter"},
+    {"id": "spiker", "label": "Outside spiker"},
+    {"id": "libero", "label": "Libero"}
+  ],
+  "tags": [
+    {"id": "youth", "label": "Youth"},
+    {"id": "senior", "label": "Senior"}
+  ],
+  "restrictedCategories": [
+    {"id": "youth-cap", "label": "Youth players", "tag": "youth", "max": 3}
+  ],
+  "presets": [
+    {
+      "id": "club",
+      "label": "Club night",
+      "purse": 5000,
+      "currencyCode": "JPY",
+      "displayUnit": {"label": "pts", "divisor": 1},
+      "incrementLadder": [
+        {"from": 0, "step": 5},
+        {"from": 100, "step": 10},
+        {"from": 500, "step": 50}
+      ],
+      "squadMin": 6,
+      "squadMax": 12,
+      "roleMinimums": {"setter": 1, "libero": 1},
+      "retention": {"maxRetentions": 1, "rtmCards": 0}
+    }
+  ],
+  "statSchema": [
+    {"id": "kills", "label": "Kills", "kind": "count", "eventTypes": ["quick", "power"]},
+    {"id": "aces", "label": "Aces", "kind": "count"},
+    {"id": "blocks", "label": "Blocks", "kind": "count"},
+    {"id": "sets-played", "label": "Sets played", "kind": "count"}
+  ],
+  "defaultRuleSet": {
+    "rules": [
+      {"type": "per-unit", "id": "kill-points", "stat": "kills", "points": 1.5},
+      {
+        "type": "role-conditional", "id": "setter-aces", "roles": ["setter"],
+        "rule": {"type": "per-unit", "id": "setter-ace-points", "stat": "aces", "points": 3}
+      },
+      {
+        "type": "event-type-bonus", "id": "power-kill", "stat": "kills",
+        "eventType": "power", "points": 0.5
+      },
+      {"type": "appearance-bonus", "id": "appearance", "points": 2}
+    ]
+  },
+  "appearanceRule": {"stat": "sets-played", "atLeast": 1},
+  "terminology": {"squad": "Roster", "match": "Match night"},
+  "aiDomainContext": "A volleyball club league scored on kills, aces and blocks."
+}

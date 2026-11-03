@@ -1,12 +1,15 @@
 #!/usr/bin/env bash
-# Fails if core code names a sport, role, stat or currency (CLAUDE.md invariant).
-# Scans server/src/main and web/src, tests excluded. Word-boundary, case-insensitive.
+# Fails if core code names a specific sport, role, stat or currency (CLAUDE.md invariant).
+# It bans specific names, not the generic concepts (role, stat, currency, sport) that pack fields use.
+# Scans server/src/main and web/src (or the root directories given as arguments), tests excluded.
+# Word-boundary, case-insensitive.
 set -u
 cd "$(dirname "$0")/.."
 
-WORDS='sport|sports|role|roles|stat|stats|currency|currencies|cricket|batter|batsman|bowler|wicket|over|overs|run|runs|all-rounder|keeper|t20|football|soccer|goal|goals|inr|usd|rupee|rupees|crore|lakh|dollar|dollars'
+WORDS='cricket|batter|batsman|bowler|wicket|over|overs|run|runs|all-rounder|keeper|t20|football|soccer|goal|goals|inr|usd|rupee|rupees|crore|lakh|dollar|dollars'
 SYMBOLS='₹'
 ROOTS=(server/src/main web/src)
+if [ "$#" -gt 0 ]; then ROOTS=("$@"); fi
 
 found=0
 for root in "${ROOTS[@]}"; do
@@ -26,7 +29,7 @@ for root in "${ROOTS[@]}"; do
 done
 
 if [ "$found" -ne 0 ]; then
-  echo "check-agnostic: forbidden sport/role/stat/currency terms found" >&2
+  echo "check-agnostic: forbidden specific sport/role/stat/currency names found" >&2
   exit 1
 fi
 echo "check-agnostic: ok"
