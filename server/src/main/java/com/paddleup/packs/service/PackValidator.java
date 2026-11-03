@@ -138,6 +138,18 @@ class PackValidator {
     }
 
     var tagIds = pack.tags().stream().map(TagDto::id).collect(Collectors.toSet());
+    for (PresetDto preset : pack.presets()) {
+      checkRetentionTags(pack, file, partial, tagIds, preset, out);
+      if (preset.poolSize() != null && preset.poolSize() < preset.squadMax()) {
+        out.add(
+            violation(
+                file,
+                pack,
+                "pool-size",
+                "preset '%s' has pool size %d below squad max %d"
+                    .formatted(preset.id(), preset.poolSize(), preset.squadMax())));
+      }
+    }
     for (RestrictedCategoryDto category : pack.restrictedCategories()) {
       if (category.max() < 0) {
         out.add(
@@ -182,6 +194,60 @@ class PackValidator {
               "appearance rule names stat '%s', which is not in the stat schema"
                   .formatted(appearance.stat())));
     }
+  }
+
+  /**
+   * Retention slabs and limits: every slab names a tag, holds a price for each retention its tag
+   * limit allows, and every tag named must be in the tag list.
+   */
+  private void checkRetentionTags(
+      PackDto pack,
+      String file,
+      Set<String> partial,
+      Set<String> tagIds,
+      PresetDto preset,
+      List<PackViolation> out) {
+    if (preset.retention() == null) {
+      return;
+    }
+    var retention = preset.retention();
+    var named = new java.util.TreeSet<String>(retention.tagLimits().keySet());
+    for (var slab : retention.slabs()) {
+      if (slab.tag() == null) {
+        out.add(
+            violation(
+                file,
+                pack,
+                "retention-slab-no-tag",
+                "preset '%s' retention has a slab with no tag".formatted(preset.id())));
+        continue;
+      }
+      named.add(slab.tag());
+      var limit = retention.tagLimits().get(slab.tag());
+      if (limit != null && slab.prices().size() < limit) {
+        out.add(
+            violation(
+                file,
+                pack,
+                "retention-slab-short",
+                "preset '%s' retention allows %d '%s' retentions but its slab has %d prices"
+                    .formatted(preset.id(), limit, slab.tag(), slab.prices().size())));
+      }
+    }
+    if (partial.contains("tags")) {
+      return;
+    }
+    named.stream()
+        .filter(tag -> !tagIds.contains(tag))
+        .forEach(
+            tag ->
+                out.add(
+                    violation(
+                        file,
+                        pack,
+                        "retention-unknown-tag",
+                        "preset '%s' retention names tag '%s', which is not in the tag list"
+                            .formatted(preset.id(), tag))));
   }
 
   private void uniqueIds(

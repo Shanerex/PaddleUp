@@ -18,7 +18,10 @@ class PackStructureValidationTest {
     "ladder-order, ladder-order, standard",
     "category-unknown-tag, category-unknown-tag, visitor",
     "category-max, category-max, foreign-cap",
-    "appearance-unknown-stat, appearance-unknown-stat, shifts"
+    "appearance-unknown-stat, appearance-unknown-stat, shifts",
+    "retention-unknown-tag-limit, retention-unknown-tag, visitor",
+    "retention-unknown-tag-slab, retention-unknown-tag, guest",
+    "pool-size, pool-size, standard"
   })
   void eachStructuralCheckNamesTheCheckAndTheOffendingId(
       String fixture, String check, String offendingId) {
