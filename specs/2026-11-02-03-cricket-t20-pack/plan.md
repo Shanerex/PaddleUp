@@ -48,7 +48,7 @@ Pack file `packs/cricket-t20.json`: schemaVersion 1, id `cricket-t20`, version `
   - Money: purse 12000, currencyCode INR, displayUnit `{label: Crore, divisor: 100}`.
   - Squad: squadMin 18, squadMax 25, roleMinimums `{WK:2, BAT:5, BOWL:5, AR:3}`.
   - incrementLadder: `[{0,5},{100,10},{200,20},{500,25}]`.
-  - retention: `{maxRetentions 6, rtmCards 6, tagLimits {capped:5, uncapped:2}, slabs [{capped,[1800,1400,1100,1800,1400]},{uncapped,[400]}], rtmFromSeason 2, rtmCounterRaise true}`.
+  - retention: `{maxRetentions 6, rtmCards 6, tagLimits {capped:5, uncapped:2}, slabs [{capped,[1800,1400,1100,1800,1400]},{uncapped,[400,400]}], rtmFromSeason 2, rtmCounterRaise true}`.
 - presets[short-pool]: the same values plus poolSize 80, optional for the room.
 - statSchema `{id, label, kind integer|decimal, unit, eventTypes?}` (R-6, AC-7). T-7 cross-checks this list against PRD 7.3:
   - in-playing-xi (flag)

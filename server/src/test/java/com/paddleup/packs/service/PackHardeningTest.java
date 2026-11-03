@@ -151,6 +151,70 @@ class PackHardeningTest {
         .allSatisfy(v -> assertThat(v.message()).containsAnyOf("standard", "foreign-cap"));
   }
 
+  /** Stub retention gets tag limits, a slab per tag, so each defect below is a single edit. */
+  private static void retentionWithSlabs(ObjectNode root, int guestLimit, int guestPrices) {
+    var retention = at(root, "/presets/0/retention");
+    retention.putObject("tagLimits").put("local", 1).put("foreign", guestLimit);
+    var slabs = retention.putArray("slabs");
+    slabs.addObject().put("tag", "local").putArray("prices").add(100);
+    var foreign = slabs.addObject().put("tag", "foreign").putArray("prices");
+    for (int i = 0; i < guestPrices; i++) {
+      foreign.add(100);
+    }
+  }
+
+  @Test
+  void slabWithFewerPricesThanItsTagLimitIsAViolation() throws Exception {
+    var failure = failWith(root -> retentionWithSlabs(root, 2, 1));
+
+    assertThat(failure.violations()).hasSize(1);
+    var violation = failure.violations().get(0);
+    assertThat(violation.check()).isEqualTo("retention-slab-short");
+    assertThat(violation.message()).contains("standard", "foreign", "1", "2");
+  }
+
+  @Test
+  void slabWithoutATagIsAViolationNotANullPointer() throws Exception {
+    var failure =
+        failWith(
+            root -> {
+              retentionWithSlabs(root, 1, 1);
+              ((ObjectNode) root.at("/presets/0/retention/slabs/1")).remove("tag");
+            });
+
+    assertThat(failure.violations()).extracting("check").contains("retention-slab-no-tag");
+    assertThat(failure.violations())
+        .allSatisfy(v -> assertThat(v.message()).doesNotContain("NullPointer"));
+  }
+
+  @ParameterizedTest(name = "null in {0}")
+  @CsvSource({
+    "/presets/0/incrementLadder",
+    "/presets/0/roleMinimums",
+    "/presets/0/retention/tagLimits",
+    "/presets/0/retention/slabs",
+    "/presets/0/retention/slabs/0/prices"
+  })
+  void nullValueInPresetCollectionIsAViolationNotACrash(String pointer) throws Exception {
+    var failure =
+        failWith(
+            root -> {
+              retentionWithSlabs(root, 1, 1);
+              var node = root.at(pointer);
+              if (node instanceof ArrayNode array) {
+                array.addNull();
+              } else {
+                ((ObjectNode) node).putNull("x");
+              }
+            });
+
+    assertThat(failure.violations()).hasSize(1);
+    assertThat(failure.violations().get(0).check()).isEqualTo("invalid-section");
+    assertThat(failure.violations().get(0).message())
+        .doesNotContain("NullPointer")
+        .contains("standard");
+  }
+
   @Test
   void parseAndValidationViolationsAreReportedTogether() throws Exception {
     var failure =

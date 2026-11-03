@@ -21,3 +21,9 @@ make test (server verify + web 40/40) and make lint (spotless, eslint, check-agn
 
 ## Verdict
 pass. No blocking items. Two minor security notes (non-blocking) and two non-blocking QA notes (AC-7, AC-19).
+
+## Review fixes
+- Uncapped slab held 1 price against a limit of 2: pack now lists [400, 400]; validator adds `retention-slab-short`.
+- Band rules divided by in-playing-xi with no guard: `BandedRate.rate` returns empty for a denominator of 0 or less.
+- Slab with no tag: validator reports `retention-slab-no-tag` instead of a NullPointerException.
+- Null elements in preset collections: PresetDto rejects them with a named message, reported as `invalid-section`.

@@ -4,6 +4,7 @@ import com.fasterxml.jackson.annotation.JsonSubTypes;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import java.math.BigDecimal;
 import java.util.List;
+import java.util.Optional;
 
 /**
  * One scoring rule. The JSON {@code type} names one of the six primitives; evaluating a rule is the
@@ -65,6 +66,20 @@ public sealed interface RuleDto {
       implements RuleDto {
     public BandedRate {
       bands = bands == null ? List.of() : List.copyOf(bands);
+    }
+
+    /**
+     * The rate to look up in the bands: numerator times scale, divided by the denominator, to 2 dp.
+     * Empty when the denominator is not above zero (for example a manual entry that left the
+     * denominator stat at 0), which means no band points. {@code minVolume} does not guard this, as
+     * it reads a different stat.
+     */
+    public Optional<BigDecimal> rate(BigDecimal numerator, BigDecimal denominator) {
+      if (numerator == null || denominator == null || denominator.signum() <= 0) {
+        return Optional.empty();
+      }
+      return Optional.of(
+          numerator.multiply(scale).divide(denominator, 2, java.math.RoundingMode.HALF_UP));
     }
   }
 

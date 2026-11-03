@@ -138,7 +138,7 @@ class CricketPackTest {
           assertThat(r.slabs())
               .containsExactly(
                   new PresetDto.Slab("capped", List.of(1800L, 1400L, 1100L, 1800L, 1400L)),
-                  new PresetDto.Slab("uncapped", List.of(400L)));
+                  new PresetDto.Slab("uncapped", List.of(400L, 400L)));
           assertThat(r.rtmFromSeason()).isEqualTo(2);
           assertThat(r.rtmCounterRaise()).isTrue();
           assertThat(preset(pack, "standard").poolSize()).isNull();
@@ -299,6 +299,13 @@ class CricketPackTest {
         .findFirst();
   }
 
+  /** Points for raw stats: no points when the volume is short or the denominator is not above 0. */
+  static Optional<BigDecimal> bandPointsFor(
+      RuleDto.BandedRate rule, String numerator, String denominator, long volume) {
+    return rule.rate(new BigDecimal(numerator), new BigDecimal(denominator))
+        .flatMap(rate -> bandPoints(rule, rate.toPlainString(), volume));
+  }
+
   static void assertBand(RuleDto.BandedRate rule, String rate, long volume, String expected) {
     var got = bandPoints(rule, rate, volume);
     if (expected == null) {
@@ -333,6 +340,25 @@ class CricketPackTest {
           assertBand(rule, "300", 20, "6");
           assertBand(rule, "170.01", 9, null);
           assertBand(rule, "10", 10, "-4");
+        });
+  }
+
+  @Test
+  void bandRulesGiveNoPointsInsteadOfDividingByZeroWhenTheDenominatorIsZero() {
+    withPack(
+        pack -> {
+          for (var id : List.of("strike-rate-bands", "economy-bands")) {
+            var rule = rule(pack, id, RuleDto.BandedRate.class);
+            assertThat(rule.rate(new BigDecimal("150"), BigDecimal.ZERO)).isEmpty();
+            assertThat(rule.rate(new BigDecimal("150"), new BigDecimal("-1"))).isEmpty();
+            assertThat(rule.rate(new BigDecimal("150"), null)).isEmpty();
+            assertThat(rule.rate(new BigDecimal("150"), BigDecimal.ONE))
+                .hasValueSatisfying(r -> assertThat(r).isEqualByComparingTo("150"));
+            assertThat(bandPointsFor(rule, "150", "0", 99)).isEmpty();
+          }
+          var strike = rule(pack, "strike-rate-bands", RuleDto.BandedRate.class);
+          assertThat(bandPointsFor(strike, "150", "1", 20))
+              .hasValueSatisfying(p -> assertThat(p).isEqualByComparingTo("4"));
         });
   }
 

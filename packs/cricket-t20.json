@@ -38,7 +38,7 @@
         "tagLimits": {"capped": 5, "uncapped": 2},
         "slabs": [
           {"tag": "capped", "prices": [1800, 1400, 1100, 1800, 1400]},
-          {"tag": "uncapped", "prices": [400]}
+          {"tag": "uncapped", "prices": [400, 400]}
         ],
         "rtmFromSeason": 2,
         "rtmCounterRaise": true
@@ -66,7 +66,7 @@
         "tagLimits": {"capped": 5, "uncapped": 2},
         "slabs": [
           {"tag": "capped", "prices": [1800, 1400, 1100, 1800, 1400]},
-          {"tag": "uncapped", "prices": [400]}
+          {"tag": "uncapped", "prices": [400, 400]}
         ],
         "rtmFromSeason": 2,
         "rtmCounterRaise": true

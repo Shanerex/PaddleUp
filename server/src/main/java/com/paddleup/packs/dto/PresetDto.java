@@ -46,8 +46,29 @@ public record PresetDto(
   }
 
   public PresetDto {
-    incrementLadder = incrementLadder == null ? List.of() : List.copyOf(incrementLadder);
-    roleMinimums = roleMinimums == null ? Map.of() : Map.copyOf(roleMinimums);
+    incrementLadder = copyOf("incrementLadder", incrementLadder);
+    roleMinimums = copyOf("roleMinimums", roleMinimums);
+  }
+
+  /** Immutable copy; null reads as empty and a null element or value is rejected by name. */
+  private static <T> List<T> copyOf(String field, List<T> list) {
+    if (list == null) {
+      return List.of();
+    }
+    if (list.stream().anyMatch(java.util.Objects::isNull)) {
+      throw new IllegalArgumentException(field + " must not contain null");
+    }
+    return List.copyOf(list);
+  }
+
+  private static <K, V> Map<K, V> copyOf(String field, Map<K, V> map) {
+    if (map == null) {
+      return Map.of();
+    }
+    if (map.values().stream().anyMatch(java.util.Objects::isNull)) {
+      throw new IllegalArgumentException(field + " must not contain a null value");
+    }
+    return Map.copyOf(map);
   }
 
   /** Amounts are shown as the value divided by {@code divisor}, followed by {@code label}. */
@@ -75,15 +96,15 @@ public record PresetDto(
     }
 
     public Retention {
-      tagLimits = tagLimits == null ? Map.of() : Map.copyOf(tagLimits);
-      slabs = slabs == null ? List.of() : List.copyOf(slabs);
+      tagLimits = copyOf("retention.tagLimits", tagLimits);
+      slabs = copyOf("retention.slabs", slabs);
     }
   }
 
   /** The price of each successive retention pick of one tag, in the smallest currency unit. */
   public record Slab(String tag, List<Long> prices) {
     public Slab {
-      prices = prices == null ? List.of() : List.copyOf(prices);
+      prices = copyOf("slab prices", prices);
     }
   }
 }
