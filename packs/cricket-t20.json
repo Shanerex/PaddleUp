@@ -1,0 +1,180 @@
+{
+  "schemaVersion": 1,
+  "id": "cricket-t20",
+  "version": "1.0.0",
+  "roles": [
+    {"id": "BAT", "label": "Batter"},
+    {"id": "BOWL", "label": "Bowler"},
+    {"id": "AR", "label": "All-rounder"},
+    {"id": "WK", "label": "Wicket-keeper"}
+  ],
+  "tags": [
+    {"id": "capped", "label": "Capped"},
+    {"id": "uncapped", "label": "Uncapped"},
+    {"id": "overseas", "label": "Overseas"}
+  ],
+  "restrictedCategories": [
+    {"id": "overseas-cap", "label": "Overseas players", "tag": "overseas", "max": 8}
+  ],
+  "presets": [
+    {
+      "id": "standard",
+      "label": "Standard auction",
+      "purse": 12000,
+      "currencyCode": "INR",
+      "displayUnit": {"label": "Crore", "divisor": 100},
+      "incrementLadder": [
+        {"from": 0, "step": 5},
+        {"from": 100, "step": 10},
+        {"from": 200, "step": 20},
+        {"from": 500, "step": 25}
+      ],
+      "squadMin": 18,
+      "squadMax": 25,
+      "roleMinimums": {"WK": 2, "BAT": 5, "BOWL": 5, "AR": 3},
+      "retention": {
+        "maxRetentions": 6,
+        "rtmCards": 6,
+        "tagLimits": {"capped": 5, "uncapped": 2},
+        "slabs": [
+          {"tag": "capped", "prices": [1800, 1400, 1100, 1800, 1400]},
+          {"tag": "uncapped", "prices": [400]}
+        ],
+        "rtmFromSeason": 2,
+        "rtmCounterRaise": true
+      }
+    },
+    {
+      "id": "short-pool",
+      "label": "Short pool (80 players)",
+      "purse": 12000,
+      "currencyCode": "INR",
+      "displayUnit": {"label": "Crore", "divisor": 100},
+      "incrementLadder": [
+        {"from": 0, "step": 5},
+        {"from": 100, "step": 10},
+        {"from": 200, "step": 20},
+        {"from": 500, "step": 25}
+      ],
+      "squadMin": 18,
+      "squadMax": 25,
+      "poolSize": 80,
+      "roleMinimums": {"WK": 2, "BAT": 5, "BOWL": 5, "AR": 3},
+      "retention": {
+        "maxRetentions": 6,
+        "rtmCards": 6,
+        "tagLimits": {"capped": 5, "uncapped": 2},
+        "slabs": [
+          {"tag": "capped", "prices": [1800, 1400, 1100, 1800, 1400]},
+          {"tag": "uncapped", "prices": [400]}
+        ],
+        "rtmFromSeason": 2,
+        "rtmCounterRaise": true
+      }
+    }
+  ],
+  "statSchema": [
+    {"id": "in-playing-xi", "label": "In playing XI", "kind": "integer", "unit": "flag"},
+    {"id": "runs", "label": "Runs", "kind": "integer", "unit": "runs"},
+    {"id": "balls-faced", "label": "Balls faced", "kind": "integer", "unit": "balls"},
+    {"id": "fours", "label": "Fours", "kind": "integer", "unit": "boundaries"},
+    {"id": "sixes", "label": "Sixes", "kind": "integer", "unit": "sixes"},
+    {"id": "duck", "label": "Dismissed for a duck", "kind": "integer", "unit": "flag"},
+    {"id": "strike-rate", "label": "Strike rate", "kind": "decimal", "unit": "runs per 100 balls"},
+    {
+      "id": "wickets", "label": "Wickets", "kind": "integer", "unit": "wickets",
+      "eventTypes": ["bowled", "lbw", "caught", "stumped", "hit-wicket"]
+    },
+    {"id": "balls-bowled", "label": "Balls bowled", "kind": "integer", "unit": "balls"},
+    {"id": "runs-conceded", "label": "Runs conceded", "kind": "integer", "unit": "runs"},
+    {"id": "maidens", "label": "Maidens", "kind": "integer", "unit": "overs"},
+    {"id": "economy", "label": "Economy rate", "kind": "decimal", "unit": "runs per over"},
+    {"id": "catches", "label": "Catches", "kind": "integer", "unit": "catches"},
+    {"id": "stumpings", "label": "Stumpings", "kind": "integer", "unit": "stumpings"},
+    {
+      "id": "run-outs", "label": "Run-outs", "kind": "integer", "unit": "run-outs",
+      "eventTypes": ["direct", "assisted"]
+    },
+    {"id": "player-of-match", "label": "Player of the Match", "kind": "integer", "unit": "flag"}
+  ],
+  "defaultRuleSet": {
+    "rules": [
+      {"type": "per-unit", "id": "runs-points", "stat": "runs", "points": 1},
+      {"type": "per-unit", "id": "four-bonus", "stat": "fours", "points": 2},
+      {"type": "per-unit", "id": "six-bonus", "stat": "sixes", "points": 4},
+      {
+        "type": "threshold-bonus", "id": "fifty-bonus", "stat": "runs",
+        "tiers": [{"atLeast": 50, "points": 10}]
+      },
+      {
+        "type": "threshold-bonus", "id": "century-bonus", "stat": "runs",
+        "tiers": [{"atLeast": 100, "points": 20}]
+      },
+      {
+        "type": "role-conditional", "id": "duck-penalty", "roles": ["BAT", "WK", "AR"],
+        "rule": {"type": "per-unit", "id": "duck-points", "stat": "duck", "points": -5}
+      },
+      {
+        "type": "banded-rate", "id": "strike-rate-bands", "numerator": "strike-rate",
+        "denominator": "in-playing-xi", "scale": 1,
+        "minVolume": {"stat": "balls-faced", "atLeast": 10},
+        "bands": [
+          {"from": 170.01, "to": 100000, "points": 6},
+          {"from": 150, "to": 170.01, "points": 4},
+          {"from": 130, "to": 150, "points": 2},
+          {"from": 60, "to": 70, "points": -2},
+          {"from": 0, "to": 60, "points": -4}
+        ]
+      },
+      {"type": "per-unit", "id": "wicket-points", "stat": "wickets", "points": 25},
+      {
+        "type": "event-type-bonus", "id": "lbw-bonus", "stat": "wickets",
+        "eventType": "lbw", "points": 8
+      },
+      {
+        "type": "event-type-bonus", "id": "bowled-bonus", "stat": "wickets",
+        "eventType": "bowled", "points": 8
+      },
+      {
+        "type": "threshold-bonus", "id": "three-wicket-bonus", "stat": "wickets",
+        "tiers": [{"atLeast": 3, "points": 10}]
+      },
+      {
+        "type": "threshold-bonus", "id": "five-wicket-bonus", "stat": "wickets",
+        "tiers": [{"atLeast": 5, "points": 20}]
+      },
+      {"type": "per-unit", "id": "maiden-points", "stat": "maidens", "points": 12},
+      {
+        "type": "banded-rate", "id": "economy-bands", "numerator": "economy",
+        "denominator": "in-playing-xi", "scale": 1,
+        "minVolume": {"stat": "balls-bowled", "atLeast": 12},
+        "bands": [
+          {"from": 0, "to": 5, "points": 6},
+          {"from": 5, "to": 6, "points": 4},
+          {"from": 6, "to": 7, "points": 2},
+          {"from": 10.01, "to": 12.01, "points": -2},
+          {"from": 12.01, "to": 1000, "points": -4}
+        ]
+      },
+      {"type": "per-unit", "id": "catch-points", "stat": "catches", "points": 8},
+      {
+        "type": "threshold-bonus", "id": "catch-tier-bonus", "stat": "catches",
+        "tiers": [{"atLeast": 3, "points": 4}]
+      },
+      {"type": "per-unit", "id": "stumping-points", "stat": "stumpings", "points": 12},
+      {
+        "type": "event-type-bonus", "id": "direct-run-out-bonus", "stat": "run-outs",
+        "eventType": "direct", "points": 12
+      },
+      {
+        "type": "event-type-bonus", "id": "assisted-run-out-bonus", "stat": "run-outs",
+        "eventType": "assisted", "points": 6
+      },
+      {"type": "per-unit", "id": "player-of-match-points", "stat": "player-of-match", "points": 25},
+      {"type": "appearance-bonus", "id": "appearance-bonus", "points": 4}
+    ]
+  },
+  "appearanceRule": {"stat": "in-playing-xi", "atLeast": 1},
+  "terminology": {"lineup": "Playing XI", "match": "Match", "competition": "League"},
+  "aiDomainContext": "## Head Coach knowledge\nT20 gives each side 20 overs, so every ball is worth something and role value is about impact per ball.\n- Powerplay hitting: in the first 6 overs only two fielders may stand outside the circle, so top-order batters who attack there add outsized runs.\n- Death-over bowling: overs 17 to 20 are the hardest to bowl; bowlers who keep economy low and take wickets there are scarce and valuable.\n- Finisher role: a lower-order batter who scores quickly under pressure. Strike rate matters more than volume.\n- Keeper-batter scarcity: a wicket-keeper who bats in the top six is rare, and every squad must carry at least 2 keepers, so the good ones are bid up.\n- Venue and conditions: small grounds and flat pitches favour batters and punish bowlers; slow, turning pitches favour spinners and economy.\n- Overseas-slot opportunity cost: a squad may hold at most 8 overseas players, so a very expensive overseas player uses a scarce slot that a cheaper domestic player could fill.\n## Stat glossary\nRates are held to 2 dp. A substitute who bats, bowls or fields counts as in the playing XI (impact player).\n- in-playing-xi: 1 when the player was in the playing XI or came on as an impact-player substitute and batted, bowled or fielded; otherwise 0.\n- runs: runs the batter scored.\n- balls-faced: legal balls the batter faced.\n- fours: boundaries hit for four.\n- sixes: boundaries hit for six.\n- duck: 1 when a batter was dismissed without scoring, else 0.\n- strike-rate: runs per 100 balls faced, supplied by the data feed or entered by hand, to 2 dp.\n- wickets: dismissals credited to the bowler; each can carry a type such as bowled, lbw, caught, stumped or hit-wicket.\n- balls-bowled: legal balls the bowler delivered, as a whole number; 2 overs is 12 balls.\n- runs-conceded: runs scored off the bowler.\n- maidens: overs in which the bowler conceded no runs.\n- economy: runs conceded per over, supplied or entered by hand, to 2 dp.\n- catches: catches taken by a fielder.\n- stumpings: stumpings made by the keeper.\n- run-outs: run-outs a fielder took part in, typed direct (own throw or hit) or assisted.\n- player-of-match: 1 for the match's Player of the Match, else 0.\n## Fit heuristics\n- Slot scarcity: the squad needs at least 2 keepers, 5 batters, 5 bowlers and 3 all-rounders; weigh a bid against the slots still to fill, not only the player's quality.\n- Overseas-slot opportunity cost: with 8 overseas slots, compare an overseas bid with the best domestic option for the same role.\n- Keeper-batter scarcity: a keeper who bats high is worth a premium because few exist.\n- Balance: a squad heavy in one role leaves too few strong bowlers or batters for the Playing XI.\n- Purse pacing: spending too much early leaves too little for the minimum squad of 18."
+}
