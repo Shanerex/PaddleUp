@@ -40,16 +40,21 @@ class PackValidator {
                 .formatted(node.asText(), SUPPORTED_SCHEMA_VERSIONS)));
   }
 
-  /** Applies every check to a pack that parsed without violations. */
-  List<PackViolation> validate(PackDto pack, String file) {
+  /**
+   * Applies every check to a parsed pack. A section named in {@code partial} lost entries while
+   * parsing, so a check that looks something up in it is skipped; the parse already reported the
+   * gap.
+   */
+  List<PackViolation> validate(PackDto pack, String file, Set<String> partial) {
     var violations = new ArrayList<PackViolation>();
-    checkReferences(pack, file, violations);
-    checkStructure(pack, file, violations);
+    checkReferences(pack, file, partial, violations);
+    checkStructure(pack, file, partial, violations);
     return violations;
   }
 
   /** Structural checks: unique ids, sane bounds, ordered ladders, valid tag and stat references. */
-  private void checkStructure(PackDto pack, String file, List<PackViolation> out) {
+  private void checkStructure(
+      PackDto pack, String file, Set<String> partial, List<PackViolation> out) {
     uniqueIds(pack, file, "roles", pack.roles().stream().map(RoleDto::id).toList(), out);
     uniqueIds(pack, file, "tags", pack.tags().stream().map(TagDto::id).toList(), out);
     uniqueIds(
@@ -68,6 +73,35 @@ class PackValidator {
         out);
 
     for (PresetDto preset : pack.presets()) {
+      if (preset.squadMin() < 0) {
+        out.add(
+            violation(
+                file,
+                pack,
+                "negative-squad-min",
+                "preset '%s' has a negative squad min (%d)"
+                    .formatted(preset.id(), preset.squadMin())));
+      }
+      if (preset.displayUnit().divisor() <= 0) {
+        out.add(
+            violation(
+                file,
+                pack,
+                "display-divisor",
+                "preset '%s' has display divisor %d; it must be above zero"
+                    .formatted(preset.id(), preset.displayUnit().divisor())));
+      }
+      for (var step : preset.incrementLadder()) {
+        if (step.step() <= 0) {
+          out.add(
+              violation(
+                  file,
+                  pack,
+                  "ladder-step",
+                  "preset '%s' increment ladder has step %d from %d; it must be above zero"
+                      .formatted(preset.id(), step.step(), step.from())));
+        }
+      }
       if (preset.squadMin() > preset.squadMax()) {
         out.add(
             violation(
@@ -105,7 +139,16 @@ class PackValidator {
 
     var tagIds = pack.tags().stream().map(TagDto::id).collect(Collectors.toSet());
     for (RestrictedCategoryDto category : pack.restrictedCategories()) {
-      if (!tagIds.contains(category.tag())) {
+      if (category.max() < 0) {
+        out.add(
+            violation(
+                file,
+                pack,
+                "negative-category-max",
+                "restricted category '%s' has a negative max (%d)"
+                    .formatted(category.id(), category.max())));
+      }
+      if (!partial.contains("tags") && !tagIds.contains(category.tag())) {
         out.add(
             violation(
                 file,
@@ -129,6 +172,7 @@ class PackValidator {
 
     var appearance = pack.appearanceRule();
     if (appearance != null
+        && !partial.contains("statSchema")
         && pack.statSchema().stream().noneMatch(st -> st.id().equals(appearance.stat()))) {
       out.add(
           violation(
@@ -157,7 +201,10 @@ class PackValidator {
   }
 
   /** FR-143: roles, role minimums and rule stats must all exist in the pack. */
-  private void checkReferences(PackDto pack, String file, List<PackViolation> out) {
+  private void checkReferences(
+      PackDto pack, String file, Set<String> partial, List<PackViolation> out) {
+    var rolesPartial = partial.contains("roles");
+    var statsPartial = partial.contains("statSchema");
     var roleIds = pack.roles().stream().map(RoleDto::id).collect(Collectors.toSet());
     var stats =
         pack.statSchema().stream()
@@ -167,7 +214,7 @@ class PackValidator {
       switch (rule) {
         case RuleDto.RoleConditional r ->
             r.roles().stream()
-                .filter(role -> !roleIds.contains(role))
+                .filter(role -> !rolesPartial && !roleIds.contains(role))
                 .forEach(
                     role ->
                         out.add(
@@ -177,15 +224,17 @@ class PackValidator {
                                 "unknown-role",
                                 "rule '%s' names role '%s', which is not in the role list"
                                     .formatted(r.id(), role))));
-        case RuleDto.PerUnit r -> requireStat(pack, file, stats, r.id(), r.stat(), out);
-        case RuleDto.ThresholdBonus r -> requireStat(pack, file, stats, r.id(), r.stat(), out);
+        case RuleDto.PerUnit r ->
+            requireStat(pack, file, stats, statsPartial, r.id(), r.stat(), out);
+        case RuleDto.ThresholdBonus r ->
+            requireStat(pack, file, stats, statsPartial, r.id(), r.stat(), out);
         case RuleDto.BandedRate r -> {
-          requireStat(pack, file, stats, r.id(), r.numerator(), out);
-          requireStat(pack, file, stats, r.id(), r.denominator(), out);
-          requireStat(pack, file, stats, r.id(), r.minVolume().stat(), out);
+          requireStat(pack, file, stats, statsPartial, r.id(), r.numerator(), out);
+          requireStat(pack, file, stats, statsPartial, r.id(), r.denominator(), out);
+          requireStat(pack, file, stats, statsPartial, r.id(), r.minVolume().stat(), out);
         }
         case RuleDto.EventTypeBonus r -> {
-          if (requireStat(pack, file, stats, r.id(), r.stat(), out)
+          if (requireStat(pack, file, stats, statsPartial, r.id(), r.stat(), out)
               && !stats.get(r.stat()).eventTypes().contains(r.eventType())) {
             out.add(
                 violation(
@@ -203,7 +252,7 @@ class PackValidator {
     for (PresetDto preset : pack.presets()) {
       preset.roleMinimums().keySet().stream()
           .sorted()
-          .filter(role -> !roleIds.contains(role))
+          .filter(role -> !rolesPartial && !roleIds.contains(role))
           .forEach(
               role ->
                   out.add(
@@ -230,11 +279,15 @@ class PackValidator {
       PackDto pack,
       String file,
       Map<String, StatDto> stats,
+      boolean statsPartial,
       String ruleId,
       String stat,
       List<PackViolation> out) {
     if (stats.containsKey(stat)) {
       return true;
+    }
+    if (statsPartial) {
+      return false;
     }
     out.add(
         violation(

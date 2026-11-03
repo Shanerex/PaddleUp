@@ -19,6 +19,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 
 /**
  * Turns pack JSON trees into dto records, one section and one rule at a time, so a broken piece
@@ -26,10 +27,19 @@ import java.util.Optional;
  */
 public class PackParser {
 
-  /** A parsed value plus the violations met while producing it; the value omits broken parts. */
-  public record Parsed<T>(T value, List<PackViolation> violations) {
+  /**
+   * A parsed value plus the violations met while producing it; the value omits broken parts. {@code
+   * partialSections} names the pack sections that lost an entry or all of it, so later checks can
+   * skip what they would wrongly report against the gap.
+   */
+  public record Parsed<T>(T value, List<PackViolation> violations, Set<String> partialSections) {
     public Parsed {
       violations = List.copyOf(violations);
+      partialSections = Set.copyOf(partialSections);
+    }
+
+    Parsed(T value, List<PackViolation> violations) {
+      this(value, violations, Set.of());
     }
   }
 
@@ -62,22 +72,26 @@ public class PackParser {
     var schemaVersion = in.<Integer>read("schemaVersion", type(Integer.class), 0);
     var id = in.<String>read("id", type(String.class), null);
     var version = in.<String>read("version", type(String.class), null);
-    var roles = in.read("roles", list(RoleDto.class), List.<RoleDto>of());
-    var tags = in.read("tags", list(TagDto.class), List.<TagDto>of());
+    var roles = in.track("roles", () -> in.readEntries("roles", RoleDto.class, LABELLED));
+    var tags = in.track("tags", () -> in.readEntries("tags", TagDto.class, LABELLED));
     var categories =
-        in.read(
+        in.track(
             "restrictedCategories",
-            list(RestrictedCategoryDto.class),
-            List.<RestrictedCategoryDto>of());
-    var presets = in.read("presets", list(PresetDto.class), List.<PresetDto>of());
-    var stats = in.read("statSchema", list(StatDto.class), List.<StatDto>of());
+            () ->
+                in.readEntries(
+                    "restrictedCategories",
+                    RestrictedCategoryDto.class,
+                    Shape.of("id", "label", "tag", "max")));
+    var presets = in.track("presets", () -> in.readEntries("presets", PresetDto.class, PRESET));
+    var stats =
+        in.track(
+            "statSchema",
+            () -> in.readEntries("statSchema", StatDto.class, Shape.of("id", "label", "kind")));
     var appearance =
-        in.<AppearanceRuleDto>read("appearanceRule", type(AppearanceRuleDto.class), null);
-    var terminology =
-        in.read(
-            "terminology",
-            mapper.getTypeFactory().constructMapType(Map.class, String.class, String.class),
-            Map.<String, String>of());
+        in.track(
+            "appearanceRule",
+            () -> in.readEntry("appearanceRule", AppearanceRuleDto.class, APPEARANCE));
+    var terminology = in.readTerminology();
     var aiContext = in.<String>read("aiDomainContext", type(String.class), null);
     if (aiContext != null && aiContext.isBlank()) {
       violations.add(
@@ -132,15 +146,93 @@ public class PackParser {
             adapterKey,
             terminology,
             aiContext);
-    return new Parsed<>(pack, violations);
+    return new Parsed<>(pack, violations, in.partial);
   }
 
   private JavaType type(Class<?> type) {
     return mapper.constructType(type);
   }
 
-  private <T> JavaType list(Class<T> type) {
-    return mapper.getTypeFactory().constructCollectionType(List.class, type);
+  private static final Shape LABELLED = Shape.of("id", "label");
+  private static final Shape APPEARANCE = Shape.of("stat", "atLeast");
+  private static final Shape PRESET =
+      Shape.of(
+              "id",
+              "label",
+              "purse",
+              "currencyCode",
+              "displayUnit",
+              "incrementLadder",
+              "squadMin",
+              "squadMax",
+              "retention")
+          .object("displayUnit", Shape.of("label", "divisor"))
+          .each("incrementLadder", Shape.of("from", "step"))
+          .object("retention", Shape.of("maxRetentions", "rtmCards"));
+
+  /**
+   * The keys a JSON object must carry (present and not null), with the shapes of its nested objects
+   * and of the entries of its arrays, which must not be empty.
+   */
+  private record Shape(List<String> keys, Map<String, Shape> objects, Map<String, Shape> arrays) {
+
+    static Shape of(String... keys) {
+      return new Shape(List.of(keys), Map.of(), Map.of());
+    }
+
+    Shape object(String key, Shape shape) {
+      var all = new java.util.HashMap<>(objects);
+      all.put(key, shape);
+      return new Shape(keys, all, arrays);
+    }
+
+    Shape each(String key, Shape shape) {
+      var all = new java.util.HashMap<>(arrays);
+      all.put(key, shape);
+      return new Shape(keys, objects, all);
+    }
+
+    /** Describes the first thing wrong with the node as a phrase after its name, or null. */
+    String problem(JsonNode node) {
+      return problem(node, "");
+    }
+
+    private String problem(JsonNode node, String path) {
+      for (String key : keys) {
+        var value = node.get(key);
+        if (value == null || value.isNull()) {
+          return "is missing '%s%s'".formatted(path, key);
+        }
+      }
+      for (var nested : objects.entrySet()) {
+        var at = path + nested.getKey();
+        var value = node.get(nested.getKey());
+        if (value == null || !value.isObject()) {
+          return "has '%s' that is not an object".formatted(at);
+        }
+        var problem = nested.getValue().problem(value, at + ".");
+        if (problem != null) {
+          return problem;
+        }
+      }
+      for (var nested : arrays.entrySet()) {
+        var at = path + nested.getKey();
+        var value = node.get(nested.getKey());
+        if (value == null || !value.isArray() || value.isEmpty()) {
+          return "has '%s' that is not a non-empty array".formatted(at);
+        }
+        for (int i = 0; i < value.size(); i++) {
+          if (!value.get(i).isObject()) {
+            return "has '%s[%d]' that is not an object".formatted(at, i);
+          }
+          var problem = nested.getValue().problem(value.get(i), "%s[%d].".formatted(at, i));
+          if (problem != null) {
+            return problem;
+          }
+        }
+      }
+      return null;
+    }
   }
 
   /** Reads named sections of one pack file, collecting violations. */
@@ -149,12 +241,23 @@ public class PackParser {
     private final String file;
     private final String packId;
     private final List<PackViolation> violations;
+    private final Set<String> partial = new java.util.TreeSet<>();
 
     Section(JsonNode root, String file, String packId, List<PackViolation> violations) {
       this.root = root;
       this.file = file;
       this.packId = packId;
       this.violations = violations;
+    }
+
+    /** Performs a section read and records the section as partial when it added a violation. */
+    <T> T track(String name, java.util.function.Supplier<T> read) {
+      int before = violations.size();
+      var value = read.get();
+      if (violations.size() > before) {
+        partial.add(name);
+      }
+      return value;
     }
 
     boolean present(String name) {
@@ -165,6 +268,92 @@ public class PackParser {
         return false;
       }
       return true;
+    }
+
+    /**
+     * Reads a section that is an array of objects one entry at a time, so a broken entry is
+     * reported by position and id and left out instead of discarding its siblings.
+     */
+    <T> List<T> readEntries(String name, Class<T> type, Shape shape) {
+      if (!present(name)) {
+        return List.of();
+      }
+      var node = root.get(name);
+      if (!node.isArray()) {
+        violations.add(
+            new PackViolation(
+                file, packId, "invalid-section", "section '" + name + "' must be an array"));
+        return List.of();
+      }
+      var entries = new ArrayList<T>();
+      for (int i = 0; i < node.size(); i++) {
+        var entry = readOne(node.get(i), "%s[%d]".formatted(name, i), type, shape);
+        if (entry != null) {
+          entries.add(entry);
+        }
+      }
+      return entries;
+    }
+
+    /** Reads a section that is one object; null when it is missing or broken. */
+    <T> T readEntry(String name, Class<T> type, Shape shape) {
+      return present(name) ? readOne(root.get(name), name, type, shape) : null;
+    }
+
+    private <T> T readOne(JsonNode node, String at, Class<T> type, Shape shape) {
+      if (!node.isObject()) {
+        violations.add(
+            new PackViolation(file, packId, "invalid-section", at + " must be an object"));
+        return null;
+      }
+      var name =
+          node.path("id").isTextual() ? "%s ('%s')".formatted(at, node.get("id").asText()) : at;
+      var problem = shape.problem(node);
+      if (problem != null) {
+        violations.add(new PackViolation(file, packId, "invalid-section", name + " " + problem));
+        return null;
+      }
+      try {
+        return mapper.treeToValue(node, type);
+      } catch (Exception e) {
+        violations.add(
+            new PackViolation(
+                file,
+                packId,
+                "invalid-section",
+                "%s cannot be read: %s".formatted(name, firstLine(e.getMessage()))));
+        return null;
+      }
+    }
+
+    /** Reads the terminology map; every value must be a string. */
+    Map<String, String> readTerminology() {
+      if (!present("terminology")) {
+        return Map.of();
+      }
+      var node = root.get("terminology");
+      if (!node.isObject()) {
+        violations.add(
+            new PackViolation(
+                file, packId, "invalid-section", "section 'terminology' must be an object"));
+        return Map.of();
+      }
+      var terms = new java.util.LinkedHashMap<String, String>();
+      node.fields()
+          .forEachRemaining(
+              field -> {
+                if (field.getValue().isTextual()) {
+                  terms.put(field.getKey(), field.getValue().asText());
+                } else {
+                  violations.add(
+                      new PackViolation(
+                          file,
+                          packId,
+                          "invalid-section",
+                          "terminology '%s' must be a string".formatted(field.getKey())));
+                }
+              });
+      return terms;
     }
 
     @SuppressWarnings("unchecked")
@@ -236,14 +425,52 @@ public class PackParser {
   private static String missingField(RuleDto rule) {
     return switch (rule) {
       case RuleDto.PerUnit r -> anyNull("id", r.id(), "stat", r.stat(), "points", r.points());
-      case RuleDto.ThresholdBonus r -> anyNull("id", r.id(), "stat", r.stat());
-      case RuleDto.BandedRate r ->
-          anyNull(
-              "id", r.id(),
-              "numerator", r.numerator(),
-              "denominator", r.denominator(),
-              "scale", r.scale(),
-              "minVolume", r.minVolume());
+      case RuleDto.ThresholdBonus r -> {
+        var own = anyNull("id", r.id(), "stat", r.stat());
+        if (own == null && r.tiers().isEmpty()) {
+          own = "tiers";
+        }
+        for (var tier : r.tiers()) {
+          own =
+              own != null
+                  ? own
+                  : anyNull("tiers.atLeast", tier.atLeast(), "tiers.points", tier.points());
+        }
+        yield own;
+      }
+      case RuleDto.BandedRate r -> {
+        var own =
+            anyNull(
+                "id", r.id(),
+                "numerator", r.numerator(),
+                "denominator", r.denominator(),
+                "scale", r.scale(),
+                "minVolume", r.minVolume());
+        if (own == null) {
+          own =
+              anyNull(
+                  "minVolume.stat",
+                  r.minVolume().stat(),
+                  "minVolume.atLeast",
+                  r.minVolume().atLeast());
+        }
+        if (own == null && r.bands().isEmpty()) {
+          own = "bands";
+        }
+        for (var band : r.bands()) {
+          own =
+              own != null
+                  ? own
+                  : anyNull(
+                      "bands.from",
+                      band.from(),
+                      "bands.to",
+                      band.to(),
+                      "bands.points",
+                      band.points());
+        }
+        yield own;
+      }
       case RuleDto.RoleConditional r -> {
         var own = anyNull("id", r.id(), "rule", r.rule());
         yield own != null ? own : missingField(r.rule());

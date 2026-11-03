@@ -63,21 +63,26 @@ public class PackLoader {
           continue;
         }
       }
-      if (parsed.violations().isEmpty()) {
-        violations.addAll(validator.validate(pack, file.name()));
-        Optional<DataAdapter> adapter = Optional.empty();
-        if (pack.adapterKey().isPresent()) {
-          adapter = Optional.ofNullable(byKey.get(pack.adapterKey().get()));
-          if (adapter.isEmpty()) {
-            violations.add(
-                new PackViolation(
-                    file.name(),
-                    pack.id(),
-                    "unknown-adapter-key",
-                    "adapter key '%s' matches no registered data adapter; registered: %s"
-                        .formatted(pack.adapterKey().get(), new TreeSet<>(byKey.keySet()))));
-          }
+      // Validate whatever parsed, so one startup error lists every problem; a broken entry is left
+      // out of
+      // the pack, so a check that needs it may add a follow-on violation.
+      var fileViolations =
+          new ArrayList<>(validator.validate(pack, file.name(), parsed.partialSections()));
+      Optional<DataAdapter> adapter = Optional.empty();
+      if (pack.adapterKey().isPresent()) {
+        adapter = Optional.ofNullable(byKey.get(pack.adapterKey().get()));
+        if (adapter.isEmpty()) {
+          fileViolations.add(
+              new PackViolation(
+                  file.name(),
+                  pack.id(),
+                  "unknown-adapter-key",
+                  "adapter key '%s' matches no registered data adapter; registered: %s"
+                      .formatted(pack.adapterKey().get(), new TreeSet<>(byKey.keySet()))));
         }
+      }
+      violations.addAll(fileViolations);
+      if (parsed.violations().isEmpty() && fileViolations.isEmpty()) {
         packs.put(pack.id(), new LoadedPack(file.path(), pack, adapter));
       }
     }
