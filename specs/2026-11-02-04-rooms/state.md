@@ -1,7 +1,7 @@
 ---
 feature: 2026-11-02-04-rooms
 phase: build
-status: in-progress
+status: approved
 g1: approved:Shanerex:2026-11-03
 g2: approved:Shanerex:2026-11-03
 g3: none
