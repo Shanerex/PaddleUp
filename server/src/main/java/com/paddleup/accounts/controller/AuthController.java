@@ -1,18 +1,16 @@
 package com.paddleup.accounts.controller;
 
-import com.paddleup.accounts.config.AuthProperties;
 import com.paddleup.accounts.dto.EmailStartRequest;
 import com.paddleup.accounts.dto.EmailVerifyRequest;
 import com.paddleup.accounts.dto.ProfileDto;
 import com.paddleup.accounts.exception.InvalidRequestException;
 import com.paddleup.accounts.model.User;
+import com.paddleup.accounts.service.ClientAddress;
 import com.paddleup.accounts.service.EmailSignInService;
 import com.paddleup.accounts.service.ProfileService;
 import com.paddleup.accounts.service.SignInSessionService;
-import com.paddleup.accounts.util.ClientIp;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
-import java.util.Collections;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -28,18 +26,17 @@ class AuthController {
 
   private final EmailSignInService emailSignIn;
   private final SignInSessionService sessions;
-  private final int trustedProxyHops;
+  private final ClientAddress clientAddress;
 
   AuthController(
-      EmailSignInService emailSignIn, SignInSessionService sessions, AuthProperties props) {
+      EmailSignInService emailSignIn, SignInSessionService sessions, ClientAddress clientAddress) {
     this.emailSignIn = emailSignIn;
     this.sessions = sessions;
-    this.trustedProxyHops = props.throttle().trustedProxyHops();
+    this.clientAddress = clientAddress;
   }
 
   private String clientIp(HttpServletRequest request) {
-    String forwarded = String.join(",", Collections.list(request.getHeaders("X-Forwarded-For")));
-    return ClientIp.resolve(request.getRemoteAddr(), forwarded, trustedProxyHops);
+    return clientAddress.resolve(request);
   }
 
   /** Always 202 for a well-formed address, so it never reveals whether an account exists. */

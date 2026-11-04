@@ -6,7 +6,7 @@ Source of truth for UI. Build agents: read this file first, then open `design-sy
 - `design-system.html` — tokens, components, states (light/dark toggle, franchise colour picker).
 - `auction-explorations.html` — the 3 auction directions (1a Spotlight, 1b War Room, 1c Paddle Row) at 390/820/1440, advisor sheet vs panel (2a/2b), and every auction edge state (3a–3j). All frames are live simulations.
 - `app-screens.html` — every other screen at phone + desktop (tablet for key screens). Frames are clickable.
-- `source/` — editable source (`*.dc.html`, `paddle.js` = theme tokens + fake auction engine). Open any `.dc.html` directly in a browser from this folder.
+- `source/` — editable source (`*.dc.html`, `paddle.js` = theme tokens + fake auction engine). Serve the folder (`python3 -m http.server` in `source/`) and open a `.dc.html`; App Screens needs the server to load its frames. The v1 frames (App Screens turn 6, added 2026-11-03) exist only in `source/`; the top-level `.html` bundles predate them.
 - `assets/favicon.svg` — favicon (use for 16/32/48).
 - `assets/app-icon.svg` — PWA icon 192/512, `purpose: "any"`.
 - `assets/app-icon-maskable.svg` — PWA icon, `purpose: "maskable"` (mark inside 40% safe zone).
@@ -27,6 +27,11 @@ Source of truth for UI. Build agents: read this file first, then open `design-sy
 | Season | Matches (+ empty), match detail, point breakdown | Room `matches`, `matchesEmpty`, `match`, `breakdown` | FR-81–82, FR-91 |
 | Records | Audit log with filters | Room `audit` | FR-48 |
 | Admin | Commissioner tools (unmapped players, minimums, manual stat entry, controls) | Room `commish` | FR-47, FR-81, FR-83 |
+| Home (v1) | Hub with pre-season rooms only | Home `hubNow` | FR-2 |
+| Join (v1) | Join by typed code; errors: invalid/expired/revoked, full, auction live, rate-limited | Home `joinCode`, `joinError:invalid\|full\|locked\|limited` | FR-11, NFR-7 |
+| Room (v1) | Room link that isn't yours or doesn't exist | Home `roomMissing` | FR-12 |
+| Pre-auction (v1) | Room in setup/retention/scheduled until the lobby ships: Commissioner below minimum, ready, admin-only, manager view | Room `setup`, `setupReady`, `setupAdmin`, `setupManager` | FR-10–13, FR-15 |
+| Pre-auction (v1) | Sheets: member actions, remove, hand over, move on, edit franchise; copied toast; loading; refresh-failed and stale-tab banners | Room `sheetMember`, `sheetRemove`, `sheetHandover`, `sheetAdvance`, `editFranchise`, `copied`, `loading`, `loadError`, `staleAction` | FR-11–13 |
 
 Open decision: pick one auction direction (1a/1b/1c) and one advisor presentation (2a/2b) before building FR-41+.
 

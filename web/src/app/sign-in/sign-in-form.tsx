@@ -1,9 +1,9 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useState, type FormEvent } from "react";
+import { useEffect, useState, type FormEvent } from "react";
 import { ApiError, GOOGLE_SIGN_IN_URL, startEmail, verifyCode } from "../../api/client";
-import { HOME } from "../../auth/redirect";
+import { afterSignIn, rememberNext } from "../../auth/redirect";
 
 const LINK_ERRORS: Record<string, string> = {
   unverified_email:
@@ -11,13 +11,19 @@ const LINK_ERRORS: Record<string, string> = {
   google: "Google sign-in did not complete. Try again or use your email.",
 };
 
-export function SignInForm({ error }: { error?: string }) {
+export function SignInForm({ error, next }: { error?: string; next?: string }) {
   const router = useRouter();
   const [step, setStep] = useState<"email" | "code">("email");
   const [email, setEmail] = useState("");
   const [code, setCode] = useState("");
   const [message, setMessage] = useState<string | null>(error ? (LINK_ERRORS[error] ?? null) : null);
   const [busy, setBusy] = useState(false);
+
+  // Kept in storage, not in the page, so it survives Google's round trip and a magic link that
+  // opens in another tab.
+  useEffect(() => {
+    rememberNext(next);
+  }, [next]);
 
   async function requestEmail(event: FormEvent) {
     event.preventDefault();
@@ -45,7 +51,7 @@ export function SignInForm({ error }: { error?: string }) {
     setMessage(null);
     try {
       await verifyCode(email.trim(), code.trim());
-      router.push(HOME);
+      router.push(afterSignIn());
     } catch (e) {
       setMessage(
         e instanceof ApiError && e.status === 401

@@ -9,7 +9,7 @@ const apiBase = process.env.API_BASE_URL ?? "http://localhost:8080";
 // plan is updated.
 export async function middleware(request: NextRequest) {
   const session = await checkSession(request.cookies.get(SESSION_COOKIE)?.value, apiBase);
-  const target = signInRedirect(request.nextUrl.pathname, session);
+  const target = signInRedirect(request.nextUrl.pathname, session, request.nextUrl.search);
   // Never clear the cookie on a 401: pu_session also carries the anonymous session that holds an
   // in-flight Google sign-in, which a second tab would otherwise destroy. A stale cookie is
   // replaced by the next sign-in.

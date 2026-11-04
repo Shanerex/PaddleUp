@@ -6,6 +6,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.json.JsonMapper;
 import com.paddleup.packs.dto.AppearanceRuleDto;
+import com.paddleup.packs.dto.PackDisplayDto;
 import com.paddleup.packs.dto.PackDto;
 import com.paddleup.packs.dto.PresetDto;
 import com.paddleup.packs.dto.RestrictedCategoryDto;
@@ -131,6 +132,8 @@ public class PackParser {
       }
     }
 
+    var display = readDisplay(root, file, packId, violations);
+
     var pack =
         new PackDto(
             schemaVersion,
@@ -145,8 +148,61 @@ public class PackParser {
             appearance,
             adapterKey,
             terminology,
-            aiContext);
+            aiContext,
+            display);
     return new Parsed<>(pack, violations, in.partial);
+  }
+
+  private static final java.util.regex.Pattern ICON =
+      java.util.regex.Pattern.compile("[a-z0-9_]{1,40}");
+
+  /** Reads the optional display section; bad values become violations and read as null. */
+  private static PackDisplayDto readDisplay(
+      JsonNode root, String file, String packId, List<PackViolation> violations) {
+    var node = root.get("display");
+    if (node == null || node.isNull()) {
+      return PackDisplayDto.EMPTY;
+    }
+    if (!node.isObject()) {
+      violations.add(
+          new PackViolation(
+              file, packId, "invalid-section", "section 'display' must be an object"));
+      return PackDisplayDto.EMPTY;
+    }
+    String name = displayText(node, "name", 40, file, packId, violations);
+    String summary = displayText(node, "summary", 280, file, packId, violations);
+    String icon = displayText(node, "icon", 40, file, packId, violations);
+    if (icon != null && !ICON.matcher(icon).matches()) {
+      violations.add(
+          new PackViolation(
+              file, packId, "invalid-section", "display.icon must be a Material Symbols name"));
+      icon = null;
+    }
+    return new PackDisplayDto(name, summary, icon);
+  }
+
+  private static String displayText(
+      JsonNode display,
+      String field,
+      int max,
+      String file,
+      String packId,
+      List<PackViolation> violations) {
+    var value = display.get(field);
+    if (value == null || value.isNull()) {
+      return null;
+    }
+    if (!value.isTextual() || value.asText().isBlank() || value.asText().length() > max) {
+      violations.add(
+          new PackViolation(
+              file,
+              packId,
+              "invalid-section",
+              "display.%s must be a non-blank string of at most %d characters"
+                  .formatted(field, max)));
+      return null;
+    }
+    return value.asText().strip();
   }
 
   private JavaType type(Class<?> type) {

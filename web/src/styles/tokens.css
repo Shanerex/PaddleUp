@@ -1,0 +1,111 @@
+/*
+ * Design tokens. Mirrors docs/design/source/paddle.js (LIGHT, DARK, L(h), D(h)) exactly;
+ * tokens.test.ts fails if a value drifts. Edit paddle.js first, then copy the value here.
+ * Each block is marked so the test can find it.
+ */
+
+/* @tokens light */
+:root {
+  --bg: oklch(0.975 0.006 75);
+  --surface: oklch(0.995 0.003 75);
+  --surface-2: oklch(0.955 0.007 75);
+  --line: oklch(0.905 0.008 75);
+  --ink: oklch(0.23 0.012 60);
+  --ink-2: oklch(0.46 0.012 60);
+  --ink-3: oklch(0.62 0.01 60);
+  --brand: oklch(0.62 0.19 38);
+  --brand-tint: oklch(0.95 0.035 45);
+  --brand-ink: oklch(0.5 0.17 38);
+  --ok: oklch(0.56 0.14 155);
+  --ok-tint: oklch(0.95 0.04 155);
+  --warn: oklch(0.72 0.15 75);
+  --warn-ink: oklch(0.5 0.12 70);
+  --warn-tint: oklch(0.96 0.05 85);
+  --bad: oklch(0.57 0.2 25);
+  --bad-tint: oklch(0.95 0.035 25);
+  --info: oklch(0.55 0.13 245);
+  --info-tint: oklch(0.95 0.03 245);
+  --inverse: oklch(0.24 0.012 60);
+  --inverse-2: oklch(0.31 0.012 60);
+  --on-inverse: oklch(0.97 0.005 75);
+  --on-inverse-2: oklch(0.78 0.01 70);
+  --coach: oklch(0.78 0.14 70);
+  --analyst: oklch(0.76 0.11 230);
+  --shadow: 0 1px 2px oklch(0.3 0.02 60 / 0.06), 0 6px 20px oklch(0.3 0.02 60 / 0.07);
+  --role1-bg: oklch(0.93 0.04 70);
+  --role1-ink: oklch(0.4 0.09 70);
+  --role2-bg: oklch(0.93 0.04 250);
+  --role2-ink: oklch(0.4 0.1 250);
+  --role3-bg: oklch(0.93 0.04 150);
+  --role3-ink: oklch(0.4 0.09 150);
+  --role4-bg: oklch(0.93 0.04 320);
+  --role4-ink: oklch(0.42 0.1 320);
+  --h: 38;
+}
+/* @end */
+
+/* Inside a room: the manager's franchise hue drives these. Set --h on the element (hues.ts). */
+/* @tokens team-light */
+.team {
+  --team: oklch(0.56 0.15 var(--h));
+  --team-strong: oklch(0.48 0.14 var(--h));
+  --team-tint: oklch(0.955 0.03 var(--h));
+  --team-tint-2: oklch(0.9 0.06 var(--h));
+  --team-ink: oklch(0.42 0.12 var(--h));
+  --on-team: oklch(0.99 0.005 var(--h));
+  --room-bg: oklch(0.972 0.014 var(--h));
+}
+/* @end */
+
+@media (prefers-color-scheme: dark) {
+  /* @tokens dark */
+  :root {
+    --bg: oklch(0.17 0.008 60);
+    --surface: oklch(0.215 0.009 60);
+    --surface-2: oklch(0.26 0.01 60);
+    --line: oklch(0.32 0.01 60);
+    --ink: oklch(0.96 0.006 75);
+    --ink-2: oklch(0.76 0.01 70);
+    --ink-3: oklch(0.55 0.01 70);
+    --brand: oklch(0.66 0.18 38);
+    --brand-tint: oklch(0.3 0.06 40);
+    --brand-ink: oklch(0.8 0.12 40);
+    --ok: oklch(0.72 0.14 155);
+    --ok-tint: oklch(0.28 0.05 155);
+    --warn: oklch(0.78 0.14 75);
+    --warn-ink: oklch(0.85 0.12 80);
+    --warn-tint: oklch(0.3 0.05 80);
+    --bad: oklch(0.68 0.19 25);
+    --bad-tint: oklch(0.29 0.06 25);
+    --info: oklch(0.74 0.11 245);
+    --info-tint: oklch(0.28 0.05 245);
+    --inverse: oklch(0.28 0.012 60);
+    --inverse-2: oklch(0.35 0.012 60);
+    --on-inverse: oklch(0.97 0.005 75);
+    --on-inverse-2: oklch(0.78 0.01 70);
+    --coach: oklch(0.78 0.14 70);
+    --analyst: oklch(0.76 0.11 230);
+    --shadow: 0 1px 2px oklch(0 0 0 / 0.3), 0 6px 20px oklch(0 0 0 / 0.25);
+    --role1-bg: oklch(0.32 0.06 70);
+    --role1-ink: oklch(0.9 0.07 70);
+    --role2-bg: oklch(0.32 0.06 250);
+    --role2-ink: oklch(0.88 0.07 250);
+    --role3-bg: oklch(0.32 0.06 150);
+    --role3-ink: oklch(0.88 0.07 150);
+    --role4-bg: oklch(0.32 0.06 320);
+    --role4-ink: oklch(0.88 0.07 320);
+  }
+  /* @end */
+
+  /* @tokens team-dark */
+  .team {
+    --team: oklch(0.6 0.15 var(--h));
+    --team-strong: oklch(0.66 0.15 var(--h));
+    --team-tint: oklch(0.28 0.05 var(--h));
+    --team-tint-2: oklch(0.36 0.07 var(--h));
+    --team-ink: oklch(0.82 0.1 var(--h));
+    --on-team: oklch(0.99 0.005 var(--h));
+    --room-bg: oklch(0.19 0.02 var(--h));
+  }
+  /* @end */
+}

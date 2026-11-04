@@ -1,0 +1,147 @@
+/* Room `sheet*` frames: scrim, bottom sheet on phone (28 top radius), centred dialog from 640. */
+.scrim {
+  position: fixed;
+  inset: 0;
+  z-index: 70;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  background: var(--scrim);
+  animation: fade 240ms ease-out;
+}
+
+.sheet {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  width: 100%;
+  max-width: 440px;
+  max-height: 100%;
+  overflow: auto;
+  padding: 20px 20px 24px;
+  border-radius: 28px 28px 0 0;
+  background: var(--surface);
+  color: var(--ink);
+  box-shadow: var(--shadow);
+  animation: rise 240ms ease-out;
+}
+
+.handle {
+  align-self: center;
+  width: 36px;
+  height: 4px;
+  margin-top: -8px;
+  border-radius: 2px;
+  background: var(--line);
+}
+
+@media (min-width: 640px) {
+  .scrim {
+    align-items: center;
+    padding: 16px;
+  }
+
+  .sheet {
+    border-radius: 28px;
+  }
+
+  .handle {
+    display: none;
+  }
+}
+
+@keyframes fade {
+  from {
+    opacity: 0;
+  }
+}
+
+@keyframes rise {
+  from {
+    transform: translateY(24px);
+    opacity: 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .sheet {
+    animation: fade 240ms ease-out;
+  }
+}
+
+.tile {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 56px;
+  height: 56px;
+  border-radius: 17px;
+}
+
+.sheet :where(h1, h2, h3, p) {
+  margin: 0;
+}
+
+.title {
+  font-size: 22px;
+  line-height: 28px;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+}
+
+.body {
+  font-size: 15px;
+  line-height: 22px;
+  color: var(--ink-2);
+}
+
+.text {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.actions {
+  display: flex;
+  gap: 10px;
+}
+
+.actions > :last-child {
+  flex: 1;
+}
+
+/* Toast (Design System 11): inverse, auto-dismisses after 4s. */
+.toastWrap {
+  position: fixed;
+  left: 16px;
+  right: 16px;
+  bottom: 24px;
+  z-index: 80;
+  display: flex;
+  justify-content: center;
+  pointer-events: none;
+}
+
+.toast {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  max-width: 400px;
+  padding: 12px 14px;
+  border-radius: 16px;
+  background: var(--inverse);
+  color: var(--on-inverse);
+  box-shadow: var(--shadow);
+  animation: rise 240ms ease-out;
+}
+
+.toastTitle {
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.toastBody {
+  font-size: 12px;
+  color: var(--on-inverse-2);
+}

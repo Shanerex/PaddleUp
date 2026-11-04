@@ -4,6 +4,134 @@
  */
 
 export interface paths {
+    "/api/rooms/{id}/config": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put: operations["saveConfig"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/rooms": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["mine"];
+        put?: never;
+        post: operations["create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/rooms/{id}/transitions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["history"];
+        put?: never;
+        post: operations["advance"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/rooms/{id}/invite": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["current"];
+        put?: never;
+        post: operations["issue"];
+        delete: operations["revoke"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/rooms/{id}/franchises": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["createOwn"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/rooms/{id}/commissioner": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["handover"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/join": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["join"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/join/preview": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["preview"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/auth/email/verify": {
         parameters: {
             query?: never;
@@ -36,6 +164,22 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/rooms/{id}/franchises/{franchiseId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete: operations["remove"];
+        options?: never;
+        head?: never;
+        patch: operations["edit"];
+        trace?: never;
+    };
     "/api/me": {
         parameters: {
             query?: never;
@@ -50,6 +194,54 @@ export interface paths {
         options?: never;
         head?: never;
         patch: operations["update"];
+        trace?: never;
+    };
+    "/api/rooms/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/rooms/{id}/members": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["members"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/rooms/packs": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["packs"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
         trace?: never;
     };
     "/api/avatars": {
@@ -72,6 +264,267 @@ export interface paths {
 export type webhooks = Record<string, never>;
 export interface components {
     schemas: {
+        AiSettingsDto: {
+            enabled: boolean;
+            lifelines: {
+                [key: string]: number;
+            };
+            reportCardVisibility: string;
+        };
+        AppearanceBonus: {
+            type: "AppearanceBonus";
+        } & (Omit<components["schemas"]["RuleDto"], "type"> & {
+            id?: string;
+            points?: number;
+        });
+        Band: {
+            from?: number;
+            to?: number;
+            points?: number;
+        };
+        BandedRate: {
+            type: "BandedRate";
+        } & (Omit<components["schemas"]["RuleDto"], "type"> & {
+            id?: string;
+            numerator?: string;
+            denominator?: string;
+            scale?: number;
+            minVolume?: components["schemas"]["MinVolume"];
+            bands?: components["schemas"]["Band"][];
+        });
+        DisplayUnit: {
+            label?: string;
+            /** Format: int64 */
+            divisor?: number;
+        };
+        EventTypeBonus: {
+            type: "EventTypeBonus";
+        } & (Omit<components["schemas"]["RuleDto"], "type"> & {
+            id?: string;
+            stat?: string;
+            eventType?: string;
+            points?: number;
+        });
+        IncrementStep: {
+            /** Format: int64 */
+            from?: number;
+            /** Format: int64 */
+            step?: number;
+        };
+        MinVolume: {
+            stat?: string;
+            atLeast?: number;
+        };
+        PerUnit: {
+            type: "PerUnit";
+        } & (Omit<components["schemas"]["RuleDto"], "type"> & {
+            id?: string;
+            stat?: string;
+            points?: number;
+        });
+        Retention: {
+            /** Format: int32 */
+            maxRetentions?: number;
+            /** Format: int32 */
+            rtmCards?: number;
+            tagLimits?: {
+                [key: string]: number;
+            };
+            slabs?: components["schemas"]["Slab"][];
+            /** Format: int32 */
+            rtmFromSeason?: number;
+            rtmCounterRaise?: boolean;
+        };
+        RoleConditional: {
+            type: "RoleConditional";
+        } & (Omit<components["schemas"]["RuleDto"], "type"> & {
+            id?: string;
+            roles?: string[];
+            rule?: components["schemas"]["AppearanceBonus"] | components["schemas"]["BandedRate"] | components["schemas"]["EventTypeBonus"] | components["schemas"]["PerUnit"] | components["schemas"]["RoleConditional"] | components["schemas"]["ThresholdBonus"];
+        });
+        RoomConfigDto: {
+            name: string;
+            competition: string;
+            /** Format: int32 */
+            minManagers: number;
+            /** Format: int32 */
+            maxManagers: number;
+            /** Format: int64 */
+            purse: number;
+            currencyCode: string;
+            displayUnit: components["schemas"]["DisplayUnit"];
+            incrementLadder: components["schemas"]["IncrementStep"][];
+            /** Format: int32 */
+            squadMin: number;
+            /** Format: int32 */
+            squadMax: number;
+            roleMinimums: {
+                [key: string]: number;
+            };
+            categoryQuotas: {
+                [key: string]: number;
+            };
+            retention: components["schemas"]["Retention"];
+            scoringRules: components["schemas"]["RuleSetDto"];
+            ai: components["schemas"]["AiSettingsDto"];
+        };
+        RuleDto: {
+            type: string;
+        };
+        RuleSetDto: {
+            rules?: (components["schemas"]["AppearanceBonus"] | components["schemas"]["BandedRate"] | components["schemas"]["EventTypeBonus"] | components["schemas"]["PerUnit"] | components["schemas"]["RoleConditional"] | components["schemas"]["ThresholdBonus"])[];
+        };
+        SaveConfigRequest: {
+            /** Format: int32 */
+            version: number;
+            config: components["schemas"]["RoomConfigDto"];
+        };
+        Slab: {
+            tag?: string;
+            prices?: number[];
+        };
+        ThresholdBonus: {
+            type: "ThresholdBonus";
+        } & (Omit<components["schemas"]["RuleDto"], "type"> & {
+            id?: string;
+            stat?: string;
+            tiers?: components["schemas"]["Tier"][];
+        });
+        Tier: {
+            atLeast?: number;
+            points?: number;
+        };
+        PackLabelsDto: {
+            packId: string;
+            packVersion: string;
+            roles: components["schemas"]["RoleDto"][];
+            tags: components["schemas"]["TagDto"][];
+            restrictedCategories: components["schemas"]["RestrictedCategoryDto"][];
+            stats: components["schemas"]["StatDto"][];
+            terminology: {
+                [key: string]: string;
+            };
+            packName?: string | null;
+        };
+        RestrictedCategoryDto: {
+            id?: string;
+            label?: string;
+            tag?: string;
+            /** Format: int32 */
+            max?: number;
+        };
+        RoleDto: {
+            id?: string;
+            label?: string;
+        };
+        RoomDto: {
+            /** Format: uuid */
+            id: string;
+            /** @enum {string} */
+            state: "setup" | "retention" | "auction_scheduled" | "auction_live" | "season_live" | "completed";
+            myRole: string;
+            commissioner: components["schemas"]["UserRefDto"];
+            /** Format: int32 */
+            configVersion: number;
+            config: components["schemas"]["RoomConfigDto"];
+            packLabels: components["schemas"]["PackLabelsDto"];
+            /** Format: int32 */
+            franchiseCount: number;
+            /** Format: uuid */
+            myFranchiseId?: string | null;
+            advanceTo: ("setup" | "retention" | "auction_scheduled" | "auction_live" | "season_live" | "completed")[];
+            /** Format: date-time */
+            createdAt: string;
+        };
+        StatDto: {
+            id?: string;
+            label?: string;
+            kind?: string;
+            eventTypes?: string[];
+            unit?: string;
+        };
+        TagDto: {
+            id?: string;
+            label?: string;
+        };
+        UserRefDto: {
+            /** Format: uuid */
+            id: string;
+            displayName: string;
+        };
+        CreateRoomRequest: {
+            packId: string;
+            presetId: string;
+            name: string;
+            competition?: string;
+        };
+        TransitionRequest: {
+            /** @enum {string} */
+            to: "setup" | "retention" | "auction_scheduled" | "auction_live" | "season_live" | "completed";
+        };
+        TransitionDto: {
+            /** @enum {string} */
+            from: "setup" | "retention" | "auction_scheduled" | "auction_live" | "season_live" | "completed";
+            /** @enum {string} */
+            to: "setup" | "retention" | "auction_scheduled" | "auction_live" | "season_live" | "completed";
+            actor?: components["schemas"]["UserRefDto"];
+            /** Format: date-time */
+            occurredAt: string;
+        };
+        InviteDto: {
+            code: string;
+            link: string;
+            /** Format: date-time */
+            expiresAt: string;
+        };
+        FranchiseRequest: {
+            name?: string;
+            colour?: string;
+            monogram?: string;
+        };
+        FranchiseDto: {
+            /** Format: uuid */
+            id: string;
+            /** Format: uuid */
+            ownerUserId: string;
+            name: string;
+            colour: string;
+            monogram: string;
+        };
+        HandoverRequest: {
+            /** Format: uuid */
+            franchiseId: string;
+        };
+        HandoverDto: {
+            commissioner: components["schemas"]["UserRefDto"];
+            stillMember: boolean;
+        };
+        JoinRequest: {
+            code: string;
+            franchise: components["schemas"]["FranchiseRequest"];
+        };
+        JoinResultDto: {
+            /** Format: uuid */
+            roomId: string;
+            franchise: components["schemas"]["FranchiseDto"];
+        };
+        JoinPreviewRequest: {
+            code: string;
+        };
+        JoinPreviewDto: {
+            roomName: string;
+            takenColours: string[];
+            full: boolean;
+            alreadyJoined: boolean;
+            /** Format: uuid */
+            roomId?: string | null;
+            packName?: string | null;
+            competition: string;
+            /** Format: int32 */
+            franchiseCount: number;
+            /** Format: int32 */
+            maxManagers: number;
+        };
         EmailVerifyRequest: {
             token?: string;
             email?: string;
@@ -92,6 +545,46 @@ export interface components {
             displayName?: string;
             avatar?: string;
         };
+        RoomSummaryDto: {
+            /** Format: uuid */
+            id: string;
+            name: string;
+            competition: string;
+            /** @enum {string} */
+            state: "setup" | "retention" | "auction_scheduled" | "auction_live" | "season_live" | "completed";
+            packId: string;
+            packName?: string | null;
+            commissioner: boolean;
+            /** Format: int32 */
+            franchiseCount: number;
+            /** Format: int32 */
+            minManagers: number;
+            /** Format: int32 */
+            maxManagers: number;
+            myFranchise?: components["schemas"]["FranchiseDto"];
+            /** Format: date-time */
+            updatedAt: string;
+        };
+        MemberDto: {
+            /** Format: uuid */
+            userId: string;
+            displayName: string;
+            avatar: string;
+            role: string;
+            franchise?: components["schemas"]["FranchiseDto"];
+        };
+        PackChoiceDto: {
+            id: string;
+            version: string;
+            presets: components["schemas"]["Preset"][];
+            name?: string | null;
+            summary?: string | null;
+            icon?: string | null;
+        };
+        Preset: {
+            id: string;
+            label: string;
+        };
         AvatarPresetsDto: {
             presets: string[];
         };
@@ -104,6 +597,288 @@ export interface components {
 }
 export type $defs = Record<string, never>;
 export interface operations {
+    saveConfig: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SaveConfigRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["RoomDto"];
+                };
+            };
+        };
+    };
+    mine: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["RoomSummaryDto"][];
+                };
+            };
+        };
+    };
+    create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreateRoomRequest"];
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["RoomDto"];
+                };
+            };
+        };
+    };
+    history: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["TransitionDto"][];
+                };
+            };
+        };
+    };
+    advance: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["TransitionRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["TransitionDto"];
+                };
+            };
+        };
+    };
+    current: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["InviteDto"];
+                };
+            };
+        };
+    };
+    issue: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["InviteDto"];
+                };
+            };
+        };
+    };
+    revoke: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description No Content */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    createOwn: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["FranchiseRequest"];
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["FranchiseDto"];
+                };
+            };
+        };
+    };
+    handover: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["HandoverRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["HandoverDto"];
+                };
+            };
+        };
+    };
+    join: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["JoinRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["JoinResultDto"];
+                };
+            };
+        };
+    };
+    preview: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["JoinPreviewRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["JoinPreviewDto"];
+                };
+            };
+        };
+    };
     verify: {
         parameters: {
             query?: never;
@@ -150,6 +925,56 @@ export interface operations {
             };
         };
     };
+    remove: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+                franchiseId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["MemberDto"][];
+                };
+            };
+        };
+    };
+    edit: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+                franchiseId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["FranchiseRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["FranchiseDto"];
+                };
+            };
+        };
+    };
     me: {
         parameters: {
             query?: never;
@@ -190,6 +1015,70 @@ export interface operations {
                 };
                 content: {
                     "*/*": components["schemas"]["ProfileDto"];
+                };
+            };
+        };
+    };
+    get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["RoomDto"];
+                };
+            };
+        };
+    };
+    members: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["MemberDto"][];
+                };
+            };
+        };
+    };
+    packs: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["PackChoiceDto"][];
                 };
             };
         };

@@ -1,8 +1,11 @@
-import { redirect } from "next/navigation";
-import { HOME } from "@/auth/redirect";
+import { AppShell } from "../ui/AppShell";
+import { HomeHub } from "./home-hub";
 
-// Middleware has already sent signed-out visitors to sign-in. Until the rooms list exists, the
-// profile is the signed-in home.
-export default function Home() {
-  redirect(HOME);
+/** Home hub: the signed-in landing page (docs/design Home `hubNow`, `empty`). */
+export default function HomePage() {
+  return (
+    <AppShell>
+      <HomeHub />
+    </AppShell>
+  );
 }
