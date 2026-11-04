@@ -4,54 +4,27 @@ status: final
 # Review: 2026-11-02-04-rooms
 
 ## QA
-Ran (human-directed pass 4): `make test` (437 server tests: surefire 240 + failsafe 197, 0 failures; none lost; 103 web tests), `make lint` (ok). No AC regressed; packs use their own JsonMapper.
-- T-3 fixed (was blocking, same root as S-9): stored jsonb read via rooms.util.StoredJson (no doc limit); config written NON_NULL and capped at 64 KB (400 invalid_config, version unchanged). RoomConfigIT large-config cases (100 x 50 bands of -1e6; role-conditional x 50 roles x 50 {} bands) save 200|400, then GET and repair PUT succeed, never 500. NON_NULL keeps semantics; old rows with nulls still read; AC-1 snapshot checks pass. Note: tests accept 200 or 400 on first save.
-- AC-1 pass: RoomCreateIT, RoomConfigFactoryTest (config, pack id and version copied).
-- AC-2 pass: RoomConfigValidatorTest (23 rules), RoomConfigIT 400 with field names.
-- AC-3 pass: RoomConfigIT 403, 409 auction_live, 409 stale_version with no change.
-- AC-4 pass: InviteIT (12-char code, link, revoke keeps members, regenerate kills old), InviteCodesTest.
-- AC-5 pass: InviteExpiryIT with MutableClock at 6d23h and 7d; expired same error as revoked; client clock ignored.
-- AC-6 pass: JoinIT re-redeem returns same franchise.
-- AC-7 pass: FranchiseRulesTest, FranchiseEditIT (duplicate name/colour 409, markup stripped, lock at auction_live).
-- AC-8 pass: JoinIT full room and rejoin after removal; RemoveManagerIT frees slot.
-- AC-9 pass: JoinThrottleIT 429 per user and per IP, window lifts.
-- AC-10 pass: CommissionerFranchiseIT (counts toward min/max, admin-only flows).
-- AC-11 pass: RemoveManagerIT (retention ok, auction_live 409, self 400, manager 403).
-- AC-12 pass: HandoverIT (all four outcomes, admin-only old Commissioner 404 after).
-- AC-13 pass: TransitionIT min-franchise gate with and without Commissioner franchise; retention skip.
-- AC-14 pass: TransitionIT, RoomStateMachineTest; REST cannot start the auction.
-- AC-15 pass: TransitionIT log readable by members; RoomsSchemaIT trigger blocks UPDATE/DELETE.
-- AC-16 pass: MembershipIT every endpoint (404 non-member, 403 manager on Commissioner endpoints).
-- AC-17 pass: check-agnostic ok, StubPackRoomIT, RoomsSchemaIT timestamptz.
-- AC-18 pass (design loop, dev-run): room-wizard/room-view/home-hub tests; Playwright on make dev: wizard end to end, reload at step 3 resumed the same room, second member tab showed the new state.
-- AC-19 pass (design loop, dev-run): signed-out join link to sign-in?next and back, joined; invalid code screen; stale tab after auction_live (set in DB) showed "Too late for that." and reloaded.
-- T-18 deviation accepted: ModuleBoundariesTest is a source scan with a self-test, not ArchUnit (pom.xml protected); record in decision.
-- Deviation accepted: RoomState in rooms.dto (other modules need it; model is private).
-- Deviation accepted: GET /api/rooms/packs, ClientAddress.limitKey, MutableClock, max_connections=400. Profile link removed (Home hub is the entry).
-- Deviation accepted: GET invite Commissioner-only (stricter than plan; R-12/AC-16 hold).
-- T-18 fixed: JSON limits moved to app-level com.paddleup.config.JsonLimitsConfig; ModuleBoundariesTest exempts only top-level `config` and still flags it reaching module-private packages; JsonLimitsIT covers accounts and rooms.
-- Follow-up (non-AC, before ship): docs/knowledge/architecture.md lacks the Rooms section and still says enforcement deferred; plan Architecture changes 1-4 unapplied (human-owned file).
-
-## Design fidelity (T-26..T-32, decision 2026-11-03-design-source-fidelity)
-Gap frames drawn in docs/design/source (App Screens turn 6) and approved by Shanerex. Added: GET /api/rooms (MyRoomsIT), pack display fields, richer join preview, tokens.css parity test. Pairs (mock vs app, 390 + 1440) in .playwright-mcp/shots/cmp-*.png:
-- Match: hub + empty, joinCode, join, joinError invalid, wizard 1-6, room setup/admin/ready/manager, sheets (member, remove, advance, edit franchise), toast, stale banner.
-- Data-only differences: pack display unit "Crore" (mock "Cr"), increments in the display unit, role labels instead of ids, pack role order.
-make test (449 server, 128 web) and make lint green. QA/security agents have not re-run on the loop diff.
+Re-verify after the design-fidelity loop (T-26..T-32). Ran `make test` (449 server: surefire 246 + failsafe 203, 0 failures; 128 web in 20 files) and `make lint` (spotless, eslint, check-agnostic and its self-test): all green. Read the loop diff, the tests below and docs/design/README.md. Playwright / `make dev` was not re-run in this pass.
+- AC-1..AC-17 pass: server suites green; the loop changes to PackDto/PackParser/RoomConfigFactory/JoinService did not regress RoomCreateIT, RoomConfigFactoryTest, JoinIT, StubPackRoomIT. Earlier passes (RoomConfigIT large-config cases, StoredJson jsonb readback, 64 KB config cap, JsonLimitsConfig/JsonLimitsIT) still hold.
+- AC-18 pass: room-wizard.test.tsx (pack display name, room created on Basics with id in URL, resume without duplicate, version on later saves, stale edit kept, invite step shows code and expiry), room-view.test.tsx (new state after a transition on visibility), home-hub.test.tsx.
+- AC-19 pass: continue-redirect, redirect and sign-in/verify-link tests (signed-out return, open-redirect rejected); join-form.test.tsx (valid, invalid/revoked/expired, revoked between preview and join, full, auction-live, Retry-After); stale tab after auction_live gives a clear message and reload (room-view.test.tsx:198, :309).
+- T-28 pass: MyRoomsIT (6 tests: empty, admin-only Commissioner, manager's own franchise, removed manager excluded, newest first, 401 signed out).
+- T-26/T-27 pass: tokens.test.ts proves light, dark and team token blocks equal docs/design/source/paddle.js.
+- Pack display fields pass: PackParserDisplayTest, stub-pack fixture, JoinIT richer preview.
+- Hard invariant pass: check-agnostic ok; grep of web/src and server/src/main for sport, role and currency words found nothing outside tests; money.ts reads symbol, unit and divisor from the room config.
+- Non-blocking (AC-18): the invite link is offered only through Share link / copy, not shown as text, and no wizard test asserts it (room-wizard.tsx:610-614).
+- Non-blocking (T-32): Playwright flows and the 390/1440 mock-vs-app screenshots live in gitignored `.playwright-mcp/`, so end-to-end AC-18/19 is not repeatable by `make test`. The CLAUDE.md real-browser check rests on the dev run recorded at T-32 and was not repeated here.
+- Non-blocking (fidelity): 7 raw `#fff` values (ui/kit.module.css 5, join/join.module.css 2) bypass tokens. Data-only differences from the mocks: pack unit "Crore" vs mock "Cr", role labels instead of ids, pack role order.
+- Accepted deviations: ModuleBoundariesTest is a source scan (not ArchUnit); RoomState in rooms.dto; GET /api/rooms/packs, ClientAddress.limitKey, MutableClock, max_connections=400; GET invite is Commissioner-only (stricter than plan).
+- Follow-up before ship (human-owned): docs/knowledge/architecture.md lacks the Rooms section; plan Architecture changes 1-4 unapplied.
 
 ## Security
-Scope: uncommitted working tree against main (no commits on branch yet).
-- S-1 minor, fixed: currencyCode, displayUnit.label, rule id capped 10/20/60 and must equal sanitised form (RoomConfigValidator.java:97-118, :300-305).
-- S-2 minor, fixed: top-level lists and maps capped at 50, rules at 100, echoed keys cut to 40.
-- S-3 minor, fixed: POST invite consumes=application/json (InviteController.java:35); web client sends `{}`.
-- S-4 minor, fixed: RoomsProperties rejects codeLength < 10 at startup (RoomsProperties.java:18-25).
-- S-6 minor, fixed: roles/tiers/bands capped at 50, RoleConditional nesting at 3 (RoomConfigValidator.java:316-333); Jackson maxNestingDepth(64) app-wide (RoomsConfig.java:18-28) turns a real StackOverflowError 500 into 400.
-- S-7 minor, fixed: JsonLimitsConfig.java:19-38 depth 64, document 256 KB, string 16 KB; deep/long/oversize bodies give 400 on accounts and rooms (~8 KB buffer slack, fine).
-- S-8 minor, fixed: scoring decimals bounded to ±1,000,000, ≤4 decimals, value not echoed (RoomConfigValidator.java:392-406).
-- S-9 major, fixed (was persistent room DoS): StoredJson (RoomRepository.java:31, RoomLogRepository.java:27) reads only server-written rows, never request bodies; 64 KB size check on both config write paths (RoomRepository.java:65 create, :92 save) rolls back with 400. Uncapped DB reads safe (config capped pre-write, log/pack trusted, read depth 200 > request 64). Polymorphic typing unchanged: closed named subtypes, no default typing.
-- S-10 minor, fixed: scale floor -6 (RoomConfigValidator.java:57, :402); `0E+2000000000` gives 400.
-- Other request paths: all new bodies JSON-only; no form/multipart/raw bodies added.
+Scope: loop commits dcc14eb and c784d2e (tree clean). S-1..S-10 are closed as recorded in earlier passes (field and list caps, JSON-only bodies, codeLength >= 10, JSON depth/size limits, StoredJson readback, 64 KB config cap, decimal bounds). No new findings.
+- GET /api/rooms: session required (MyRoomsIT 401), parameterised query (RoomRepository.java:74-84), capped at 100. Removed managers and the former Commissioner after handover drop out; only the caller's own franchise is returned.
+- Join preview (JoinService.java:79-98): session, throttle and valid code still required; new fields show only what a code holder sees after joining.
+- Pack display fields: trusted pack files, length-capped, icon limited to [a-z0-9_]{1,40} (PackParser.java:156-176), rendered as text.
+- Web: no dangerouslySetInnerHTML/innerHTML/eval; user text escaped; inline styles from a fixed hue table; API paths use encodeURIComponent; join code reduced to [A-Z0-9] before navigation; safeNext rejects `//`, schemes, backslashes, control chars, /auth, /api; `pu_next` checked on save and read, 1 h expiry, read once.
 - S-5 minor, accepted in plan: invite codes stored in plain text (V5__rooms.sql:44).
-- Checked clean: SecureRandom codes, throttle before lookup, ClientAddress hop trust, 404 before 403, Commissioner-only actions, row locks plus version CAS, append-only room_log, parameterised JDBC, name sanitising, safe `next` redirect.
 
 ## Verdict
-pass (after human-directed pass 4) plus design-fidelity loop. Blocking: none. Open: S-5 accepted; re-verify the loop diff with /rx:next (qa + security); architecture.md follow-up before ship (human-owned).
+pass. Blocking: none. Open: S-5 accepted; non-blocking items above (AC-18 invite-link test, T-32 evidence not committed, raw #fff); architecture.md follow-up before ship (human-owned).

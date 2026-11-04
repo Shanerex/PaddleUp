@@ -1,12 +1,12 @@
 ---
 feature: 2026-11-02-04-rooms
-phase: verify
-status: awaiting-human
+phase: done
+status: approved
 g1: approved:Shanerex:2026-11-03
 g2: approved:Shanerex:2026-11-03
-g3: none
+g3: approved:Shanerex:2026-11-04
 bump: minor
-next: /rx:next re-verify (qa + security on the design loop), then human gives g3
+next: open a PR; a human merges
 ---
 # State: 2026-11-02-04-rooms
 
@@ -25,3 +25,6 @@ next: /rx:next re-verify (qa + security on the design loop), then human gives g3
 - 2026-11-03 build: human-directed design-fidelity loop: web UI drifted from docs/design/source; rebuild to mocks, gap screens drawn in source and approved first (T-26..T-32); decision 2026-11-03-design-source-fidelity
 - 2026-11-03 build: T-26 gap frames approved by Shanerex (App Screens turn 6); human chose optional pack name/summary/icon and richer join preview
 - 2026-11-04 build: T-27..T-32 done (tokens parity, ui kit, hub, join, wizard, room page, GET /api/rooms); Playwright flows + mock pairs match; make test (449/128) + lint green; phase verify
+- 2026-11-04 verify: qa + security re-run on design loop: pass (449 server, 128 web, lint green); review.md final; awaiting g3 + bump
+- 2026-11-04 verify: g3 approved by Shanerex, bump minor; phase close
+- 2026-11-04 close: knowledge written (2 decisions, 2 learnings); rx-check done green; phase done
