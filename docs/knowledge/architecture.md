@@ -1,6 +1,6 @@
 # Architecture
 
-Source: specs/2026-11-01-project-scaffold/plan.md (proposed; pending review); Sport Packs section from specs/2026-11-02-02-sport-pack-framework/plan.md.
+Source: specs/2026-11-01-project-scaffold/plan.md (proposed; pending review); Sport Packs section from specs/2026-11-02-02-sport-pack-framework/plan.md; Rooms section from specs/2026-11-02-04-rooms/plan.md.
 
 ## Repo layout
 - `server/`: Spring Boot modular monolith, single Maven module (Java 21, Maven wrapper).
@@ -12,7 +12,7 @@ Source: specs/2026-11-01-project-scaffold/plan.md (proposed; pending review); Sp
 - Base package `com.paddleup`, one top-level package per module: `accounts`, `rooms`, `auction`, `scoring`, `packs`, `advisor`.
 - Inside each module, MVCS layers as sub-packages: `controller` (REST/STOMP entry points) -> `service` (logic, transactions) -> `repository` (Spring JDBC; in `packs`, read-only file access); `model` (domain types, rows) and `dto` (request/response/event payloads). Three support packages sit beside them: `exception` (module error types and its `@RestControllerAdvice`), `config` (`@Configuration` and `@ConfigurationProperties`) and `util` (stateless helpers). Other modules use only a module's `service`, `dto` and `exception` packages; `config` and `util` are module-private.
 - Calls flow controller -> service -> repository only. Controllers return dtos, never model types.
-- Cross-module: a module may use another module's `service` and `dto` packages only, never its controller, repository or model. Enforcement (ArchUnit / Spring Modulith) is deferred.
+- Cross-module: a module may use another module's `service` and `dto` packages only, never its controller, repository or model. Enforced by `ModuleBoundariesTest`, a source scan (not ArchUnit) with a self-test: other modules may touch only `service`, `dto` and `exception`; only the top-level `com.paddleup.config` package is exempt. Spring Modulith is still deferred.
 - Feature build order and module ownership per feature: `docs/roadmap.md`.
 
 ## Sport Packs
@@ -20,6 +20,21 @@ Source: specs/2026-11-01-project-scaffold/plan.md (proposed; pending review); Sp
 - Other modules read packs only through `packs.service.PackService` and `packs.dto`.
 - Data adapters are beans implementing `packs.service.DataAdapter`, selected by the pack's `adapterKey` == `key()`.
 - Deployment: the server image or working dir must contain the packs dir. Without it the server starts with zero packs and logs a WARN.
+
+## Rooms
+- A room's config and its pack vocabulary are snapshotted as one JSONB value (with an int `config_version`) when the room is created. The room never re-reads the pack afterwards. Saves use version compare-and-set (409 `stale_version`); config is capped at 64 KB and read back through `rooms.util.StoredJson`.
+- Membership = the Commissioner column on the room plus franchise owners. Non-members get 404, non-Commissioners get 403 on Commissioner endpoints.
+- `room_log` is append-only, enforced by a DB trigger that blocks UPDATE and DELETE.
+- Other modules change room state only through `rooms.service.RoomLifecycle`. REST cannot start the auction.
+- Invites are a revocable 12-char code or link that expires after 7 days; joining is throttled per user and per IP.
+
+## Shared infrastructure
+- `accounts.service.ClientAddress` is the one way to resolve the client IP (also used for throttle keys).
+- `java.time.Clock` (UTC) is an app-wide bean that every module injects by type; tests replace it.
+- `com.paddleup.config.JsonLimitsConfig` sets app-wide Jackson limits (depth 64, document 256 KB, string 16 KB); over-limit bodies give 400.
+
+## Web sign-in return
+- A signed-out page request redirects to `/sign-in?next=<safe path>`. The path is kept in localStorage (1 h, read once, re-checked on read), and every sign-in path returns to it. Google's success redirect goes to `/auth/continue`.
 
 ## Persistence
 - PostgreSQL 17: local via docker compose, tests via Testcontainers (same image).
