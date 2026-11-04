@@ -1,6 +1,7 @@
 // @vitest-environment jsdom
 import { cleanup, render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
+import { StrictMode } from "react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 const push = vi.fn();
@@ -153,9 +154,11 @@ describe("RoomWizard (Home `wizard:1-6`)", () => {
     expect((screen.getByRole("button", { name: "Continue" }) as HTMLButtonElement).disabled).toBe(true);
   });
 
-  it("keeps the person's edits when someone else saved first", async () => {
+  it("loads the other save instead of overwriting it when the version is stale", async () => {
     vi.mocked(saveConfig).mockRejectedValueOnce(new ApiError(409, { error: "stale_version" }));
-    vi.mocked(getRoom).mockResolvedValueOnce(room()).mockResolvedValueOnce(room({ configVersion: 2 }));
+    vi.mocked(getRoom)
+      .mockResolvedValueOnce(room())
+      .mockResolvedValueOnce(room({ configVersion: 2, config: { ...config, name: "Theirs" } }));
     const user = userEvent.setup();
     render(<RoomWizard roomId="room-1" initialStep={2} />);
     const name = await screen.findByLabelText("Room name");
@@ -165,9 +168,70 @@ describe("RoomWizard (Home `wizard:1-6`)", () => {
     await user.click(screen.getByRole("button", { name: "Continue" }));
 
     expect(await screen.findByText(/Someone else saved changes/)).toBeTruthy();
-    expect((screen.getByLabelText("Room name") as HTMLInputElement).value).toBe("Mine");
+    expect((screen.getByLabelText("Room name") as HTMLInputElement).value).toBe("Theirs");
     await user.click(screen.getByRole("button", { name: "Continue" }));
-    await waitFor(() => expect(saveConfig).toHaveBeenLastCalledWith("room-1", 2, expect.objectContaining({ name: "Mine" })));
+    await waitFor(() =>
+      expect(saveConfig).toHaveBeenLastCalledWith("room-1", 2, expect.objectContaining({ name: "Theirs" })),
+    );
+  });
+
+  it("saves chosen manager limits before leaving for the setup page", async () => {
+    const user = userEvent.setup();
+    render(<RoomWizard />);
+    await screen.findByText("Pack One");
+    await user.click(screen.getByRole("button", { name: "Continue" }));
+    await user.type(screen.getByLabelText("Room name"), "Friends");
+    await user.click(screen.getByRole("button", { name: "Increase Minimum managers" }));
+    await user.click(screen.getByRole("button", { name: "Create room" }));
+
+    await waitFor(() => expect(replace).toHaveBeenCalledWith("/rooms/room-1/setup?step=3"));
+    expect(saveConfig).toHaveBeenCalledWith("room-1", 1, expect.objectContaining({ minManagers: 3 }));
+    expect(vi.mocked(saveConfig).mock.invocationCallOrder[0]).toBeLessThan(replace.mock.invocationCallOrder[0]);
+  });
+
+  it("keeps the created room when saving the manager limits fails, and never creates a second", async () => {
+    vi.mocked(saveConfig).mockRejectedValueOnce(new ApiError(500, null));
+    const user = userEvent.setup();
+    render(<RoomWizard />);
+    await screen.findByText("Pack One");
+    await user.click(screen.getByRole("button", { name: "Continue" }));
+    await user.type(screen.getByLabelText("Room name"), "Friends");
+    await user.click(screen.getByRole("button", { name: "Increase Minimum managers" }));
+    await user.click(screen.getByRole("button", { name: "Create room" }));
+
+    await waitFor(() => expect(replace).toHaveBeenCalledWith("/rooms/room-1/setup?step=2&min=3&max=10"));
+    expect(await screen.findByText(/manager limits were not saved/)).toBeTruthy();
+    await user.click(screen.getByRole("button", { name: "Continue" }));
+
+    await waitFor(() =>
+      expect(saveConfig).toHaveBeenLastCalledWith("room-1", 1, expect.objectContaining({ minManagers: 3, maxManagers: 10 })),
+    );
+    expect(createRoom).toHaveBeenCalledTimes(1);
+  });
+
+  it("offers unsaved limits again on the setup page and retries them on Continue", async () => {
+    const user = userEvent.setup();
+    // Strict Mode loads the room twice, as `make dev` does; the later load must not drop the limits.
+    vi.mocked(getRoom)
+      .mockResolvedValueOnce(room())
+      .mockImplementationOnce(() => new Promise((done) => setTimeout(() => done(room()), 30)));
+    render(
+      <StrictMode>
+        <RoomWizard roomId="room-1" initialStep={2} unsavedLimits={{ min: 3, max: 8 }} />
+      </StrictMode>,
+    );
+
+    expect(await screen.findByText(/manager limits were not saved/)).toBeTruthy();
+    await waitFor(() => expect(getRoom).toHaveBeenCalledTimes(2));
+    await new Promise((done) => setTimeout(done, 60));
+    await user.click(screen.getByRole("button", { name: "Continue" }));
+
+    await waitFor(() =>
+      expect(saveConfig).toHaveBeenCalledWith("room-1", 1, expect.objectContaining({ minManagers: 3, maxManagers: 8 })),
+    );
+    expect(await screen.findByRole("heading", { name: "Squad rules" })).toBeTruthy();
+    expect(screen.queryByText(/manager limits were not saved/)).toBeNull();
+    expect(createRoom).not.toHaveBeenCalled();
   });
 
   it("issues an invite on reaching the last step and opens the room", async () => {

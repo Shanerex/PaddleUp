@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useCallback, useEffect, useState, type FormEvent } from "react";
+import { useCallback, useEffect, useRef, useState, type FormEvent } from "react";
 import {
   ApiError,
   createOwnFranchise,
@@ -61,9 +61,18 @@ function dateTime(iso: string): string {
 /**
  * The 6-step create flow (docs/design Home `wizard:1-6`). The room exists from step 2 ("Create
  * room"); from then on its id lives in the URL (/rooms/{id}/setup?step=N), so a reload resumes
- * the same room instead of creating another.
+ * the same room instead of creating another. `unsavedLimits` are manager limits chosen before the
+ * room existed whose save failed; they are put back into the draft so Continue retries them.
  */
-export function RoomWizard({ roomId, initialStep = 1 }: { roomId?: string; initialStep?: Step }) {
+export function RoomWizard({
+  roomId,
+  initialStep = 1,
+  unsavedLimits,
+}: {
+  roomId?: string;
+  initialStep?: Step;
+  unsavedLimits?: { min: number; max: number };
+}) {
   const router = useRouter();
   const [step, setStepState] = useState<Step>(roomId ? (Math.max(2, initialStep) as Step) : 1);
   const [packs, setPacks] = useState<PackChoice[] | null>(null);
@@ -77,6 +86,8 @@ export function RoomWizard({ roomId, initialStep = 1 }: { roomId?: string; initi
   const [invite, setInvite] = useState<Invite | null>(null);
   const [members, setMembers] = useState<Member[]>([]);
   const [error, setError] = useState<{ message: string; locked?: boolean } | null>(null);
+  const pendingLimits = useRef(unsavedLimits ?? null);
+  const [limitsUnsaved, setLimitsUnsaved] = useState(!!unsavedLimits);
   const [nameError, setNameError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [toast, setToast] = useState<string | null>(null);
@@ -110,7 +121,14 @@ export function RoomWizard({ roomId, initialStep = 1 }: { roomId?: string; initi
   useEffect(() => {
     loadPacks();
     if (roomId) {
-      loadRoom(roomId).catch((e) => setError({ message: explainRoomError(e).message }));
+      loadRoom(roomId)
+        .then((next) => {
+          // Kept until the step changes: a repeated load (Strict Mode calls this effect twice) must
+          // not replace the offered limits with the saved ones.
+          const limits = pendingLimits.current;
+          if (limits) setDraft({ ...next.config, minManagers: limits.min, maxManagers: limits.max });
+        })
+        .catch((e) => setError({ message: explainRoomError(e).message }));
       getInvite(roomId).then(setInvite).catch(() => undefined);
     }
   }, [roomId, loadPacks, loadRoom]);
@@ -119,19 +137,29 @@ export function RoomWizard({ roomId, initialStep = 1 }: { roomId?: string; initi
     (next: Step) => {
       setStepState(next);
       setError(null);
+      setLimitsUnsaved(false);
+      pendingLimits.current = null;
       if (room) router.replace(`/rooms/${room.id}/setup?step=${next}`, { scroll: false });
     },
     [room, router],
   );
 
   const pack = packs?.find((p) => p.id === packId);
+  const shownError: { message: string; locked?: boolean } | null =
+    error ??
+    (limitsUnsaved && step === 2
+      ? { message: "Room created, but the manager limits were not saved. Check them and continue to try again." }
+      : null);
   const labels = room?.packLabels;
 
   function update(patch: Partial<RoomConfig>) {
     setDraft((d) => (d ? { ...d, ...patch } : d));
   }
 
-  /** Saves the draft, then moves on. A stale version keeps the person's edits for the next save. */
+  /**
+   * Saves the draft, then moves on. A stale version reloads the other save's config into the
+   * draft, so a retry can never silently overwrite it; the person re-applies their edits.
+   */
   async function saveAndGo(next: Step) {
     if (!room || !draft) return;
     setBusy(true);
@@ -147,8 +175,15 @@ export function RoomWizard({ roomId, initialStep = 1 }: { roomId?: string; initi
       const code = e instanceof ApiError ? (e.body as { error?: string } | null)?.error : null;
       if (code === "stale_version") {
         const fresh = await getRoom(room.id).catch(() => null);
-        if (fresh) setRoom(fresh);
-        setError({ message: "Someone else saved changes while you were editing. Save again to keep yours." });
+        if (fresh) {
+          setRoom(fresh);
+          setDraft(fresh.config);
+        }
+        setError({
+          message: fresh
+            ? "Someone else saved changes while you were editing. We loaded their version; check it and make your edits again."
+            : "Someone else saved changes while you were editing. Reload the page to see them.",
+        });
       } else {
         setError({ message: explained.message, locked: code === "room_locked" });
       }
@@ -166,17 +201,26 @@ export function RoomWizard({ roomId, initialStep = 1 }: { roomId?: string; initi
     setBusy(true);
     setError(null);
     try {
+      // From here the room exists: every path keeps it and moves to its setup URL, so neither a
+      // retry nor a reload can create a second one. The URL change remounts the wizard on the setup
+      // page, so the follow-up save finishes first and a failure travels in the URL.
       let created = await createRoom({ packId, presetId, name: name.trim(), competition: competition.trim() });
-      if (managers.touched) {
-        created = await saveConfig(created.id, created.configVersion, {
-          ...created.config,
-          minManagers: managers.min,
-          maxManagers: managers.max,
-        });
-      }
-      router.replace(`/rooms/${created.id}/setup?step=3`);
       setRoom(created);
       setDraft(created.config);
+      if (managers.touched) {
+        const wanted = { ...created.config, minManagers: managers.min, maxManagers: managers.max };
+        try {
+          created = await saveConfig(created.id, created.configVersion, wanted);
+          setRoom(created);
+          setDraft(created.config);
+        } catch {
+          setDraft(wanted);
+          setLimitsUnsaved(true);
+          router.replace(`/rooms/${created.id}/setup?step=2&min=${managers.min}&max=${managers.max}`);
+          return;
+        }
+      }
+      router.replace(`/rooms/${created.id}/setup?step=3`);
       setStepState(3);
     } catch (e) {
       setError({ message: explainRoomError(e).message });
@@ -292,9 +336,9 @@ export function RoomWizard({ roomId, initialStep = 1 }: { roomId?: string; initi
 
         <div className={s.body}>
           <div className={s.content}>
-            {error && (
-              <Note tone="bad" icon="error" role="alert" title={error.message}>
-                {error.locked && room && <Link href={`/rooms/${room.id}`}>Go to the room</Link>}
+            {shownError && (
+              <Note tone="bad" icon="error" role="alert" title={shownError.message}>
+                {shownError.locked && room && <Link href={`/rooms/${room.id}`}>Go to the room</Link>}
               </Note>
             )}
             {error && !packs && step === 1 && (
