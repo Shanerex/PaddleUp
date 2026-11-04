@@ -6,7 +6,9 @@ import java.util.Optional;
 
 /**
  * The room lifecycle as one pure table: what each state allows, and where it may go next. States
- * only move forward; {@code retention} may be skipped. Leaving {@code setup} needs enough managers.
+ * only move forward; {@code retention} may be skipped. Leaving any pre-auction state ({@code
+ * setup}, {@code retention}, {@code auction_scheduled}) needs enough managers, so removals after
+ * setup cannot put the auction live below the minimum.
  */
 final class RoomStateMachine {
 
@@ -47,9 +49,14 @@ final class RoomStateMachine {
     if (!next(from).contains(to)) {
       return Optional.of("A room cannot move from " + from.value() + " to " + to.value());
     }
-    if (from == RoomState.SETUP && franchises < minManagers) {
+    if (preAuction(from) && franchises < minManagers) {
       return Optional.of(
-          "Needs at least " + minManagers + " franchises to leave setup; has " + franchises);
+          "Needs at least "
+              + minManagers
+              + " franchises to leave "
+              + from.value()
+              + "; has "
+              + franchises);
     }
     return Optional.empty();
   }

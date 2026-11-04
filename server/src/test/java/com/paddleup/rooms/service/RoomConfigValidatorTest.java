@@ -158,6 +158,12 @@ class RoomConfigValidatorTest {
   }
 
   @Test
+  void missingReportVisibilityIsAViolationNotACrash() {
+    assertThat(fields(e -> e.ai = new AiSettingsDto(true, Map.of(), null)))
+        .containsExactly("ai.reportCardVisibility");
+  }
+
+  @Test
   void aScoringRuleOnAStatOutsideTheSnapshotNamesTheRule() {
     var rules = new RuleSetDto(List.of(new RuleDto.PerUnit("x", "not-a-stat", BigDecimal.ONE)));
     assertThat(fields(e -> e.scoringRules = rules)).containsExactly("scoringRules.rules[0].stat");

@@ -278,7 +278,8 @@ class RoomConfigValidator {
         out.add(new Violation(at, "Must be a whole number, 0 or more"));
       }
     }
-    if (!RoomConfigFactory.REPORT_VISIBILITIES.contains(ai.reportCardVisibility())) {
+    if (ai.reportCardVisibility() == null
+        || !RoomConfigFactory.REPORT_VISIBILITIES.contains(ai.reportCardVisibility())) {
       out.add(
           new Violation(
               "ai.reportCardVisibility",

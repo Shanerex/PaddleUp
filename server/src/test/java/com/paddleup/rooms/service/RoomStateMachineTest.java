@@ -84,9 +84,17 @@ class RoomStateMachineTest {
   }
 
   @Test
-  void theMinimumOnlyGatesSetup() {
-    assertThat(RoomStateMachine.refusal(RETENTION, AUCTION_SCHEDULED, 0, 2)).isEmpty();
-    assertThat(RoomStateMachine.refusal(AUCTION_SCHEDULED, AUCTION_LIVE, 0, 2)).isEmpty();
+  void theMinimumGatesEveryPreAuctionState() {
+    assertThat(RoomStateMachine.refusal(RETENTION, AUCTION_SCHEDULED, 1, 2)).isPresent();
+    assertThat(RoomStateMachine.refusal(AUCTION_SCHEDULED, AUCTION_LIVE, 1, 2)).isPresent();
+    assertThat(RoomStateMachine.refusal(RETENTION, AUCTION_SCHEDULED, 2, 2)).isEmpty();
+    assertThat(RoomStateMachine.refusal(AUCTION_SCHEDULED, AUCTION_LIVE, 2, 2)).isEmpty();
+  }
+
+  @Test
+  void theMinimumDoesNotGateLaterStates() {
+    assertThat(RoomStateMachine.refusal(AUCTION_LIVE, SEASON_LIVE, 0, 2)).isEmpty();
+    assertThat(RoomStateMachine.refusal(SEASON_LIVE, COMPLETED, 0, 2)).isEmpty();
   }
 
   @Test

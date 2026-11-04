@@ -58,6 +58,27 @@ class RemoveManagerIT extends AbstractRoomsIT {
   }
 
   @Test
+  void removingBelowTheMinimumInRetentionBlocksSchedulingUntilRefilled() {
+    Person commissioner = person();
+    String roomId = createRoom(commissioner);
+    String code = issueInvite(commissioner, roomId);
+    joinNew(roomId, code, "sky");
+    joinNew(roomId, code, "teal");
+    post(commissioner, "/api/rooms/" + roomId + "/transitions", Map.of("to", "retention"));
+    delete(commissioner, removeUrl(roomId, franchiseOf(roomId, "sky")));
+    delete(commissioner, removeUrl(roomId, franchiseOf(roomId, "teal")));
+
+    var refused =
+        post(
+            commissioner,
+            "/api/rooms/" + roomId + "/transitions",
+            Map.of("to", "auction_scheduled"));
+
+    assertThat(refused.getStatusCode()).as(refused.getBody()).isEqualTo(HttpStatus.CONFLICT);
+    assertThat(body(refused).get("error").asText()).isEqualTo("illegal_state");
+  }
+
+  @Test
   void aFullRoomTakesSomeoneNewAfterARemoval() {
     Person commissioner = person();
     String roomId = createRoom(commissioner);
