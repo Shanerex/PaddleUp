@@ -45,6 +45,9 @@ Not: real-money play, public lobbies, native apps, AI that bids or acts for a ma
 - User-editable text is sanitised and length-capped before entering a prompt; LLM output is
   schema-validated. LLM failure never affects the auction and refunds the lifeline.
 - Scoring recompute is idempotent; manual stat entries beat provider data.
+- UI is built to a named screen in docs/design/source/*.dc.html, cited as "Design refs" in tasks.md.
+  No screen there: draw it in the source and get approval first; never invent layout in code. Spec
+  sets rules and limits, the mock sets the look. rx spawn prompts for UI work include those files.
 
 ## rx
 Workflow: /rx:feature <name>, then /rx:next.
@@ -53,4 +56,5 @@ are in docs/roadmap.md (git switch -c feature/<id> main, then /rx:next; not /rx:
 Formats are in the rx-spec skill.
 Requirements: anything with a lifetime gets a state x entry-point matrix before its ACs
 (learnings/2026-11-02-state-matrix-for-lifecycles). Verify: besides the AC tests, run the
-changed user flows in a real browser (Playwright, make dev) incl. new tab and stale state.
+changed user flows in a real browser (Playwright, make dev) incl. new tab and stale state, and
+screenshot each changed screen beside its mock at 390 and 1440 (decisions/2026-11-03-design-source-fidelity).
