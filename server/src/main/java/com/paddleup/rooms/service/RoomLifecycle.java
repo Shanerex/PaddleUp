@@ -11,6 +11,7 @@ import com.paddleup.rooms.model.LogKind;
 import com.paddleup.rooms.model.Room;
 import com.paddleup.rooms.repository.FranchiseRepository;
 import com.paddleup.rooms.repository.RoomLogRepository;
+import com.paddleup.rooms.repository.RoomPoolRepository;
 import com.paddleup.rooms.repository.RoomRepository;
 import java.time.Clock;
 import java.time.Instant;
@@ -33,6 +34,7 @@ public class RoomLifecycle {
   private final RoomLogRepository log;
   private final MembershipGuard guard;
   private final InviteService invites;
+  private final RoomPoolRepository pools;
   private final RoomViews views;
   private final Clock clock;
 
@@ -42,6 +44,7 @@ public class RoomLifecycle {
       RoomLogRepository log,
       MembershipGuard guard,
       InviteService invites,
+      RoomPoolRepository pools,
       RoomViews views,
       Clock clock) {
     this.rooms = rooms;
@@ -49,6 +52,7 @@ public class RoomLifecycle {
     this.log = log;
     this.guard = guard;
     this.invites = invites;
+    this.pools = pools;
     this.views = views;
     this.clock = clock;
   }
@@ -113,8 +117,13 @@ public class RoomLifecycle {
   }
 
   private RoomConflictException refusal(Room room, RoomState to) {
-    return RoomStateMachine.refusal(
-            room.state(), to, franchises.count(room.id()), room.config().minManagers())
+    var refusal =
+        RoomStateMachine.refusal(
+            room.state(), to, franchises.count(room.id()), room.config().minManagers());
+    if (refusal.isEmpty() && to == RoomState.AUCTION_LIVE && !pools.exists(room.id())) {
+      refusal = java.util.Optional.of("No player pool yet; load season data first");
+    }
+    return refusal
         .map(msg -> new RoomConflictException(RoomConflictException.ILLEGAL_STATE, msg))
         .orElse(null);
   }

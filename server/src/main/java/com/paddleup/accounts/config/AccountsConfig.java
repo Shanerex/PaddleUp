@@ -6,7 +6,11 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
 @Configuration
-@EnableConfigurationProperties({AuthProperties.class, ResendProperties.class})
+@EnableConfigurationProperties({
+  AuthProperties.class,
+  ResendProperties.class,
+  AdminProperties.class
+})
 class AccountsConfig {
 
   @Bean

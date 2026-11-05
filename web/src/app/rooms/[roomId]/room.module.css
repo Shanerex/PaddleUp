@@ -560,3 +560,26 @@
   border-radius: 24px;
   background: var(--surface-2);
 }
+
+/* Player pool card (Room `setup*`): counts and two links. */
+.poolCounts {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 16px;
+}
+
+.poolCount {
+  font-size: 15px;
+}
+
+.poolCount b {
+  font-family: var(--font-num);
+  font-size: 22px;
+  font-weight: 500;
+}
+
+.poolAlt {
+  background: var(--surface-2);
+  color: var(--ink);
+}

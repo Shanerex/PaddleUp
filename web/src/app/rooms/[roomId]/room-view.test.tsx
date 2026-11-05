@@ -17,6 +17,7 @@ vi.mock("../../../api/client", async (importOriginal) => ({
   getMembers: vi.fn(),
   getTransitions: vi.fn(),
   getInvite: vi.fn(),
+  getPool: vi.fn(),
   advanceRoom: vi.fn(),
   issueInvite: vi.fn(),
   revokeInvite: vi.fn(),
@@ -33,6 +34,7 @@ import {
   editFranchise,
   getInvite,
   getMembers,
+  getPool,
   getRoom,
   getTransitions,
   handOver,
@@ -40,6 +42,7 @@ import {
   removeFranchise,
   revokeInvite,
   type Member,
+  type Pool,
   type Room,
   type RoomState,
 } from "../../../api/client";
@@ -106,7 +109,22 @@ const members = [
   },
 ] as unknown as Member[];
 
+function poolOf(over: Partial<Pool> = {}): Pool {
+  return {
+    hasPool: true,
+    version: 2,
+    datasetVersion: 3,
+    latestDatasetVersion: 3,
+    editCount: 0,
+    canEdit: true,
+    players: [{ id: "a" }, { id: "b" }, { id: "c" }],
+    sets: [{ name: "One", players: 2 }, { name: "Two", players: 1 }],
+    ...over,
+  } as unknown as Pool;
+}
+
 beforeEach(() => {
+  vi.mocked(getPool).mockResolvedValue(poolOf());
   vi.mocked(getRoom).mockResolvedValue(room("setup"));
   vi.mocked(getMembers).mockResolvedValue(members);
   vi.mocked(getTransitions).mockResolvedValue([]);
@@ -326,5 +344,42 @@ describe("RoomView as the Commissioner (Room `setup`, `setupReady`, `setupAdmin`
 
     expect(await screen.findByText("Couldn't load the room.")).toBeTruthy();
     expect(screen.getByRole("button", { name: "Try again" })).toBeTruthy();
+  });
+});
+
+describe("RoomView player pool card and rail links (Room setup*)", () => {
+  it("points the Commissioner at the editable pool and the set order", async () => {
+    render(<RoomView roomId="room-1" />);
+
+    const card = await screen.findByRole("region", { name: "Player pool" });
+    expect(within(card).getByText(/season data v3/)).toBeTruthy();
+    expect(within(card).getByText("players", { exact: false })).toBeTruthy();
+    expect(within(card).getByRole("link", { name: /Edit pool/ }).getAttribute("href")).toBe("/rooms/room-1/pool");
+    expect(within(card).getByRole("link", { name: /Set order/ }).getAttribute("href")).toBe("/rooms/room-1/sets");
+    const rail = screen.getByRole("navigation", { name: "Room" });
+    expect(within(rail).getByRole("link", { name: "Player pool" }).getAttribute("href")).toBe("/rooms/room-1/pool");
+    expect(within(rail).getByRole("link", { name: "Set order" }).getAttribute("href")).toBe("/rooms/room-1/sets");
+  });
+
+  it("offers a manager View pool rather than Edit pool", async () => {
+    vi.mocked(getRoom).mockResolvedValue(room("setup", { myRole: "manager", myFranchiseId: "f-ben" }));
+    vi.mocked(getPool).mockResolvedValue(poolOf({ canEdit: false }));
+    render(<RoomView roomId="room-1" />);
+
+    const card = await screen.findByRole("region", { name: "Player pool" });
+    expect(within(card).getByRole("link", { name: /View pool/ }).getAttribute("href")).toBe("/rooms/room-1/pool");
+    expect(within(card).queryByRole("link", { name: /Edit pool/ })).toBeNull();
+  });
+
+  it("says there is no pool yet, and a room whose pool cannot be read still loads", async () => {
+    vi.mocked(getPool).mockResolvedValue(poolOf({ hasPool: false, datasetVersion: null, players: [], sets: [] }));
+    const { unmount } = render(<RoomView roomId="room-1" />);
+    expect(await screen.findByText(/No season data loaded yet/)).toBeTruthy();
+    unmount();
+
+    vi.mocked(getPool).mockRejectedValue(new Error("down"));
+    render(<RoomView roomId="room-1" />);
+    expect(await screen.findByText("Friends")).toBeTruthy();
+    expect(screen.queryByRole("region", { name: "Player pool" })).toBeNull();
   });
 });

@@ -7,6 +7,7 @@ Source of truth for UI. Build agents: read this file first, then open `design-sy
 - `auction-explorations.html` — the 3 auction directions (1a Spotlight, 1b War Room, 1c Paddle Row) at 390/820/1440, advisor sheet vs panel (2a/2b), and every auction edge state (3a–3j). All frames are live simulations.
 - `app-screens.html` — every other screen at phone + desktop (tablet for key screens). Frames are clickable.
 - `source/` — editable source (`*.dc.html`, `paddle.js` = theme tokens + fake auction engine). Serve the folder (`python3 -m http.server` in `source/`) and open a `.dc.html`; App Screens needs the server to load its frames. The v1 frames (App Screens turn 6, added 2026-11-03) exist only in `source/`; the top-level `.html` bundles predate them.
+- `source/AdminImport.dc.html` — app-admin season data import (added 2026-11-04). Its frames are in App Screens turn 7 with the player pool screens.
 - `assets/favicon.svg` — favicon (use for 16/32/48).
 - `assets/app-icon.svg` — PWA icon 192/512, `purpose: "any"`.
 - `assets/app-icon-maskable.svg` — PWA icon, `purpose: "maskable"` (mark inside 40% safe zone).
@@ -31,6 +32,10 @@ Source of truth for UI. Build agents: read this file first, then open `design-sy
 | Join (v1) | Join by typed code; errors: invalid/expired/revoked, full, auction live, rate-limited | Home `joinCode`, `joinError:invalid\|full\|locked\|limited` | FR-11, NFR-7 |
 | Room (v1) | Room link that isn't yours or doesn't exist | Home `roomMissing` | FR-12 |
 | Pre-auction (v1) | Room in setup/retention/scheduled until the lobby ships: Commissioner below minimum, ready, admin-only, manager view | Room `setup`, `setupReady`, `setupAdmin`, `setupManager` | FR-10–13, FR-15 |
+| Pre-auction (v1) | Player pool: Commissioner (newer season data notice), manager read-only, auction live (locked, write refused), no season data (auction blocked), stale tab | Room `pool`, `poolMember`, `poolLive`, `poolEmpty`, `poolStale` | FR-20–21 |
+| Pre-auction (v1) | Pool sheets: edit player (field error), add player, confirm remove, confirm reset to latest | Room `poolEdit`, `poolAdd`, `poolRemove`, `poolReset` | FR-21 |
+| Pre-auction (v1) | Set order: Commissioner (one set moved, unsaved), manager read-only | Room `sets`, `setsMember` | FR-22 |
+| Admin (v1) | Season data import: file picked, some rows skipped (new version), every row skipped (no version), not an app admin | AdminImport `import`, `importReport`, `importFailed`, `importDenied` | FR-21 |
 | Pre-auction (v1) | Sheets: member actions, remove, hand over, move on, edit franchise; copied toast; loading; refresh-failed and stale-tab banners | Room `sheetMember`, `sheetRemove`, `sheetHandover`, `sheetAdvance`, `editFranchise`, `copied`, `loading`, `loadError`, `staleAction` | FR-11–13 |
 
 Open decision: pick one auction direction (1a/1b/1c) and one advisor presentation (2a/2b) before building FR-41+.

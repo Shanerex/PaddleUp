@@ -64,4 +64,11 @@ describe("explainRoomError", () => {
     expect(explainRoomError(new Error("offline")).message).toMatch(/connection/);
     expect(explainRoomError(api(409, null)).refetch).toBe(true);
   });
+
+  it("explains the pool codes: a mismatched pack, a field error and a vanished player", () => {
+    expect(explainRoomError(api(409, { error: "pack_mismatch" }))).toMatchObject({ refetch: true, message: expect.stringMatching(/different version of this pack/) });
+    expect(explainRoomError(api(422, { error: "invalid_player", violations: [{ field: "role", message: "Not a role." }] })).message).toBe("Not a role.");
+    expect(explainRoomError(api(404, { error: "player_not_found" }))).toMatchObject({ refetch: true });
+    expect(explainRoomError(api(409, { error: "stale_version" })).refetch).toBe(true);
+  });
 });
