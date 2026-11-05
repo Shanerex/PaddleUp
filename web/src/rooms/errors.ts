@@ -52,6 +52,10 @@ export function explainRoomError(error: unknown): Explained {
     }
     case 403:
       return { message: "Only the Commissioner can do that.", refetch: true };
+    case 422: {
+      const problems = violations(error.body);
+      return { message: problems.length > 0 ? problems.join(" ") : "Check the details and try again.", refetch: false };
+    }
     case 404:
       if (code === "invalid_invite") {
         return {
@@ -60,6 +64,9 @@ export function explainRoomError(error: unknown): Explained {
         };
       }
       if (code === "no_invite") return { message: "There is no active invite yet.", refetch: false };
+      if (code === "player_not_found") {
+        return { message: "That player is no longer in the pool. We loaded the latest.", refetch: true };
+      }
       return { message: "We could not find that room, or you are not in it.", refetch: false };
     case 409:
       switch (code) {
@@ -77,6 +84,11 @@ export function explainRoomError(error: unknown): Explained {
         case "illegal_state":
           return {
             message: `${serverMessage(error.body) ?? "That move is not allowed right now."} We reloaded the room.`,
+            refetch: true,
+          };
+        case "pack_mismatch":
+          return {
+            message: "The season data was made for a different version of this pack, so it can't be loaded here.",
             refetch: true,
           };
         case "room_full":

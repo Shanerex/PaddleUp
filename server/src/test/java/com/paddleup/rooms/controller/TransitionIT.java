@@ -131,6 +131,7 @@ class TransitionIT extends AbstractRoomsIT {
     Person c = person();
     String roomId = readyRoom(c);
     post(c, url(roomId), Map.of("to", "auction_scheduled"));
+    ensurePool(roomId);
     UserId actor = new UserId(userId(c));
     UUID id = UUID.fromString(roomId);
 
@@ -166,6 +167,7 @@ class TransitionIT extends AbstractRoomsIT {
     String code = issueInvite(c, roomId);
     post(c, url(roomId), Map.of("to", "auction_scheduled"));
     assertThat(get(c, "/api/rooms/" + roomId + "/invite").getStatusCode()).isEqualTo(HttpStatus.OK);
+    ensurePool(roomId);
 
     lifecycle.advance(UUID.fromString(roomId), RoomState.AUCTION_LIVE, new UserId(userId(c)));
 
@@ -183,6 +185,7 @@ class TransitionIT extends AbstractRoomsIT {
     Person manager = insertManager(roomId, "teal");
     post(c, url(roomId), Map.of("to", "retention"));
     post(c, url(roomId), Map.of("to", "auction_scheduled"));
+    ensurePool(roomId);
     lifecycle.advance(UUID.fromString(roomId), RoomState.AUCTION_LIVE, new UserId(userId(c)));
 
     var response = get(manager, url(roomId));

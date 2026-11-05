@@ -17,6 +17,11 @@ spring:
             client-secret: ${GOOGLE_CLIENT_SECRET:not-configured}
             scope: openid,email,profile
             redirect-uri: ${paddleup.auth.web-base-url}/api/login/oauth2/code/google
+  servlet:
+    multipart:
+      # Season data uploads: 1 MB of file (DatasetFileReader.MAX_BYTES) plus form overhead.
+      max-file-size: 1MB
+      max-request-size: 1100KB
   session:
     # Flyway (V2__spring_session.sql) is the only schema owner.
     jdbc:
@@ -53,6 +58,9 @@ paddleup:
       failed-per-ip: 20
       failure-window: 1h
       trusted-proxy-hops: ${PADDLEUP_TRUSTED_PROXY_HOPS:2}
+  admin:
+    # Comma-separated emails of the app admins who may import season datasets; empty admits nobody.
+    emails: ${PADDLEUP_ADMIN_EMAILS:}
   rooms:
     invite-ttl: 7d
     code-length: 12

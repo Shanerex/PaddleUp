@@ -4,6 +4,10 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.paddleup.accounts.dto.UserId;
+import com.paddleup.packs.dto.ImportReportDto;
+import com.paddleup.packs.service.SeasonDatasetService;
+import com.paddleup.packs.util.DatasetFileReader.Format;
 import com.paddleup.support.AbstractApiIT;
 import com.paddleup.support.MutableClock;
 import java.util.List;
@@ -45,10 +49,57 @@ public abstract class AbstractRoomsIT extends AbstractApiIT {
   @Autowired protected ObjectMapper json;
   @Autowired protected JdbcTemplate jdbc;
   @Autowired protected MutableClock clock;
+  @Autowired protected SeasonDatasetService seasons;
+
+  /** Six valid Cricket T20 players over three sets. */
+  protected static final String SEASON_CSV =
+      """
+      name,country,role,tags,base_price,set,provider_id
+      Ann Lee,Chile,BAT,capped;overseas,20,Marquee,p-1
+      Bo Ray,Peru,BOWL,,50,Marquee,
+      Cy Day,Chile,AR,uncapped,100,Capped Batters,
+      Di Ox,Peru,WK,capped,150,Capped Batters,
+      Ed Fu,Chile,BOWL,uncapped,200,Uncapped,
+      Gus Ho,Peru,AR,overseas,500,Uncapped,
+      """;
 
   @AfterEach
   void realTime() {
     clock.reset();
+  }
+
+  /** Imports a CSV as a new season dataset version for the pack. */
+  protected ImportReportDto importSeason(String packId, String csv) {
+    UUID admin = UUID.randomUUID();
+    jdbc.update(
+        "INSERT INTO users (id, email, display_name, avatar, created_at, updated_at)"
+            + " VALUES (?, ?, 'Admin', 'preset-01', now(), now())",
+        admin,
+        "admin-" + admin + "@example.test");
+    return seasons.importFile(
+        new UserId(admin),
+        packId,
+        Format.CSV,
+        csv.getBytes(java.nio.charset.StandardCharsets.UTF_8));
+  }
+
+  /** Makes sure the Cricket T20 pack has at least one dataset version. */
+  protected void ensureSeason() {
+    if (seasons.latestSummary("cricket-t20").isEmpty()) {
+      importSeason("cricket-t20", SEASON_CSV);
+    }
+  }
+
+  /** Gives a room a pool header straight in the database, for tests that do not edit the pool. */
+  protected void ensurePool(String roomId) {
+    ensureSeason();
+    jdbc.update(
+        "INSERT INTO room_pools (room_id, dataset_id, dataset_version, source_count, set_order,"
+            + " created_at, updated_at)"
+            + " SELECT ?, id, version, 0, set_order, now(), now() FROM season_datasets"
+            + " WHERE pack_id = 'cricket-t20' ORDER BY version DESC LIMIT 1"
+            + " ON CONFLICT DO NOTHING",
+        UUID.fromString(roomId));
   }
 
   protected Person person() {

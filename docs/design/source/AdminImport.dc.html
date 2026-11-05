@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<title>PaddleUp — Season data</title>
+<link rel="icon" href="assets/favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=DM+Mono:wght@400;500&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@20..48,400..600,0..1,0&display=block">
+<script src="paddle.js"></script>
+<style>html,body{margin:0;padding:0}*{scrollbar-width:none}*::-webkit-scrollbar{display:none}body{font-family:'Plus Jakarta Sans',system-ui,sans-serif;-webkit-font-smoothing:antialiased}a{color:var(--brand-ink,#b8401f)}a:hover{color:var(--ink,#2a2420)}</style>
+</helmet>
+<div ref="{{ rootRef }}" style="--bg:oklch(0.975 0.006 75);--surface:oklch(0.995 0.003 75);--surface-2:oklch(0.955 0.007 75);--line:oklch(0.905 0.008 75);--ink:oklch(0.23 0.012 60);--ink-2:oklch(0.46 0.012 60);--ink-3:oklch(0.62 0.01 60);--brand:oklch(0.62 0.19 38);--brand-tint:oklch(0.95 0.035 45);--brand-ink:oklch(0.5 0.17 38);--ok:oklch(0.56 0.14 155);--ok-tint:oklch(0.95 0.04 155);--warn:oklch(0.72 0.15 75);--warn-ink:oklch(0.5 0.12 70);--warn-tint:oklch(0.96 0.05 85);--bad:oklch(0.57 0.2 25);--bad-tint:oklch(0.95 0.035 25);--info:oklch(0.55 0.13 245);--info-tint:oklch(0.95 0.03 245);--inverse:oklch(0.24 0.012 60);--inverse-2:oklch(0.31 0.012 60);--on-inverse:oklch(0.97 0.005 75);--on-inverse-2:oklch(0.78 0.01 70);--shadow:0 1px 2px oklch(0.3 0.02 60 / 0.06), 0 6px 20px oklch(0.3 0.02 60 / 0.07);--role1-bg:oklch(0.93 0.04 70);--role1-ink:oklch(0.4 0.09 70);--role2-bg:oklch(0.93 0.04 250);--role2-ink:oklch(0.4 0.1 250);--role3-bg:oklch(0.93 0.04 150);--role3-ink:oklch(0.4 0.09 150);--role4-bg:oklch(0.93 0.04 320);--role4-ink:oklch(0.42 0.1 320);position:relative;width:100%;height:{{ frameH }};display:flex;flex-direction:column;background:var(--bg);color:var(--ink);font-family:'Plus Jakarta Sans',system-ui,sans-serif;overflow:hidden">
+
+  <div style="flex-shrink:0;display:flex;align-items:center;gap:12px;padding:12px 20px;background:var(--surface);border-bottom:1px solid var(--line)">
+    <a href="Home.dc.html" style="display:flex;align-items:center;gap:8px;text-decoration:none;color:var(--ink)"><svg width="28" height="28" viewBox="0 0 64 64"><g transform="rotate(-16 32 32)" fill="var(--brand)"><rect x="28" y="35" width="8" height="24" rx="4"></rect><circle cx="32" cy="23" r="18"></circle></g></svg><span style="font-size:20px;font-weight:800;letter-spacing:-0.03em">Paddle<span style="color:var(--brand)">Up</span></span></a>
+    <sc-if value="{{ isAdmin }}" hint-placeholder-val="{{ true }}"><span style="font-size:10px;font-weight:800;letter-spacing:0.05em;padding:4px 9px;border-radius:999px;background:var(--inverse);color:var(--on-inverse)">APP ADMIN</span></sc-if>
+    <span style="flex:1"></span>
+    <span title="Profile" style="width:40px;height:40px;border-radius:20px;background:var(--brand-tint);color:var(--brand-ink);display:flex;align-items:center;justify-content:center;font-weight:800;font-size:14px">SR</span>
+  </div>
+
+  <!-- Not on the server-config admin allow-list: the page never shows the form (the API answers 403 as well). -->
+  <sc-if value="{{ sDenied }}" hint-placeholder-val="{{ false }}">
+    <div style="flex:1;min-height:0;overflow:auto;display:flex;align-items:center;justify-content:center;padding:32px 20px">
+      <div style="max-width:400px;display:flex;flex-direction:column;align-items:center;gap:12px;text-align:center">
+        <span style="width:64px;height:64px;border-radius:20px;background:var(--surface-2);color:var(--ink-2);display:flex;align-items:center;justify-content:center;font-family:'Material Symbols Rounded';font-size:32px">lock</span>
+        <span style="font-size:22px;line-height:28px;font-weight:800;letter-spacing:-0.02em">This page is for app admins</span>
+        <span style="font-size:15px;line-height:22px;color:var(--ink-2)">Your account isn't on the admin list. If you think it should be, ask whoever manages this PaddleUp.</span>
+        <a href="Home.dc.html" style="margin-top:8px;height:52px;padding:0 20px;border-radius:14px;background:var(--brand);color:#fffaf6;font-weight:700;font-size:15px;display:flex;align-items:center;text-decoration:none">Back to your rooms</a>
+      </div>
+    </div>
+  </sc-if>
+
+  <!-- Admin import (FR-21), added 2026-11-04 for the player-pool spec. Screens: import (file picked), importReport (some rows rejected: new version made), importFailed (every row rejected: no version). Pack name, role keys and tag keys come from the chosen Sport Pack. -->
+  <sc-if value="{{ isAdmin }}" hint-placeholder-val="{{ true }}">
+    <div style="flex:1;min-height:0;overflow:auto;padding:24px 20px 40px">
+      <div style="max-width:1040px;margin:0 auto;display:flex;flex-direction:column;gap:20px">
+        <div style="display:flex;flex-direction:column;gap:4px"><span style="font-size:28px;font-weight:800;letter-spacing:-0.025em">Season data</span><span style="font-size:14px;color:var(--ink-2);line-height:1.5;max-width:620px">Load the player list for a Sport Pack. Each import becomes a new version. New rooms copy the latest; rooms that already exist keep their copy.</span></div>
+
+        <sc-if value="{{ hasResult }}" hint-placeholder-val="{{ false }}">
+          <div style="display:flex;gap:14px;align-items:flex-start;padding:18px;border-radius:24px;background:{{ rs.bg }}">
+            <span style="width:44px;height:44px;border-radius:13px;background:var(--surface);color:{{ rs.ink }};display:flex;align-items:center;justify-content:center;font-family:'Material Symbols Rounded';font-size:24px;flex-shrink:0">{{ rs.icon }}</span>
+            <div style="flex:1;min-width:0;display:flex;flex-direction:column;gap:10px">
+              <div style="display:flex;flex-direction:column;gap:2px"><span style="font-size:17px;font-weight:800">{{ rs.title }}</span><span style="font-size:14px;color:var(--ink-2);line-height:1.45">{{ rs.body }}</span></div>
+              <div style="display:flex;gap:8px;flex-wrap:wrap">
+                <sc-for list="{{ rs.stats }}" as="t" hint-placeholder-count="3"><div style="background:var(--surface);border-radius:14px;padding:8px 12px;display:flex;flex-direction:column;gap:2px;min-width:96px"><span style="font-size:10px;font-weight:700;letter-spacing:0.06em;color:var(--ink-2)">{{ t.k }}</span><span style="font-family:'DM Mono',monospace;font-size:18px;font-weight:500;color:{{ t.ink }}">{{ t.v }}</span></div></sc-for>
+              </div>
+            </div>
+          </div>
+          <div style="border-radius:24px;background:var(--surface);padding:6px 0;box-shadow:var(--shadow);display:flex;flex-direction:column">
+            <div style="display:flex;justify-content:space-between;align-items:baseline;padding:10px 16px"><span style="font-size:11px;font-weight:700;letter-spacing:0.06em;color:var(--ink-2)">REJECTED ROWS</span><span style="font-family:'DM Mono',monospace;font-size:12px;color:var(--ink-2)">{{ rs.rejectedN }}</span></div>
+            <sc-if value="{{ notPhone }}" hint-placeholder-val="{{ true }}">
+              <div style="display:flex;gap:12px;padding:8px 16px;border-top:1px solid var(--line);font-size:11px;font-weight:700;letter-spacing:0.06em;color:var(--ink-2)"><span style="width:48px">ROW</span><span style="width:96px">FIELD</span><span style="width:180px">VALUE</span><span style="flex:1">PROBLEM</span></div>
+            </sc-if>
+            <sc-for list="{{ rs.rows }}" as="r" hint-placeholder-count="3"><div style="display:flex;flex-wrap:wrap;align-items:baseline;gap:4px 12px;padding:10px 16px;border-top:1px solid var(--line)">
+              <span style="width:48px;font-family:'DM Mono',monospace;font-size:13px;color:var(--ink-2)">{{ r.row }}</span>
+              <span style="width:96px;font-family:'DM Mono',monospace;font-size:13px;font-weight:500;color:var(--bad)">{{ r.field }}</span>
+              <span style="width:180px;font-family:'DM Mono',monospace;font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ r.value }}</span>
+              <span style="flex:1 1 220px;font-size:13px;color:var(--ink-2);line-height:1.45">{{ r.problem }}</span>
+            </div></sc-for>
+            <sc-if value="{{ rs.more }}" hint-placeholder-val="{{ false }}"><span style="padding:12px 16px 8px;border-top:1px solid var(--line);font-size:12px;color:var(--ink-2)">{{ rs.moreText }}</span></sc-if>
+          </div>
+        </sc-if>
+
+        <div style="display:flex;flex-wrap:wrap;gap:16px;align-items:flex-start">
+          <div style="flex:3 1 380px;min-width:0;border-radius:24px;background:var(--surface);padding:18px;display:flex;flex-direction:column;gap:14px;box-shadow:var(--shadow)">
+            <span style="font-size:11px;font-weight:700;letter-spacing:0.06em;color:var(--ink-2)">{{ formLabel }}</span>
+            <label style="display:flex;flex-direction:column;gap:6px"><span style="font-size:13px;font-weight:700">Sport Pack</span><div style="height:48px;border-radius:14px;background:var(--surface-2);display:flex;align-items:center;justify-content:space-between;padding:0 10px 0 14px;font-size:15px;font-weight:500"><span style="display:flex;align-items:center;gap:8px"><span style="font-family:'Material Symbols Rounded';font-size:20px;color:var(--ink-2)">sports_cricket</span>Cricket T20 <span style="font-family:'DM Mono',monospace;font-size:13px;color:var(--ink-2)">1.0.0</span></span><span style="font-family:'Material Symbols Rounded';font-size:20px;color:var(--ink-2)">expand_more</span></div></label>
+            <div style="display:flex;flex-direction:column;gap:6px"><span style="font-size:13px;font-weight:700">File</span>
+              <sc-if value="{{ hasFile }}" hint-placeholder-val="{{ true }}">
+                <div style="display:flex;align-items:center;gap:12px;padding:12px 14px;border-radius:14px;background:var(--brand-tint)"><span style="font-family:'Material Symbols Rounded';font-size:24px;line-height:1;color:var(--brand-ink)">description</span><div style="flex:1;min-width:0;display:flex;flex-direction:column;gap:2px"><span style="font-weight:700;font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ file.name }}</span><span style="font-family:'DM Mono',monospace;font-size:12px;color:var(--ink-2)">{{ file.meta }}</span></div><button onClick="{{ clearFile }}" title="Remove file" style="width:36px;height:36px;border:0;border-radius:12px;background:var(--surface);color:var(--ink-2);font-family:'Material Symbols Rounded';font-size:20px;cursor:pointer">close</button></div>
+              </sc-if>
+              <sc-if value="{{ noFile }}" hint-placeholder-val="{{ false }}">
+                <button onClick="{{ pickFile }}" style="height:120px;border:2px dashed var(--line);border-radius:18px;background:var(--surface-2);color:var(--ink-2);font:inherit;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;cursor:pointer"><span style="font-family:'Material Symbols Rounded';font-size:28px;line-height:1">upload_file</span><span style="font-size:14px;font-weight:700;color:var(--ink)">Drop a CSV or JSON file</span><span style="font-size:12px">or choose one</span></button>
+              </sc-if>
+            </div>
+            <div style="display:flex;flex-direction:column;gap:6px;padding:12px 14px;border-radius:14px;background:var(--surface-2);font-size:12px;color:var(--ink-2);line-height:1.5">
+              <span><b style="color:var(--ink)">Columns:</b> <span style="font-family:'DM Mono',monospace">name, country, role, tags, base_price, set, provider_id</span></span>
+              <span><b style="color:var(--ink)">Cricket T20 roles:</b> <span style="font-family:'DM Mono',monospace">BAT · BOWL · AR · WK</span> · <b style="color:var(--ink)">tags:</b> <span style="font-family:'DM Mono',monospace">capped · uncapped · overseas</span></span>
+              <span>Rows that don't fit the pack are skipped and listed. The rest still import.</span>
+            </div>
+            <button onClick="{{ runImport }}" style="height:52px;border:0;border-radius:14px;background:{{ ctaBg }};color:{{ ctaInk }};font:inherit;font-weight:700;font-size:16px;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px"><span style="font-family:'Material Symbols Rounded';font-size:20px;line-height:1">upload</span>Import</button>
+          </div>
+
+          <div style="flex:2 1 280px;min-width:0;border-radius:24px;background:var(--surface);padding:8px;display:flex;flex-direction:column;box-shadow:var(--shadow)">
+            <div style="display:flex;justify-content:space-between;align-items:baseline;padding:10px"><span style="font-size:11px;font-weight:700;letter-spacing:0.06em;color:var(--ink-2)">VERSIONS · CRICKET T20</span></div>
+            <sc-for list="{{ versions }}" as="v" hint-placeholder-count="3"><div style="display:flex;align-items:center;gap:12px;padding:10px;border-top:1px solid var(--line);background:{{ v.rowBg }};border-radius:{{ v.radius }}">
+              <span style="width:44px;height:44px;border-radius:13px;background:{{ v.tileBg }};color:{{ v.tileInk }};display:flex;align-items:center;justify-content:center;font-family:'DM Mono',monospace;font-size:15px;font-weight:500;flex-shrink:0">{{ v.v }}</span>
+              <div style="flex:1;min-width:0;display:flex;flex-direction:column;gap:2px"><div style="display:flex;align-items:center;gap:6px"><span style="font-weight:700;font-size:14px"><span style="font-family:'DM Mono',monospace">{{ v.players }}</span> players</span><sc-if value="{{ v.latest }}" hint-placeholder-val="{{ false }}"><span style="font-size:9px;font-weight:800;letter-spacing:0.05em;padding:2px 6px;border-radius:6px;background:var(--ok-tint);color:var(--ok)">LATEST</span></sc-if></div><span style="font-size:12px;color:var(--ink-2)">{{ v.sub }}</span></div>
+            </div></sc-for>
+          </div>
+        </div>
+      </div>
+    </div>
+  </sc-if>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;screen&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;import&quot;,&quot;importEmpty&quot;,&quot;importReport&quot;,&quot;importFailed&quot;,&quot;importDenied&quot;],&quot;default&quot;:&quot;import&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;Prototype&quot;},&quot;mode&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;light&quot;,&quot;dark&quot;],&quot;default&quot;:&quot;light&quot;,&quot;tsType&quot;:&quot;'light'|'dark'&quot;,&quot;section&quot;:&quot;Theme&quot;},&quot;height&quot;:{&quot;editor&quot;:null,&quot;tsType&quot;:&quot;string&quot;}}">
+class Component extends DCLogic {
+  state = { screen: null, bp: 'phone' };
+  rootRef = React.createRef();
+  componentDidMount() {
+    const go = () => {
+      if (!window.PaddleSim) { this.t = setTimeout(go, 40); return; }
+      PaddleSim.applyTheme(this.rootRef.current, this.props.mode ?? 'light', 195);
+      this.unw = PaddleSim.watchWidth(this.rootRef.current, (bp) => bp !== this.state.bp && this.setState({ bp }));
+    };
+    go();
+  }
+  componentDidUpdate(pp) { if (pp.mode !== this.props.mode && window.PaddleSim) PaddleSim.applyTheme(this.rootRef.current, this.props.mode ?? 'light', 195); if (pp.screen !== this.props.screen) this.setState({ screen: null }); }
+  componentWillUnmount() { clearTimeout(this.t); this.unw && this.unw(); }
+  renderVals() {
+    const sc = this.state.screen ?? this.props.screen ?? 'import';
+    const go = (s) => this.setState({ screen: s });
+    const report = sc === 'importReport', failed = sc === 'importFailed';
+    const hasFile = sc !== 'importEmpty';
+    const RS = {
+      importReport: { bg: 'var(--ok-tint)', ink: 'var(--ok)', icon: 'check_circle', title: 'v4 is live with 215 players.', body: '3 rows were skipped. New rooms get v4. Existing rooms keep their copy until their Commissioner resets.', stats: [['IMPORTED', '215', 'var(--ok)'], ['SKIPPED', '3', 'var(--bad)'], ['VERSION', 'v4', 'var(--ink)']],
+        rows: [['17', 'role', 'BATTER', 'Not a Cricket T20 role. Use BAT, BOWL, AR or WK.'], ['88', 'tags', 'overseas;local', '"local" is not a Cricket T20 tag.'], ['141', 'base_price', '-20', 'Base price must be above zero.']], more: false, moreText: '' },
+      importFailed: { bg: 'var(--bad-tint)', ink: 'var(--bad)', icon: 'error', title: 'Nothing imported.', body: 'All 24 rows were skipped, so no new version was made. v3 is still the latest. Is this file for a different Sport Pack?', stats: [['IMPORTED', '0', 'var(--ink)'], ['SKIPPED', '24', 'var(--bad)'], ['LATEST', 'v3', 'var(--ink)']],
+        rows: [['2', 'role', 'GK', 'Not a Cricket T20 role. Use BAT, BOWL, AR or WK.'], ['3', 'role', 'DEF', 'Not a Cricket T20 role. Use BAT, BOWL, AR or WK.'], ['4', 'tags', 'home-grown', '"home-grown" is not a Cricket T20 tag.'], ['5', 'role', 'MID', 'Not a Cricket T20 role. Use BAT, BOWL, AR or WK.']], more: true, moreText: 'and 20 more like these' }
+    };
+    const r = RS[sc];
+    const rs = r ? { bg: r.bg, ink: r.ink, icon: r.icon, title: r.title, body: r.body, stats: r.stats.map(([k, v, ink]) => ({ k, v, ink })), rows: r.rows.map(([row, field, value, problem]) => ({ row, field, value, problem })), rejectedN: failed ? '24' : '3', more: r.more, moreText: r.moreText } : null;
+    const vRaw = report ? [['v4', 215, 'Today 21:40 · 3 skipped', true], ['v3', 214, 'Sat 2 Nov · 0 skipped', false], ['v2', 208, 'Tue 29 Oct · 6 skipped', false], ['v1', 190, 'Mon 21 Oct · 2 skipped', false]]
+      : [['v3', 214, 'Sat 2 Nov · 0 skipped', true], ['v2', 208, 'Tue 29 Oct · 6 skipped', false], ['v1', 190, 'Mon 21 Oct · 2 skipped', false]];
+    const versions = vRaw.map(([v, players, sub, latest], i) => ({ v, players, sub, latest, rowBg: 'transparent', radius: '0', tileBg: latest ? 'var(--brand-tint)' : 'var(--surface-2)', tileInk: latest ? 'var(--brand-ink)' : 'var(--ink-2)' }));
+    const file = failed ? { name: 'football-2026-squads.csv', meta: '24 rows · 3 KB' } : report ? { name: 'ipl-2026-pool-final.csv', meta: '218 rows · 41 KB' } : { name: 'ipl-2026-pool-final.csv', meta: '218 rows · 41 KB' };
+    return {
+      rootRef: this.rootRef, frameH: this.props.height ?? '100vh', notPhone: this.state.bp !== 'phone',
+      sDenied: sc === 'importDenied', isAdmin: sc !== 'importDenied',
+      hasResult: !!r, rs: rs || { stats: [], rows: [] }, formLabel: r ? 'IMPORT ANOTHER FILE' : 'NEW IMPORT',
+      hasFile, noFile: !hasFile, file,
+      ctaBg: hasFile ? 'var(--brand)' : 'var(--surface-2)', ctaInk: hasFile ? '#fffaf6' : 'var(--ink-3)',
+      clearFile: () => go('importEmpty'), pickFile: () => go('import'), runImport: () => hasFile ? go('importReport') : null,
+      versions
+    };
+  }
+}
+</script>
+</body>
+</html>

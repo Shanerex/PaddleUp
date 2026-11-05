@@ -13,7 +13,13 @@ public enum LogKind {
   MANAGER_JOINED,
   MANAGER_REMOVED,
   COMMISSIONER_HANDOVER,
-  TRANSITION;
+  TRANSITION,
+  POOL_COPIED,
+  POOL_PLAYER_ADDED,
+  POOL_PLAYER_EDITED,
+  POOL_PLAYER_REMOVED,
+  POOL_RESET,
+  SET_ORDER_SAVED;
 
   public String value() {
     return name().toLowerCase(Locale.ROOT);

@@ -1,0 +1,854 @@
+/* Room.dc.html v1 `pool*`, `sets*` screens (lines 405-490) and the `poolEdit` sheet (532-556). */
+.page {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  max-width: 1040px;
+  margin: 0 auto;
+}
+
+.narrow {
+  max-width: 680px;
+  width: 100%;
+}
+
+.back {
+  align-self: flex-start;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  height: 36px;
+  margin: -6px 0 -6px -6px;
+  padding: 0 12px 0 6px;
+  border-radius: 12px;
+  color: var(--team-ink);
+  font-size: 14px;
+  font-weight: 700;
+  text-decoration: none;
+}
+
+@media (min-width: 1100px) {
+  .back {
+    display: none;
+  }
+}
+
+.head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.headText {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+
+.title {
+  margin: 0;
+  font-size: 24px;
+  font-weight: 800;
+  letter-spacing: -0.025em;
+}
+
+.sub {
+  font-size: 13px;
+  color: var(--ink-2);
+}
+
+.lede {
+  font-size: 14px;
+  line-height: 1.45;
+  color: var(--ink-2);
+}
+
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.notice {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 14px 16px;
+  border-radius: 20px;
+  background: var(--info-tint);
+}
+
+.noticeIcon {
+  color: var(--info);
+}
+
+.noticeText {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+  font-size: 14px;
+}
+
+.noticeText b {
+  font-weight: 700;
+}
+
+.noticeSub {
+  font-size: 13px;
+  line-height: 1.45;
+  color: var(--ink-2);
+}
+
+.note {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 14px;
+  border-radius: 16px;
+  background: var(--surface-2);
+  font-size: 13px;
+  line-height: 1.45;
+  color: var(--ink-2);
+}
+
+.note > :first-child {
+  color: var(--ink-2);
+}
+
+.noteText {
+  flex: 1;
+}
+
+.empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  padding: 32px 24px;
+  border-radius: 28px;
+  background: var(--surface);
+  box-shadow: var(--shadow);
+  text-align: center;
+}
+
+.emptyTile {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 64px;
+  height: 64px;
+  border-radius: 20px;
+  background: var(--surface-2);
+  color: var(--ink-2);
+}
+
+.emptyTitle {
+  margin: 0;
+  font-size: 22px;
+  line-height: 28px;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+}
+
+.emptyBody {
+  max-width: 420px;
+  margin: 0;
+  font-size: 15px;
+  line-height: 22px;
+  color: var(--ink-2);
+}
+
+.emptyHint {
+  font-size: 12px;
+  color: var(--ink-2);
+}
+
+.cols {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  gap: 16px;
+}
+
+.listCol {
+  flex: 3 1 420px;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.tools {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.search {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  height: 44px;
+  padding: 0 14px;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  background: var(--surface);
+  color: var(--ink-3);
+}
+
+.search:focus-within {
+  border-color: var(--team);
+}
+
+.searchInput {
+  flex: 1;
+  min-width: 0;
+  height: 100%;
+  border: 0;
+  background: transparent;
+  color: var(--ink);
+  font: inherit;
+  font-size: 14px;
+  outline: none;
+}
+
+.searchInput::placeholder {
+  color: var(--ink-3);
+}
+
+.chips {
+  display: flex;
+  gap: 6px;
+  padding: 2px 0;
+  overflow-x: auto;
+}
+
+.chip {
+  display: inline-flex;
+  flex-shrink: 0;
+  align-items: center;
+  gap: 6px;
+  height: 32px;
+  padding: 0 12px;
+  border: 0;
+  border-radius: 999px;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 700;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.chip[aria-pressed="true"] {
+  box-shadow: 0 0 0 2px var(--team);
+}
+
+/* "All" is the resting state; the mock draws no ring on it. */
+.chip[data-all][aria-pressed="true"] {
+  box-shadow: none;
+}
+
+.chip .count {
+  font-family: var(--font-num);
+  font-weight: 500;
+}
+
+.table {
+  display: flex;
+  flex-direction: column;
+  padding: 6px 0;
+  border-radius: 24px;
+  background: var(--surface);
+  box-shadow: var(--shadow);
+}
+
+.thead {
+  display: none;
+  align-items: center;
+  gap: 12px;
+  padding: 8px 16px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  color: var(--ink-2);
+}
+
+@media (min-width: 600px) {
+  .thead {
+    display: flex;
+  }
+}
+
+.row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 16px;
+  border-top: 1px solid var(--line);
+}
+
+.who {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.nameLine,
+.subLine {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+}
+
+.name {
+  font-size: 14px;
+  font-weight: 700;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.flag {
+  flex-shrink: 0;
+  padding: 2px 6px;
+  border-radius: 6px;
+  background: var(--team-tint);
+  color: var(--team-ink);
+  font-size: 9px;
+  font-weight: 800;
+  letter-spacing: 0.05em;
+}
+
+.flagTop {
+  display: none;
+}
+
+.flagSub {
+  display: inline-block;
+}
+
+@media (min-width: 600px) {
+  .flagTop {
+    display: inline-block;
+  }
+
+  .flagSub {
+    display: none;
+  }
+}
+
+.subText {
+  font-size: 12px;
+  color: var(--ink-2);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.subWide {
+  display: none;
+}
+
+@media (min-width: 600px) {
+  .subWide {
+    display: inline;
+  }
+
+  .subPhone {
+    display: none;
+  }
+}
+
+.colRole {
+  display: flex;
+  flex-shrink: 0;
+  width: 52px;
+}
+
+.roleChip {
+  padding: 3px 7px;
+  border-radius: 7px;
+  font-size: 11px;
+  font-weight: 800;
+}
+
+.colSet {
+  display: none;
+  flex-shrink: 0;
+  width: 120px;
+  font-size: 13px;
+  color: var(--ink-2);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+@media (min-width: 600px) {
+  .colSet {
+    display: block;
+  }
+}
+
+.colBase {
+  flex-shrink: 0;
+  min-width: 76px;
+  white-space: nowrap;
+  text-align: right;
+  font-family: var(--font-num);
+  font-size: 14px;
+  font-variant-numeric: tabular-nums;
+}
+
+@media (min-width: 600px) {
+  .colBase {
+    width: 112px;
+  }
+}
+
+.colAct {
+  flex-shrink: 0;
+  width: 36px;
+}
+
+.iconBtn {
+  display: inline-flex;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  border: 0;
+  border-radius: 12px;
+  background: var(--surface-2);
+  color: var(--ink-2);
+  cursor: pointer;
+}
+
+.iconBtn:disabled {
+  color: var(--ink-3);
+  cursor: default;
+}
+
+.foot {
+  padding: 12px 16px 8px;
+  border-top: 1px solid var(--line);
+  font-size: 12px;
+  color: var(--ink-2);
+}
+
+.noMatch {
+  padding: 16px;
+  border-top: 1px solid var(--line);
+  font-size: 13px;
+  color: var(--ink-2);
+}
+
+.setsCard {
+  flex: 1 1 260px;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  padding: 8px;
+  border-radius: 24px;
+  background: var(--surface);
+  box-shadow: var(--shadow);
+}
+
+.cardHead {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  padding: 10px;
+}
+
+.label {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  color: var(--ink-2);
+}
+
+.num {
+  font-family: var(--font-num);
+  font-size: 12px;
+  color: var(--ink-2);
+  font-variant-numeric: tabular-nums;
+}
+
+.setRow {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 10px;
+  border-top: 1px solid var(--line);
+}
+
+.setIdx {
+  width: 20px;
+  font-family: var(--font-num);
+  font-size: 12px;
+  color: var(--ink-3);
+}
+
+.setName {
+  flex: 1;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.setsLink {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  height: 44px;
+  margin: 8px 4px 4px;
+  border-radius: 14px;
+  background: var(--team-tint);
+  color: var(--team-ink);
+  font-size: 14px;
+  font-weight: 700;
+  text-decoration: none;
+}
+
+.skeleton {
+  border-radius: 24px;
+  background: var(--surface-2);
+}
+
+/* Banners pinned under the header (DS 11). */
+.banner {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 16px;
+  font-size: 13px;
+}
+
+.bannerText {
+  flex: 1;
+}
+
+.bannerSub {
+  color: var(--ink-2);
+}
+
+/* Edit / add sheet. */
+.sheetHead {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.sheetTitle {
+  margin: 0;
+  font-size: 22px;
+  line-height: 28px;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+}
+
+.sheetSub {
+  font-size: 13px;
+  color: var(--ink-2);
+}
+
+.group {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  min-width: 0;
+}
+
+.groupLabel {
+  padding: 0;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.optional {
+  font-weight: 500;
+  color: var(--ink-2);
+}
+
+.roleGrid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 8px;
+}
+
+.roleOpt {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  height: 44px;
+  padding: 0 12px;
+  border: 0;
+  border-radius: 12px;
+  background: var(--surface-2);
+  color: var(--ink);
+  font: inherit;
+  font-size: 14px;
+  font-weight: 700;
+  text-align: left;
+  cursor: pointer;
+}
+
+.roleOpt[aria-checked="true"] {
+  background: var(--team-tint);
+  color: var(--team-ink);
+  box-shadow: 0 0 0 2px var(--team);
+}
+
+.roleKey {
+  padding: 2px 6px;
+  border-radius: 6px;
+  font-size: 11px;
+  font-weight: 800;
+}
+
+.tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 36px;
+  padding: 0 12px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: var(--surface);
+  color: var(--ink-2);
+  font: inherit;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.tag[aria-pressed="true"] {
+  border-color: var(--team);
+  background: var(--team-tint);
+  color: var(--team-ink);
+}
+
+.pair {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+
+.selectWrap {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 0;
+}
+
+.select {
+  width: 100%;
+  height: 48px;
+  padding: 0 34px 0 14px;
+  border: 1.5px solid transparent;
+  border-radius: 14px;
+  background: var(--surface-2);
+  color: var(--ink);
+  font: inherit;
+  font-size: 15px;
+  font-weight: 500;
+  appearance: none;
+  outline: none;
+  text-overflow: ellipsis;
+}
+
+.select:focus-visible {
+  border-color: var(--team);
+}
+
+.selectIcon {
+  position: absolute;
+  right: 10px;
+  bottom: 14px;
+  color: var(--ink-2);
+  pointer-events: none;
+}
+
+.fieldError {
+  margin-top: -8px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--bad);
+}
+
+.sheetActions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.grow {
+  flex: 1;
+}
+
+.removeLabel {
+  display: none;
+}
+
+@media (min-width: 640px) {
+  .removeLabel {
+    display: inline;
+  }
+}
+
+/* Set order (sets, setsMember). */
+.setList {
+  display: flex;
+  flex-direction: column;
+  margin: 0;
+  padding: 6px 0;
+  border-radius: 24px;
+  background: var(--surface);
+  box-shadow: var(--shadow);
+  list-style: none;
+}
+
+.setItem {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px 10px 14px;
+  border-top: 1px solid var(--line);
+}
+
+.setItem:first-child {
+  border-top: 0;
+}
+
+.moved {
+  background: var(--team-tint);
+}
+
+.handle {
+  color: var(--ink-3);
+}
+
+.setNo {
+  width: 24px;
+  font-family: var(--font-num);
+  font-size: 14px;
+  color: var(--ink-2);
+  font-variant-numeric: tabular-nums;
+}
+
+.setText {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.setTitleLine {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.setTitle {
+  font-size: 14px;
+  font-weight: 700;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.movedFlag {
+  flex-shrink: 0;
+  padding: 2px 6px;
+  border-radius: 6px;
+  background: var(--team);
+  color: var(--on-team);
+  font-size: 9px;
+  font-weight: 800;
+  letter-spacing: 0.05em;
+}
+
+.setCount {
+  font-size: 12px;
+  color: var(--ink-2);
+}
+
+.setCount b {
+  font-family: var(--font-num);
+  font-weight: 400;
+}
+
+.moveBtns {
+  display: flex;
+  gap: 4px;
+}
+
+.saveBar {
+  position: sticky;
+  bottom: 0;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 10px 10px 16px;
+  border-radius: 18px;
+  background: var(--inverse);
+  color: var(--on-inverse);
+  box-shadow: var(--shadow);
+}
+
+.saveText {
+  flex: 1;
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.discard {
+  height: 44px;
+  padding: 0 14px;
+  border: 0;
+  border-radius: 12px;
+  background: transparent;
+  color: var(--on-inverse-2);
+  font: inherit;
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.save {
+  height: 44px;
+  padding: 0 16px;
+  border: 0;
+  border-radius: 12px;
+  background: var(--team);
+  color: var(--on-team);
+  font: inherit;
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.save:disabled {
+  opacity: 0.7;
+  cursor: default;
+}

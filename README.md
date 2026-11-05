@@ -32,6 +32,16 @@ Accounts sign in by emailed link or 6-digit code, or with Google. Sessions are s
 - Sign-in rate limits (`paddleup.auth.throttle.*`, Postgres-backed): 3 emails per address and 10 per client IP per 15 minutes; 5 wrong codes per email (across all its tokens) and 20 failures per client IP per hour; over the limit the server answers 429 with `Retry-After` and sends nothing. The client IP is read from `X-Forwarded-For` behind `PADDLEUP_TRUSTED_PROXY_HOPS` trusted proxies (default 2: Vercel rewrite + Fly proxy; the dev profile uses 0, the socket peer). Check the real header after deploying; a wrong count shares buckets between users but never lets a client choose its own address. A locked email answers 429 with `Retry-After` even for the right code; the emailed link still works because it is not email-throttled.
 - API types: with the server running, `cd web && npm run gen:api` regenerates `web/src/api/generated.ts` from `/v3/api-docs` (set `OPENAPI_URL` if the server is not on port 8080). Commit the result.
 
+## Season data (player pool)
+
+Each Sport Pack has versioned season datasets. An app admin imports one at `/admin/import`; every room copies the latest version when it is created, and its Commissioner can edit that copy, reset it and reorder its sets until the auction goes live.
+
+- Admins: set `PADDLEUP_ADMIN_EMAILS` to a comma-separated list of account emails (case-insensitive). The default is empty, which admits nobody; the import endpoints answer 403 and the page shows the "app admins only" screen. The `dev` profile needs it too, for example `PADDLEUP_ADMIN_EMAILS=you@example.com make dev`.
+- File format: CSV with the header `name,country,role,tags,base_price,set,provider_id` (tags separated by `;`, `provider_id` optional), or JSON `{"players":[{"name":"...","country":"...","role":"...","tags":["..."],"base_price":20,"set":"...","provider_id":"..."}]}`. At most 1 MB and 2,000 rows. Row 1 is the first player, not the header.
+- Rules per row: `role` and `tags` must be keys of the chosen pack; `base_price` is a whole number of the pack's smallest currency unit, above zero, at most every preset's purse and on its increment ladder; name, country and set are cleaned of markup and capped at 60, 40 and 40 characters; `provider_id` is up to 64 characters of letters, digits and `. : _ -`.
+- Import is partial: valid rows become the next version (v1, v2, ...) and rejected rows are listed with row, field and problem. A file with no valid row creates no version and answers 422 with the report. Versions are immutable; existing room copies never change.
+- Rooms without a copy (no season data when they were created) cannot start the auction. The Commissioner uses "Load season data" on the player pool screen once a version exists.
+
 ## Layout
 
 - `server/` Spring Boot modular monolith: modules `accounts`, `rooms`, `auction`, `scoring`, `packs`, `advisor` under `com.paddleup`, each split into `controller`, `service`, `repository`, `model`, `dto`, `exception`, `config` and `util` packages (see `docs/knowledge/architecture.md`)
