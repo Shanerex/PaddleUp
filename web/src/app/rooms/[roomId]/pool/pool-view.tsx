@@ -20,6 +20,10 @@ import {
   roleSlot,
   sourceLine,
   tagText,
+  unfitClause,
+  unfitReason,
+  UNFIT_HINT,
+  UNFIT_WHY,
   type PackLabels,
 } from "../../../../rooms/pool";
 import { AppShell, shell } from "../../../../ui/AppShell";
@@ -151,6 +155,7 @@ export function PoolView({ roomId }: { roomId: string }) {
       : null;
   const newer = !!pool && f.commish && canEdit && hasNewerData(pool);
   const edits = pool?.editCount ?? 0;
+  const unfit = pool && f.commish && canEdit ? unfitReason(pool) : null;
   const sheetPlayer = sheet?.kind === "edit" || sheet?.kind === "remove" ? sheet.player : null;
 
   return (
@@ -278,12 +283,26 @@ export function PoolView({ roomId }: { roomId: string }) {
                   <Button variant="primary" icon="person_add" onClick={() => open({ kind: "add" })}>
                     Add player
                   </Button>
-                  <Button variant="outline" icon="restart_alt" onClick={() => open({ kind: "reset" })}>
-                    Reset to latest
-                  </Button>
+                  {pool.latestFit === "fits" && (
+                    <Button variant="outline" icon="restart_alt" onClick={() => open({ kind: "reset" })}>
+                      Reset to latest
+                    </Button>
+                  )}
                 </div>
               )}
             </div>
+
+            {unfit && (
+              <div className={`${s.notice} ${s.noticeWarn}`}>
+                <Icon name="report" size={22} className={s.noticeIconWarn} />
+                <div className={s.noticeText}>
+                  <b>Season data v{pool.latestDatasetVersion} can&apos;t be loaded here.</b>
+                  <span className={s.noticeSub}>
+                    {UNFIT_WHY[unfit]} Your pool stays on v{pool.datasetVersion} with {edits} {edits === 1 ? "edit" : "edits"}.
+                  </span>
+                </div>
+              </div>
+            )}
 
             {newer && (
               <div className={s.notice}>
@@ -313,20 +332,23 @@ export function PoolView({ roomId }: { roomId: string }) {
                 <p className={s.emptyBody}>
                   {pool.latestDatasetVersion == null
                     ? `Nobody has loaded season data for ${labels.packName ?? labels.packId} yet. The auction can't start until this room has a pool.`
-                    : `Season data v${pool.latestDatasetVersion} is ready for ${labels.packName ?? labels.packId}. The auction can't start until this room has a pool.`}
+                    : unfitReason(pool)
+                      ? `Season data v${pool.latestDatasetVersion} exists for ${labels.packName ?? labels.packId}, but ${unfitClause(unfitReason(pool)!)}, so it can't be loaded here. The auction can't start until this room has a pool.`
+                      : `Season data v${pool.latestDatasetVersion} is ready for ${labels.packName ?? labels.packId}. The auction can't start until this room has a pool.`}
                 </p>
                 {canEdit && (
                   <>
                     <Button
                       variant="primary"
                       icon="download"
-                      disabled={pool.latestDatasetVersion == null}
+                      disabled={pool.latestDatasetVersion == null || unfitReason(pool) !== null}
                       busy={busy}
                       onClick={() => void write("Loading the season data", () => resetPool(roomId, 0))}
                     >
                       Load season data
                     </Button>
                     {pool.latestDatasetVersion == null && <span className={s.emptyHint}>Turns on as soon as there&apos;s season data to load.</span>}
+                    {unfitReason(pool) && <span className={s.emptyHint}>{UNFIT_HINT[unfitReason(pool)!]}</span>}
                     {sheetError && (
                       <span className={s.fieldError} role="alert" style={{ margin: 0 }}>
                         {sheetError}

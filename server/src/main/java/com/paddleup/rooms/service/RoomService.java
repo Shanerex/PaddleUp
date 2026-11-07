@@ -196,6 +196,7 @@ public class RoomService {
                 DisplayNameSanitiser.sanitise(request.config().name()),
                 DisplayNameSanitiser.sanitise(request.config().competition()));
     failOn(validator.validate(config, room.packSnapshot(), franchises.count(roomId)));
+    pool.requireFits(roomId, config);
     Instant now = clock.instant();
     if (!rooms.updateConfig(roomId, config, room.configVersion(), now)) {
       throw new RoomConflictException(

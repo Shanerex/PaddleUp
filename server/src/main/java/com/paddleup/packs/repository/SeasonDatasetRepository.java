@@ -1,5 +1,6 @@
 package com.paddleup.packs.repository;
 
+import com.paddleup.packs.dto.DatasetFacetsDto;
 import com.paddleup.packs.dto.DatasetSummaryDto;
 import com.paddleup.packs.dto.SeasonDatasetDto;
 import com.paddleup.packs.dto.SeasonPlayerDto;
@@ -11,6 +12,7 @@ import java.time.Instant;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 import java.util.UUID;
 import org.springframework.jdbc.core.BatchPreparedStatementSetter;
 import org.springframework.jdbc.core.JdbcTemplate;
@@ -130,6 +132,37 @@ public class SeasonDatasetRepository {
             return players.size();
           }
         });
+  }
+
+  /**
+   * The newest version's distinct roles, tags and base prices, read by the database so the players
+   * themselves are never loaded.
+   */
+  public Optional<DatasetFacetsDto> latestFacets(String packId) {
+    return latestSummary(packId)
+        .map(
+            d ->
+                new DatasetFacetsDto(
+                    d.version(),
+                    Set.copyOf(
+                        jdbc.sql("SELECT DISTINCT role_key FROM season_players WHERE dataset_id = ?")
+                            .param(d.id())
+                            .query(String.class)
+                            .list()),
+                    Set.copyOf(
+                        jdbc.sql(
+                                "SELECT DISTINCT unnest(tag_keys) FROM season_players"
+                                    + " WHERE dataset_id = ?")
+                            .param(d.id())
+                            .query(String.class)
+                            .list()),
+                    Set.copyOf(
+                        jdbc.sql(
+                                "SELECT DISTINCT base_price FROM season_players"
+                                    + " WHERE dataset_id = ?")
+                            .param(d.id())
+                            .query(Long.class)
+                            .list())));
   }
 
   public Optional<DatasetSummaryDto> latestSummary(String packId) {

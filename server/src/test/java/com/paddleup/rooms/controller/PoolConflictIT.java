@@ -153,6 +153,7 @@ class PoolConflictIT extends AbstractRoomsIT {
       for (int round = 0; round < 8; round++) {
         Person c = person();
         String id = createRoom(c);
+        ensurePool(id);
         insertManager(id, "sky");
         insertManager(id, "teal");
         assertThat(

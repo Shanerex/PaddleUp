@@ -55,6 +55,9 @@ export function PlayerSheet({
     set: player?.set ?? pool.sets[0]?.name ?? "",
     providerId: player?.providerId ?? "",
   }));
+  // The version the pool had when this sheet opened. A background reload that bumps pool.version
+  // must not let this draft overwrite someone else's change; the server answers 409 instead.
+  const [openedVersion] = useState(pool.version);
   const [localPrice, setLocalPrice] = useState<string | null>(null);
   const set = (patch: Partial<Draft>) => setDraft((d) => ({ ...d, ...patch }));
 
@@ -66,7 +69,7 @@ export function PlayerSheet({
     }
     setLocalPrice(null);
     onSave({
-      version: pool.version,
+      version: openedVersion,
       name: draft.name,
       country: draft.country,
       role: draft.role,

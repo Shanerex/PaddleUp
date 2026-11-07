@@ -66,7 +66,8 @@ describe("explainRoomError", () => {
   });
 
   it("explains the pool codes: a mismatched pack, a field error and a vanished player", () => {
-    expect(explainRoomError(api(409, { error: "pack_mismatch" }))).toMatchObject({ refetch: true, message: expect.stringMatching(/different version of this pack/) });
+    expect(explainRoomError(api(409, { error: "pack_mismatch" }))).toMatchObject({ refetch: true, message: expect.stringMatching(/roles or tags this room's pack doesn't have/) });
+    expect(explainRoomError(api(409, { error: "price_mismatch" }))).toMatchObject({ refetch: true, message: expect.stringMatching(/purse or price steps don't allow/) });
     expect(explainRoomError(api(422, { error: "invalid_player", violations: [{ field: "role", message: "Not a role." }] })).message).toBe("Not a role.");
     expect(explainRoomError(api(404, { error: "player_not_found" }))).toMatchObject({ refetch: true });
     expect(explainRoomError(api(409, { error: "stale_version" })).refetch).toBe(true);

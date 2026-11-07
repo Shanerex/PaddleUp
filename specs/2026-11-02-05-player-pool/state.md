@@ -26,3 +26,4 @@ next: open a PR; a human merges
 - 2026-11-04 verify: qa and security pass after fix loop 1 (S-1, S-2 minor deferred); g3 approved by Shanerex; bump minor; phase close
 - 2026-11-05 close: decisions/learnings already written; rx-check done: only server/pom.xml shared file modified (jackson-dataformat-csv, planned in plan.md); human decides
 - 2026-11-05 close: Shanerex accepted server/pom.xml shared-file change (jackson-dataformat-csv, per plan.md); phase done
+- 2026-11-07 review fix (PR #7): added R-15..R-18, AC-19..AC-24 for squad-fill start rule, purse-change block, unfit season data (log, reasons); drew poolUnfit, poolUnfitPack, poolEmptyUnfit, poolEmptyUnfitPack in Room.dc.html + App Screens 7p..7s; awaiting human approval of the mock and of the amended requirements

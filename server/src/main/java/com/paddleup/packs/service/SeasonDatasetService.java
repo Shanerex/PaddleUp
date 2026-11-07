@@ -1,6 +1,7 @@
 package com.paddleup.packs.service;
 
 import com.paddleup.accounts.dto.UserId;
+import com.paddleup.packs.dto.DatasetFacetsDto;
 import com.paddleup.packs.dto.DatasetSummaryDto;
 import com.paddleup.packs.dto.ImportReportDto;
 import com.paddleup.packs.dto.PackDto;
@@ -115,6 +116,12 @@ public class SeasonDatasetService {
   @Transactional(readOnly = true)
   public Optional<DatasetSummaryDto> latestSummary(String packId) {
     return datasets.latestSummary(packId);
+  }
+
+  /** The newest version's distinct roles, tags and prices, without loading its players. */
+  @Transactional(readOnly = true)
+  public Optional<DatasetFacetsDto> latestFacets(String packId) {
+    return datasets.latestFacets(packId);
   }
 
   /** Every version of the pack's dataset, newest first. */

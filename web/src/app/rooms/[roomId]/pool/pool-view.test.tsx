@@ -95,6 +95,7 @@ function pool(over: Partial<Pool> = {}): Pool {
     version: 4,
     datasetVersion: 3,
     latestDatasetVersion: 3,
+    latestFit: "fits",
     editCount: 2,
     canEdit: true,
     players: [
@@ -171,6 +172,29 @@ describe("PoolView reading (Room pool, poolMember, poolLive)", () => {
     expect(screen.getByText(/Your pool is a copy of v3 with 2 edits\. Reset to switch to v4\./)).toBeTruthy();
   });
 
+  it("says why a Commissioner can't reset when the newest data's prices don't fit (poolUnfit)", async () => {
+    setup({ pool: pool({ latestDatasetVersion: 4, latestFit: "price" }) });
+
+    expect(await screen.findByText("Season data v4 can't be loaded here.")).toBeTruthy();
+    expect(screen.getByText("It has base prices this room's purse or price steps don't allow. Your pool stays on v3 with 2 edits.")).toBeTruthy();
+    expect(screen.queryByRole("button", { name: /Reset to latest/ })).toBeNull();
+    expect(screen.queryByText("Season data v4 is out.")).toBeNull();
+  });
+
+  it("says roles or tags when the pack is why (poolUnfitPack)", async () => {
+    setup({ pool: pool({ latestDatasetVersion: 4, latestFit: "pack" }) });
+
+    expect(await screen.findByText(/It uses roles or tags this room's pack doesn't have\. Your pool stays on v3/)).toBeTruthy();
+    expect(screen.queryByRole("button", { name: /Reset to latest/ })).toBeNull();
+  });
+
+  it("shows members no unfit notice", async () => {
+    setup({ role: "manager", pool: pool({ canEdit: false, latestDatasetVersion: 4, latestFit: null }) });
+
+    expect(await screen.findByText("Kiran Desai")).toBeTruthy();
+    expect(screen.queryByText(/can't be loaded here/)).toBeNull();
+  });
+
   it("filters by search text and by role chip", async () => {
     setup();
     const user = userEvent.setup();
@@ -197,7 +221,7 @@ describe("PoolView reading (Room pool, poolMember, poolLive)", () => {
 });
 
 describe("PoolView empty (poolEmpty)", () => {
-  const empty = pool({ hasPool: false, version: 0, datasetVersion: null, latestDatasetVersion: null, editCount: 0, players: [], sets: [] });
+  const empty = pool({ hasPool: false, version: 0, datasetVersion: null, latestDatasetVersion: null, latestFit: "none", editCount: 0, players: [], sets: [] });
 
   it("explains there is no pool and disables Load season data while there is no dataset", async () => {
     setup({ pool: empty });
@@ -208,9 +232,25 @@ describe("PoolView empty (poolEmpty)", () => {
     expect(screen.getByText("Turns on as soon as there's season data to load.")).toBeTruthy();
   });
 
+  it("explains a price mismatch and turns Load season data off (poolEmptyUnfit)", async () => {
+    setup({ pool: { ...empty, latestDatasetVersion: 2, latestFit: "price" } });
+
+    expect(await screen.findByText(/Season data v2 exists for Pack Name, but it has base prices this room's purse or price steps don't allow, so it can't be loaded here\./)).toBeTruthy();
+    expect((screen.getByRole("button", { name: /Load season data/ }) as HTMLButtonElement).disabled).toBe(true);
+    expect(screen.getByText("Turns on when the purse and price steps allow every price in it.")).toBeTruthy();
+  });
+
+  it("explains a pack mismatch with its own hint (poolEmptyUnfitPack)", async () => {
+    setup({ pool: { ...empty, latestDatasetVersion: 2, latestFit: "pack" } });
+
+    expect(await screen.findByText(/but it uses roles or tags this room's pack doesn't have, so it can't be loaded here\./)).toBeTruthy();
+    expect(screen.getByText("Turns on when season data made for this pack version is loaded.")).toBeTruthy();
+    expect(screen.queryByText(/purse and price steps/)).toBeNull();
+  });
+
   it("loads the season data with version 0 once a dataset exists", async () => {
     const user = userEvent.setup();
-    setup({ pool: { ...empty, latestDatasetVersion: 2 } });
+    setup({ pool: { ...empty, latestDatasetVersion: 2, latestFit: "fits" } });
     vi.mocked(resetPool).mockResolvedValue(pool());
 
     await user.click(await screen.findByRole("button", { name: /Load season data/ }));
@@ -274,6 +314,23 @@ describe("PoolView add and edit sheet (poolAdd, poolEdit)", () => {
 
     expect(editPoolPlayer).toHaveBeenCalledWith("room-1", "p1", expect.objectContaining({ version: 4, name: "Kiran D", basePrice: 150, role: "R1", tags: ["a"], set: "Marquee" }));
     await waitFor(() => expect(screen.queryByRole("dialog")).toBeNull());
+  });
+
+  it("sends the pool version from when the sheet opened, not one a background reload brought in", async () => {
+    const user = userEvent.setup();
+    setup();
+    vi.mocked(editPoolPlayer).mockResolvedValue(pool({ version: 6 }));
+
+    await user.click((await screen.findAllByRole("button", { name: "Edit Kiran Desai" }))[0]);
+    const sheet = screen.getByRole("dialog", { name: "Edit player" });
+    // Another tab saved; coming back to this tab reloads the pool at version 5.
+    vi.mocked(getPool).mockResolvedValue(pool({ version: 5 }));
+    Object.defineProperty(document, "visibilityState", { value: "visible", configurable: true });
+    document.dispatchEvent(new Event("visibilitychange"));
+    await waitFor(() => expect(getPool).toHaveBeenCalledTimes(2));
+    await user.click(within(sheet).getByRole("button", { name: "Save changes" }));
+
+    expect(editPoolPlayer).toHaveBeenCalledWith("room-1", "p1", expect.objectContaining({ version: 4 }));
   });
 
   it("keeps the sheet open and shows the server's field error when a field is rejected", async () => {

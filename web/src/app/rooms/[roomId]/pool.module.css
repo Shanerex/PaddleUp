@@ -85,6 +85,14 @@
   color: var(--info);
 }
 
+.noticeWarn {
+  background: var(--warn-tint);
+}
+
+.noticeIconWarn {
+  color: var(--warn-ink);
+}
+
 .noticeText {
   flex: 1;
   display: flex;

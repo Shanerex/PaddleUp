@@ -389,6 +389,7 @@ export interface components {
             datasetVersion?: number | null;
             /** Format: int32 */
             latestDatasetVersion?: number | null;
+            latestFit?: "none" | "fits" | "pack" | "price" | null;
             /** Format: int32 */
             editCount: number;
             canEdit: boolean;

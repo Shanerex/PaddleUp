@@ -120,12 +120,31 @@ public class RoomLifecycle {
     var refusal =
         RoomStateMachine.refusal(
             room.state(), to, franchises.count(room.id()), room.config().minManagers());
-    if (refusal.isEmpty() && to == RoomState.AUCTION_LIVE && !pools.exists(room.id())) {
-      refusal = java.util.Optional.of("No player pool yet; load season data first");
+    if (refusal.isEmpty() && to == RoomState.AUCTION_LIVE) {
+      refusal = poolRefusal(room);
     }
     return refusal
         .map(msg -> new RoomConflictException(RoomConflictException.ILLEGAL_STATE, msg))
         .orElse(null);
+  }
+
+  /** The auction locks the pool, so it needs enough players to fill every squad to its minimum. */
+  private java.util.Optional<String> poolRefusal(Room room) {
+    if (!pools.exists(room.id())) {
+      return java.util.Optional.of("No player pool yet; load season data first");
+    }
+    int players = pools.countPlayers(room.id());
+    long needed = Math.max(1L, (long) franchises.count(room.id()) * room.config().squadMin());
+    if (players < needed) {
+      return java.util.Optional.of(
+          "The pool has "
+              + players
+              + (players == 1 ? " player" : " players")
+              + " but "
+              + needed
+              + " are needed to fill every squad; add players first");
+    }
+    return java.util.Optional.empty();
   }
 
   private Instant apply(Room room, RoomState to, UserId actor) {

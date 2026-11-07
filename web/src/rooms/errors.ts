@@ -1,4 +1,5 @@
 import { ApiError } from "../api/client";
+import { unfitClause } from "./pool";
 
 /** What to tell the person, and whether the screen should reload the room to match the server. */
 export interface Explained {
@@ -87,8 +88,9 @@ export function explainRoomError(error: unknown): Explained {
             refetch: true,
           };
         case "pack_mismatch":
+        case "price_mismatch":
           return {
-            message: "The season data was made for a different version of this pack, so it can't be loaded here.",
+            message: `The season data can't be loaded here: ${unfitClause(code === "pack_mismatch" ? "pack" : "price")}.`,
             refetch: true,
           };
         case "room_full":

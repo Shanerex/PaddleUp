@@ -77,6 +77,31 @@ class RoomConfigIT extends AbstractRoomsIT {
   }
 
   @Test
+  void aPurseBelowABasePriceInTheRoomsPoolIsRejectedAndNothingChanges() {
+    Person commissioner = person();
+    String roomId = createRoom(commissioner);
+    long dearest =
+        jdbc.queryForObject(
+            "SELECT max(base_price) FROM room_pool_players WHERE room_id = ?",
+            Long.class,
+            UUID.fromString(roomId));
+    ObjectNode config = config(commissioner, roomId);
+    config.put("purse", dearest - 1);
+
+    var response = save(commissioner, roomId, 1, config);
+
+    assertThat(violationFields(response)).containsExactly("purse");
+    assertThat(body(response).get("violations").get(0).get("message").asText())
+        .contains("Change those players first");
+    JsonNode room = body(get(commissioner, "/api/rooms/" + roomId));
+    assertThat(room.get("configVersion").asInt()).isEqualTo(1);
+    assertThat(room.get("config").get("purse").asLong()).isNotEqualTo(dearest - 1);
+
+    config.put("purse", dearest);
+    assertThat(save(commissioner, roomId, 1, config).getStatusCode()).isEqualTo(HttpStatus.OK);
+  }
+
+  @Test
   void roleMinimumsAboveSquadMinNamesRoleMinimums() {
     assertThat(violationsFor(c -> c.put("squadMin", 10).put("squadMax", 12), 0))
         .containsExactly("roleMinimums");

@@ -90,7 +90,10 @@ public abstract class AbstractRoomsIT extends AbstractApiIT {
     }
   }
 
-  /** Gives a room a pool header straight in the database, for tests that do not edit the pool. */
+  /**
+   * Gives a room a pool straight in the database, for tests that do not edit the pool: a header and
+   * 100 added players, enough to fill the squads of any test room.
+   */
   protected void ensurePool(String roomId) {
     ensureSeason();
     jdbc.update(
@@ -99,6 +102,16 @@ public abstract class AbstractRoomsIT extends AbstractApiIT {
             + " SELECT ?, id, version, 0, set_order, now(), now() FROM season_datasets"
             + " WHERE pack_id = 'cricket-t20' ORDER BY version DESC LIMIT 1"
             + " ON CONFLICT DO NOTHING",
+        UUID.fromString(roomId));
+    jdbc.update(
+        "INSERT INTO room_pool_players (id, room_id, source_player_id, origin, name, country,"
+            + " role_key, tag_keys, base_price, set_name, provider_player_id, position)"
+            + " SELECT gen_random_uuid(), p.room_id, NULL, 'added', 'Filler ' || n, 'Chile', 'BAT',"
+            + " '{}', 20, p.set_order[1], NULL, n"
+            + " FROM room_pools p, generate_series(0, 99) n"
+            + " WHERE p.room_id = ?"
+            + " AND NOT EXISTS (SELECT 1 FROM room_pool_players x WHERE x.room_id = p.room_id"
+            + " AND x.name LIKE 'Filler %')",
         UUID.fromString(roomId));
   }
 

@@ -73,6 +73,13 @@ public class RoomPoolRepository {
         .single();
   }
 
+  public int countPlayers(UUID roomId) {
+    return jdbc.sql("SELECT COUNT(*) FROM room_pool_players WHERE room_id = ?")
+        .param(roomId)
+        .query(Integer.class)
+        .single();
+  }
+
   public Optional<RoomPool> find(UUID roomId) {
     return jdbc.sql("SELECT * FROM room_pools WHERE room_id = ?")
         .param(roomId)

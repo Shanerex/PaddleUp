@@ -402,19 +402,23 @@
   </div>
 </sc-if>
 
-<!-- v1 player pool (FR-20..22), added 2026-11-04 for the player-pool spec. Screens: pool (Commissioner, pre-auction), poolMember (manager, read-only), poolLive (auction started: locked, write refused), poolEmpty (no season data for the pack), poolStale (write from an old version); sheets poolEdit (field error), poolAdd, poolRemove, poolReset. Role keys and labels, tag labels, price unit and pack name all come from the room's Sport Pack; player rows come from the room's copy of the season data. -->
+<!-- v1 player pool (FR-20..22), added 2026-11-04 for the player-pool spec. Screens: pool (Commissioner, pre-auction), poolMember (manager, read-only), poolLive (auction started: locked, write refused), poolEmpty (no season data for the pack), poolEmptyUnfit and poolEmptyUnfitPack (season data exists but cannot be loaded: prices vs purse or price steps, or roles and tags vs pack), poolUnfit and poolUnfitPack (the same with a pool: warning notice, Reset to latest hidden), poolStale (write from an old version); sheets poolEdit (field error), poolAdd, poolRemove, poolReset. Role keys and labels, tag labels, price unit and pack name all come from the room's Sport Pack; player rows come from the room's copy of the season data. -->
 <sc-if value="{{ sPool }}" hint-placeholder-val="{{ false }}">
   <div style="display:flex;flex-direction:column;gap:16px">
     <sc-if value="{{ notDesktop }}" hint-placeholder-val="{{ true }}"><button data-s="{{ px.roomTo }}" onClick="{{ nav }}" style="align-self:flex-start;height:36px;padding:0 12px 0 6px;border:0;border-radius:12px;background:transparent;color:var(--team-ink);font:inherit;font-weight:700;font-size:14px;display:flex;align-items:center;gap:4px;cursor:pointer;margin:-6px 0 -6px -6px"><span style="font-family:'Material Symbols Rounded';font-size:20px;line-height:1">arrow_back</span>Room</button></sc-if>
     <div style="display:flex;flex-wrap:wrap;align-items:flex-end;justify-content:space-between;gap:12px">
       <div style="display:flex;flex-direction:column;gap:4px;min-width:0"><span style="font-size:24px;font-weight:800;letter-spacing:-0.025em">Player pool</span><span style="font-size:13px;color:var(--ink-2)">{{ px.source }}</span></div>
       <sc-if value="{{ px.canEdit }}" hint-placeholder-val="{{ true }}">
-        <div style="display:flex;gap:8px;flex-wrap:wrap"><button data-s="poolAdd" onClick="{{ nav }}" style="height:44px;padding:0 16px;border:0;border-radius:14px;background:var(--team);color:var(--on-team);font:inherit;font-weight:700;font-size:14px;display:flex;align-items:center;gap:6px;cursor:pointer"><span style="font-family:'Material Symbols Rounded';font-size:20px;line-height:1">person_add</span>Add player</button><button data-s="poolReset" onClick="{{ nav }}" style="height:44px;padding:0 16px;border:1px solid var(--line);border-radius:14px;background:var(--surface);color:var(--ink);font:inherit;font-weight:700;font-size:14px;display:flex;align-items:center;gap:6px;cursor:pointer"><span style="font-family:'Material Symbols Rounded';font-size:20px;line-height:1">restart_alt</span>Reset to latest</button></div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap"><button data-s="poolAdd" onClick="{{ nav }}" style="height:44px;padding:0 16px;border:0;border-radius:14px;background:var(--team);color:var(--on-team);font:inherit;font-weight:700;font-size:14px;display:flex;align-items:center;gap:6px;cursor:pointer"><span style="font-family:'Material Symbols Rounded';font-size:20px;line-height:1">person_add</span>Add player</button><sc-if value="{{ px.canReset }}" hint-placeholder-val="{{ true }}"><button data-s="poolReset" onClick="{{ nav }}" style="height:44px;padding:0 16px;border:1px solid var(--line);border-radius:14px;background:var(--surface);color:var(--ink);font:inherit;font-weight:700;font-size:14px;display:flex;align-items:center;gap:6px;cursor:pointer"><span style="font-family:'Material Symbols Rounded';font-size:20px;line-height:1">restart_alt</span>Reset to latest</button></sc-if></div>
       </sc-if>
     </div>
 
     <sc-if value="{{ px.newer }}" hint-placeholder-val="{{ true }}">
       <div style="display:flex;gap:12px;align-items:flex-start;padding:14px 16px;border-radius:20px;background:var(--info-tint)"><span style="font-family:'Material Symbols Rounded';font-size:22px;line-height:1;color:var(--info)">update</span><div style="flex:1;display:flex;flex-direction:column;gap:2px;min-width:0"><span style="font-weight:700;font-size:14px">Season data v4 is out.</span><span style="font-size:13px;color:var(--ink-2);line-height:1.45">Your pool is a copy of v3 with 5 edits. Reset to switch to v4. That discards your edits and set order.</span></div></div>
+    </sc-if>
+
+    <sc-if value="{{ px.unfit }}" hint-placeholder-val="{{ false }}">
+      <div style="display:flex;gap:12px;align-items:flex-start;padding:14px 16px;border-radius:20px;background:var(--warn-tint)"><span style="font-family:'Material Symbols Rounded';font-size:22px;line-height:1;color:var(--warn-ink)">report</span><div style="flex:1;display:flex;flex-direction:column;gap:2px;min-width:0"><span style="font-weight:700;font-size:14px">Season data v4 can't be loaded here.</span><span style="font-size:13px;color:var(--ink-2);line-height:1.45">{{ px.unfitBody }}</span></div></div>
     </sc-if>
 
     <sc-if value="{{ px.hasNote }}" hint-placeholder-val="{{ false }}">
@@ -425,9 +429,9 @@
       <div style="border-radius:28px;background:var(--surface);padding:32px 24px;display:flex;flex-direction:column;align-items:center;gap:12px;text-align:center;box-shadow:var(--shadow)">
         <span style="width:64px;height:64px;border-radius:20px;background:var(--surface-2);color:var(--ink-2);display:flex;align-items:center;justify-content:center;font-family:'Material Symbols Rounded';font-size:32px">inventory_2</span>
         <span style="font-size:22px;line-height:28px;font-weight:800;letter-spacing:-0.02em">No player pool yet</span>
-        <span style="font-size:15px;line-height:22px;color:var(--ink-2);max-width:420px">Nobody has loaded season data for Cricket T20 yet. The auction can't start until this room has a pool.</span>
+        <span style="font-size:15px;line-height:22px;color:var(--ink-2);max-width:420px">{{ px.emptyBody }}</span>
         <span style="margin-top:4px;height:44px;padding:0 16px;border-radius:14px;background:var(--surface-2);color:var(--ink-3);display:flex;align-items:center;gap:6px;font-weight:700;font-size:14px"><span style="font-family:'Material Symbols Rounded';font-size:20px;line-height:1">download</span>Load season data</span>
-        <span style="font-size:12px;color:var(--ink-2)">Turns on as soon as there's season data to load.</span>
+        <span style="font-size:12px;color:var(--ink-2)">{{ px.emptyHint }}</span>
       </div>
     </sc-if>
 
@@ -574,7 +578,7 @@
   </sc-if>
 </div>
 </x-dc>
-<script type="text/x-dc" data-dc-script data-props="{&quot;screen&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;overview&quot;,&quot;lobby&quot;,&quot;retention&quot;,&quot;squad&quot;,&quot;standings&quot;,&quot;offline&quot;,&quot;players&quot;,&quot;matches&quot;,&quot;matchesEmpty&quot;,&quot;match&quot;,&quot;breakdown&quot;,&quot;summary&quot;,&quot;report&quot;,&quot;audit&quot;,&quot;commish&quot;,&quot;setup&quot;,&quot;setupReady&quot;,&quot;setupAdmin&quot;,&quot;setupManager&quot;,&quot;sheetMember&quot;,&quot;sheetRemove&quot;,&quot;sheetHandover&quot;,&quot;sheetAdvance&quot;,&quot;editFranchise&quot;,&quot;copied&quot;,&quot;loading&quot;,&quot;loadError&quot;,&quot;staleAction&quot;,&quot;pool&quot;,&quot;poolMember&quot;,&quot;poolLive&quot;,&quot;poolEmpty&quot;,&quot;poolStale&quot;,&quot;poolEdit&quot;,&quot;poolAdd&quot;,&quot;poolRemove&quot;,&quot;poolReset&quot;,&quot;sets&quot;,&quot;setsMember&quot;],&quot;default&quot;:&quot;overview&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;Prototype&quot;},&quot;mode&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;light&quot;,&quot;dark&quot;],&quot;default&quot;:&quot;light&quot;,&quot;tsType&quot;:&quot;'light'|'dark'&quot;,&quot;section&quot;:&quot;Theme&quot;},&quot;hue&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;15&quot;,&quot;45&quot;,&quot;75&quot;,&quot;105&quot;,&quot;135&quot;,&quot;165&quot;,&quot;195&quot;,&quot;225&quot;,&quot;255&quot;,&quot;285&quot;,&quot;315&quot;,&quot;345&quot;],&quot;default&quot;:&quot;195&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;Theme&quot;},&quot;height&quot;:{&quot;editor&quot;:null,&quot;tsType&quot;:&quot;string&quot;}}">
+<script type="text/x-dc" data-dc-script data-props="{&quot;screen&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;overview&quot;,&quot;lobby&quot;,&quot;retention&quot;,&quot;squad&quot;,&quot;standings&quot;,&quot;offline&quot;,&quot;players&quot;,&quot;matches&quot;,&quot;matchesEmpty&quot;,&quot;match&quot;,&quot;breakdown&quot;,&quot;summary&quot;,&quot;report&quot;,&quot;audit&quot;,&quot;commish&quot;,&quot;setup&quot;,&quot;setupReady&quot;,&quot;setupAdmin&quot;,&quot;setupManager&quot;,&quot;sheetMember&quot;,&quot;sheetRemove&quot;,&quot;sheetHandover&quot;,&quot;sheetAdvance&quot;,&quot;editFranchise&quot;,&quot;copied&quot;,&quot;loading&quot;,&quot;loadError&quot;,&quot;staleAction&quot;,&quot;pool&quot;,&quot;poolMember&quot;,&quot;poolLive&quot;,&quot;poolEmpty&quot;,&quot;poolEmptyUnfit&quot;,&quot;poolEmptyUnfitPack&quot;,&quot;poolUnfit&quot;,&quot;poolUnfitPack&quot;,&quot;poolStale&quot;,&quot;poolEdit&quot;,&quot;poolAdd&quot;,&quot;poolRemove&quot;,&quot;poolReset&quot;,&quot;sets&quot;,&quot;setsMember&quot;],&quot;default&quot;:&quot;overview&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;Prototype&quot;},&quot;mode&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;light&quot;,&quot;dark&quot;],&quot;default&quot;:&quot;light&quot;,&quot;tsType&quot;:&quot;'light'|'dark'&quot;,&quot;section&quot;:&quot;Theme&quot;},&quot;hue&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;15&quot;,&quot;45&quot;,&quot;75&quot;,&quot;105&quot;,&quot;135&quot;,&quot;165&quot;,&quot;195&quot;,&quot;225&quot;,&quot;255&quot;,&quot;285&quot;,&quot;315&quot;,&quot;345&quot;],&quot;default&quot;:&quot;195&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;Theme&quot;},&quot;height&quot;:{&quot;editor&quot;:null,&quot;tsType&quot;:&quot;string&quot;}}">
 class Component extends DCLogic {
   state = { screen: null, bp: 'phone', ready: false, retained: [0, 1, 2, 5], tbl: 'franchises', sqTeam: 'MR', auditF: 'all' };
   rootRef = React.createRef();
@@ -706,7 +710,7 @@ class Component extends DCLogic {
     // v1 player pool and set order. Overrides header, rail, sheets and banners for these screens only.
     // Pack-driven in the app: role keys/labels/slots, tag labels, price unit and pack name come from the room's Sport Pack.
     const sc = this.state.screen ?? this.props.screen ?? 'overview';
-    const P = { pool: ['pool', 'c'], poolEdit: ['pool', 'c'], poolAdd: ['pool', 'c'], poolRemove: ['pool', 'c'], poolReset: ['pool', 'c'], poolStale: ['pool', 'c'], poolEmpty: ['pool', 'c'], poolLive: ['pool', 'l'], poolMember: ['pool', 'm'], sets: ['sets', 'c'], setsMember: ['sets', 'm'] }[sc];
+    const P = { pool: ['pool', 'c'], poolEdit: ['pool', 'c'], poolAdd: ['pool', 'c'], poolRemove: ['pool', 'c'], poolReset: ['pool', 'c'], poolStale: ['pool', 'c'], poolEmpty: ['pool', 'c'], poolEmptyUnfit: ['pool', 'c'], poolEmptyUnfitPack: ['pool', 'c'], poolUnfit: ['pool', 'c'], poolUnfitPack: ['pool', 'c'], poolLive: ['pool', 'l'], poolMember: ['pool', 'm'], sets: ['sets', 'c'], setsMember: ['sets', 'm'] }[sc];
     if (!P) return { sPool: false, sSets: false, shPoolEdit: false };
     const [view, who] = P; const commish = who === 'c', mgr = who === 'm', live = who === 'l';
     const bp = this.state.bp; const phone = bp === 'phone';
@@ -729,10 +733,19 @@ class Component extends DCLogic {
     });
     const chips = [{ label: 'All', n: 214, bg: 'var(--ink)', ink: 'var(--bg)', ring: 'none' }, ...ROLES.map(([k, label, s, n]) => ({ label, n, bg: `var(--role${s}-bg)`, ink: `var(--role${s}-ink)`, ring: 'none' }))];
     const NOTE = { poolMember: ['visibility', 'Shane can change the pool until the auction goes live. You can look, not touch.'], poolLive: ['lock', 'Locked. The auction is live, so nobody can change the pool now.'], setsMember: ['visibility', 'Shane sets the order until the auction goes live.'] };
-    const empty = sc === 'poolEmpty';
+    const unfitSc = sc === 'poolUnfit' || sc === 'poolUnfitPack';
+    const emptyUnfitSc = sc === 'poolEmptyUnfit' || sc === 'poolEmptyUnfitPack';
+    const empty = sc === 'poolEmpty' || emptyUnfitSc;
+    const packWhy = sc === 'poolUnfitPack' || sc === 'poolEmptyUnfitPack';
+    const UNFIT = packWhy
+      ? { why: "It uses roles or tags this room's pack doesn't have.", hint: 'Turns on when season data made for this pack version is loaded.' }
+      : { why: "It has base prices this room's purse or price steps don't allow.", hint: 'Turns on when the purse and price steps allow every price in it.' };
     const px = {
+      canReset: !unfitSc, unfit: commish && unfitSc, unfitBody: `${UNFIT.why} Your pool stays on v3 with 5 edits.`,
+      emptyBody: emptyUnfitSc ? `Season data v2 exists for Cricket T20, but ${UNFIT.why.charAt(0).toLowerCase()}${UNFIT.why.slice(1).replace(/\.$/, '')}, so it can't be loaded here. The auction can't start until this room has a pool.` : "Nobody has loaded season data for Cricket T20 yet. The auction can't start until this room has a pool.",
+      emptyHint: emptyUnfitSc ? UNFIT.hint : "Turns on as soon as there's season data to load.",
       source: empty ? 'Cricket T20 · no season data yet' : `Cricket T20 · season data v3 · 214 players${commish ? ' · 5 edits' : live ? ' · locked' : ''}`,
-      canEdit: commish && !empty, newer: commish && !empty && sc !== 'poolStale', empty, full: !empty,
+      canEdit: commish && !empty, newer: commish && !empty && sc !== 'poolStale' && !unfitSc, empty, full: !empty,
       hasNote: !!NOTE[sc], noteIcon: (NOTE[sc] || NOTE.poolMember)[0], note: (NOTE[sc] || NOTE.poolMember)[1],
       chips, rows, setsShort: saved.slice(0, 5).map((k, i) => ({ i: String(i + 1).padStart(2, '0'), name: setName[k], n: SETS.find((s) => s[0] === k)[2] })),
       setsTo: commish ? 'sets' : 'setsMember', setsCta: commish ? 'Change set order' : 'See set order', roomTo: commish ? 'setupReady' : 'setupManager',

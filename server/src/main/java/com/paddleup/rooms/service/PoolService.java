@@ -2,6 +2,7 @@ package com.paddleup.rooms.service;
 
 import com.paddleup.accounts.dto.UserId;
 import com.paddleup.accounts.service.DisplayNameSanitiser;
+import com.paddleup.packs.dto.DatasetFacetsDto;
 import com.paddleup.packs.dto.DatasetSummaryDto;
 import com.paddleup.packs.dto.FieldError;
 import com.paddleup.packs.dto.PlayerInput;
@@ -13,7 +14,9 @@ import com.paddleup.packs.dto.ValidPlayer;
 import com.paddleup.packs.service.PlayerRowRules;
 import com.paddleup.packs.service.PriceRule;
 import com.paddleup.packs.service.SeasonDatasetService;
+import com.paddleup.rooms.dto.DatasetFit;
 import com.paddleup.rooms.dto.PackLabelsDto;
+import com.paddleup.rooms.dto.RoomConfigDto;
 import com.paddleup.rooms.dto.PoolDto;
 import com.paddleup.rooms.dto.PoolOrigin;
 import com.paddleup.rooms.dto.PoolPlayerDto;
@@ -22,6 +25,7 @@ import com.paddleup.rooms.dto.PoolResetRequest;
 import com.paddleup.rooms.dto.PoolSetDto;
 import com.paddleup.rooms.dto.PoolSetsRequest;
 import com.paddleup.rooms.dto.Violation;
+import com.paddleup.rooms.exception.InvalidConfigException;
 import com.paddleup.rooms.exception.PoolPlayerNotFoundException;
 import com.paddleup.rooms.exception.PoolRejectedException;
 import com.paddleup.rooms.exception.RoomConflictException;
@@ -82,15 +86,26 @@ public class PoolService {
 
   /**
    * Copies the latest dataset for the room's pack into the room, in the caller's transaction. With
-   * no dataset, or one the room's pack snapshot cannot describe, nothing is written; the
-   * Commissioner can load season data later.
+   * no dataset nothing is written. With one the room cannot take (a role or tag its pack lacks, or
+   * a price its purse or ladder forbids) no copy is made and a {@code pool_copy_skipped} log row
+   * records the version and why; the Commissioner can load season data later.
    */
   void copyLatest(Room room, UserId actor) {
     Optional<SeasonDatasetDto> latest = datasets.latest(room.packId());
-    if (latest.isEmpty() || !compatible(room, latest.get())) {
+    if (latest.isEmpty()) {
       return;
     }
     Instant now = clock.instant();
+    DatasetFit fit = fitOf(room, DatasetFacetsDto.of(latest.get()));
+    if (fit != DatasetFit.FITS) {
+      log.append(
+          room.id(),
+          LogKind.POOL_COPY_SKIPPED,
+          actor.value(),
+          Map.of("datasetVersion", latest.get().version(), "reason", fit.value()),
+          now);
+      return;
+    }
     createCopy(room.id(), latest.get(), now);
     log.append(
         room.id(),
@@ -239,10 +254,16 @@ public class PoolService {
                 () ->
                     new RoomConflictException(
                         RoomConflictException.ILLEGAL_STATE, "No season data has been loaded yet"));
-    if (!compatible(room, latest)) {
+    DatasetFit fit = fitOf(room, DatasetFacetsDto.of(latest));
+    if (fit == DatasetFit.PACK) {
       throw new RoomConflictException(
           RoomConflictException.PACK_MISMATCH,
-          "The season data was made for a different version of this pack");
+          "The season data uses roles or tags this room's pack doesn't have");
+    }
+    if (fit == DatasetFit.PRICE) {
+      throw new RoomConflictException(
+          RoomConflictException.PRICE_MISMATCH,
+          "The season data has base prices this room's purse or price steps don't allow");
     }
     Instant now = clock.instant();
     if (header.isEmpty()) {
@@ -398,14 +419,51 @@ public class PoolService {
     return same ? PoolOrigin.SOURCE : PoolOrigin.EDITED;
   }
 
-  /** Every role and tag of the dataset exists in the room's pack snapshot. */
-  private static boolean compatible(Room room, SeasonDatasetDto dataset) {
+  /**
+   * Whether the room can load a dataset: every role and tag must exist in the room's pack snapshot,
+   * and every base price must be one the room's purse and increment ladder accept, so a copy never
+   * holds an unaffordable player. A pack mismatch is reported before a price one.
+   */
+  private static DatasetFit fitOf(Room room, DatasetFacetsDto facets) {
     Set<String> roles =
         room.packSnapshot().roles().stream().map(RoleDto::id).collect(Collectors.toSet());
     Set<String> tags =
         room.packSnapshot().tags().stream().map(TagDto::id).collect(Collectors.toSet());
-    return dataset.players().stream()
-        .allMatch(p -> roles.contains(p.role()) && tags.containsAll(p.tags()));
+    if (!roles.containsAll(facets.roles()) || !tags.containsAll(facets.tags())) {
+      return DatasetFit.PACK;
+    }
+    PriceRule prices = PriceRule.of(room.config().purse(), room.config().incrementLadder());
+    return facets.prices().stream().allMatch(prices::accepts) ? DatasetFit.FITS : DatasetFit.PRICE;
+  }
+
+  /**
+   * Called by a config save, in its transaction with the room locked: rejects a purse or increment
+   * ladder under which any player already in the pool would have an unaffordable or off-step base
+   * price. Rooms with no pool pass.
+   */
+  void requireFits(UUID roomId, RoomConfigDto config) {
+    if (!pools.exists(roomId)) {
+      return;
+    }
+    PriceRule prices = PriceRule.of(config.purse(), config.incrementLadder());
+    List<PoolPlayer> misfits =
+        pools.players(roomId).stream().filter(p -> !prices.accepts(p.basePrice())).toList();
+    if (misfits.isEmpty()) {
+      return;
+    }
+    boolean overPurse = misfits.stream().anyMatch(p -> p.basePrice() > config.purse());
+    String names = misfits.stream().limit(3).map(PoolPlayer::name).collect(Collectors.joining(", "));
+    String more = misfits.size() > 3 ? " and " + (misfits.size() - 3) + " more" : "";
+    throw new InvalidConfigException(
+        List.of(
+            new Violation(
+                overPurse ? "purse" : "incrementLadder",
+                "The pool has base prices this "
+                    + (overPurse ? "purse" : "increment ladder")
+                    + " does not allow ("
+                    + names
+                    + more
+                    + "). Change those players first.")));
   }
 
   private void createCopy(UUID roomId, SeasonDatasetDto dataset, Instant now) {
@@ -443,12 +501,21 @@ public class PoolService {
 
   private PoolDto view(MembershipGuard.Access access) {
     Room room = access.room();
-    Integer latest =
-        datasets.latestSummary(room.packId()).map(DatasetSummaryDto::version).orElse(null);
     boolean canEdit = access.commissioner() && RoomStateMachine.preAuction(room.state());
+    // Only someone who can edit needs to know whether the newest data fits; for them the facets
+    // are read in the database, never the players.
+    Integer latest;
+    DatasetFit fit = null;
+    if (canEdit) {
+      Optional<DatasetFacetsDto> facets = datasets.latestFacets(room.packId());
+      latest = facets.map(DatasetFacetsDto::version).orElse(null);
+      fit = facets.map(f -> fitOf(room, f)).orElse(DatasetFit.NONE);
+    } else {
+      latest = datasets.latestSummary(room.packId()).map(DatasetSummaryDto::version).orElse(null);
+    }
     Optional<RoomPool> header = pools.find(room.id());
     if (header.isEmpty()) {
-      return new PoolDto(false, 0, null, latest, 0, canEdit, List.of(), List.of());
+      return new PoolDto(false, 0, null, latest, fit, 0, canEdit, List.of(), List.of());
     }
     List<PoolPlayer> players = pools.players(room.id());
     var counts = new LinkedHashMap<String, Integer>();
@@ -462,6 +529,7 @@ public class PoolService {
         header.get().poolVersion(),
         header.get().datasetVersion(),
         latest,
+        fit,
         editCount,
         canEdit,
         players.stream()

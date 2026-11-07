@@ -114,7 +114,80 @@ class PoolResetIT extends AbstractRoomsIT {
 
     assertThat(response.getStatusCode()).isEqualTo(HttpStatus.CONFLICT);
     assertThat(body(response).get("error").asText()).isEqualTo("pack_mismatch");
-    assertThat(read(commissioner)).isEqualTo(before);
+    assertThat(body(response).get("message").asText()).contains("roles or tags");
+    JsonNode after = read(commissioner);
+    assertThat(after.get("latestFit").asText()).isEqualTo("pack");
+    assertThat(after.get("version")).isEqualTo(before.get("version"));
+    assertThat(after.get("players")).isEqualTo(before.get("players"));
+  }
+
+  @Test
+  void aDatasetWithAPriceTheRoomsPurseCannotAffordIs409AndNotOfferedAsLoadable() {
+    JsonNode before = read(commissioner);
+    assertThat(before.get("latestFit").asText()).isEqualTo("fits");
+    jdbc.update(
+        "UPDATE rooms SET config = jsonb_set(config, '{purse}', '60') WHERE id = ?",
+        UUID.fromString(roomId));
+
+    JsonNode after = read(commissioner);
+    var response =
+        post(commissioner, pool() + "/reset", Map.of("version", after.get("version").asInt()));
+
+    assertThat(after.get("latestFit").asText()).isEqualTo("price");
+    assertThat(response.getStatusCode()).isEqualTo(HttpStatus.CONFLICT);
+    assertThat(body(response).get("error").asText()).isEqualTo("price_mismatch");
+    assertThat(body(response).get("message").asText()).contains("purse or price steps");
+    assertThat(read(commissioner)).isEqualTo(after);
+  }
+
+  @Test
+  void aMemberIsNotToldWhetherTheNewestDataFits() {
+    Person manager = insertManager(roomId, "sky");
+
+    assertThat(read(manager).get("latestFit").isNull()).isTrue();
+    assertThat(read(manager).get("latestDatasetVersion").asInt()).isPositive();
+  }
+
+  @Test
+  void aRoomCreatedWhenTheLatestDataDoesNotFitGetsNoCopyAndALogRowSaysWhy() {
+    // Only a pack that changed after the import can leave data a new room cannot take, so write
+    // a newer version with a role the pack lacks straight into the tables.
+    UUID admin = UUID.randomUUID();
+    jdbc.update(
+        "INSERT INTO users (id, email, display_name, avatar, created_at, updated_at)"
+            + " VALUES (?, ?, 'Admin', 'preset-01', now(), now())",
+        admin,
+        "admin-" + admin + "@example.test");
+    UUID dataset = UUID.randomUUID();
+    jdbc.update(
+        "INSERT INTO season_datasets (id, pack_id, version, pack_version, source_format,"
+            + " imported_by, imported_at, player_count, rejected_count, set_order)"
+            + " SELECT ?, pack_id, version + 1, pack_version, 'csv', ?, now(), 1, 0, ARRAY['Zed']"
+            + " FROM season_datasets WHERE pack_id = 'cricket-t20' ORDER BY version DESC LIMIT 1",
+        dataset,
+        admin);
+    jdbc.update(
+        "INSERT INTO season_players (id, dataset_id, position, name, country, role_key, tag_keys,"
+            + " base_price, set_name, provider_player_id)"
+            + " VALUES (gen_random_uuid(), ?, 0, 'Ghost', 'Chile', 'GHOST', '{}', 20, 'Zed', NULL)",
+        dataset);
+    try {
+      Person other = person();
+      String id = createRoom(other);
+
+      JsonNode pool = body(get(other, "/api/rooms/" + id + "/pool"));
+      assertThat(pool.get("hasPool").asBoolean()).isFalse();
+      assertThat(pool.get("latestFit").asText()).isEqualTo("pack");
+      assertThat(
+              jdbc.queryForObject(
+                  "SELECT detail->>'reason' FROM room_log WHERE room_id = ?"
+                      + " AND kind = 'pool_copy_skipped'",
+                  String.class,
+                  UUID.fromString(id)))
+          .isEqualTo("pack");
+    } finally {
+      importSeason("cricket-t20", SEASON_CSV); // leave a valid newest version for other tests
+    }
   }
 
   @Test

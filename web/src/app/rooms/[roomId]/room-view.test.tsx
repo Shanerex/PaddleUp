@@ -115,6 +115,7 @@ function poolOf(over: Partial<Pool> = {}): Pool {
     version: 2,
     datasetVersion: 3,
     latestDatasetVersion: 3,
+    latestFit: "fits",
     editCount: 0,
     canEdit: true,
     players: [{ id: "a" }, { id: "b" }, { id: "c" }],

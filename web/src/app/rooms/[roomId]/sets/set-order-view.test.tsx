@@ -46,6 +46,7 @@ function pool(order: string[] = ["Marquee", "Batters", "Empty set"], over: Parti
     version: 4,
     datasetVersion: 3,
     latestDatasetVersion: 3,
+    latestFit: "fits",
     editCount: 0,
     canEdit: true,
     players: [],

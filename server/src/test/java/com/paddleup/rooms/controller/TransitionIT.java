@@ -117,6 +117,41 @@ class TransitionIT extends AbstractRoomsIT {
   }
 
   @Test
+  void goingLiveIsRefusedWhenThePoolCannotFillTheSquads() {
+    Person c = person();
+    String roomId = readyRoom(c);
+    post(c, url(roomId), Map.of("to", "auction_scheduled"));
+    UserId actor = new UserId(userId(c));
+    UUID id = UUID.fromString(roomId);
+
+    // No pool at all.
+    jdbc.update("DELETE FROM room_pool_players WHERE room_id = ?", id);
+    jdbc.update("DELETE FROM room_pools WHERE room_id = ?", id);
+    assertThatThrownBy(() -> lifecycle.advance(id, RoomState.AUCTION_LIVE, actor))
+        .isInstanceOf(RoomConflictException.class)
+        .hasMessageContaining("No player pool yet");
+
+    // A pool header with no players.
+    ensurePool(roomId);
+    jdbc.update("DELETE FROM room_pool_players WHERE room_id = ?", id);
+    assertThatThrownBy(() -> lifecycle.advance(id, RoomState.AUCTION_LIVE, actor))
+        .isInstanceOf(RoomConflictException.class)
+        .hasMessageContaining("are needed to fill every squad");
+
+    // Fewer players than two squads of the minimum size.
+    ensurePool(roomId);
+    jdbc.update(
+        "DELETE FROM room_pool_players WHERE room_id = ? AND id NOT IN"
+            + " (SELECT id FROM room_pool_players WHERE room_id = ? ORDER BY position, id LIMIT 5)",
+        id,
+        id);
+    assertThatThrownBy(() -> lifecycle.advance(id, RoomState.AUCTION_LIVE, actor))
+        .isInstanceOf(RoomConflictException.class)
+        .hasMessageContaining("The pool has 5 players");
+    assertThat(stateOf(roomId)).isEqualTo("auction_scheduled");
+  }
+
+  @Test
   void aBadTargetIs400() {
     Person c = person();
     String roomId = readyRoom(c);

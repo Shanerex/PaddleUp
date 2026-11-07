@@ -4,6 +4,7 @@ import {
   classifyPoolError,
   formatPrice,
   hasNewerData,
+  unfitReason,
   originFlag,
   parsePrice,
   roleCounts,
@@ -46,6 +47,7 @@ function pool(over: Partial<Pool> = {}): Pool {
     version: 3,
     datasetVersion: 3,
     latestDatasetVersion: 3,
+    latestFit: "fits",
     editCount: 5,
     canEdit: true,
     players: [player("R1"), player("R1"), player("R2")],
@@ -90,6 +92,16 @@ describe("flags and source line", () => {
     expect(hasNewerData(pool())).toBe(false);
     expect(hasNewerData(pool({ latestDatasetVersion: 4 }))).toBe(true);
     expect(hasNewerData(pool({ hasPool: false, latestDatasetVersion: 4, datasetVersion: null }))).toBe(false);
+  });
+
+  it("does not offer newer data this room cannot load, and says why", () => {
+    expect(hasNewerData(pool({ latestDatasetVersion: 4, latestFit: "price" }))).toBe(false);
+    expect(hasNewerData(pool({ latestDatasetVersion: 4, latestFit: "pack" }))).toBe(false);
+    expect(unfitReason(pool({ latestDatasetVersion: 4, latestFit: "price" }))).toBe("price");
+    expect(unfitReason(pool({ latestDatasetVersion: 4, latestFit: "pack" }))).toBe("pack");
+    expect(unfitReason(pool({ latestDatasetVersion: null, latestFit: "none" }))).toBeNull();
+    expect(unfitReason(pool({ latestDatasetVersion: 4, latestFit: "fits" }))).toBeNull();
+    expect(unfitReason(pool({ latestDatasetVersion: 4, latestFit: null }))).toBeNull();
   });
 });
 
@@ -141,7 +153,8 @@ describe("classifyPoolError", () => {
   it("treats a missing room as gone and other failures as a message", () => {
     expect(classifyPoolError(e(404, { error: "room_not_found" }))).toEqual({ kind: "gone" });
     expect(classifyPoolError(e(403, { error: "forbidden" }))).toMatchObject({ kind: "other", refetch: true });
-    expect(classifyPoolError(e(409, { error: "pack_mismatch" }))).toMatchObject({ kind: "other", refetch: true });
+    expect(classifyPoolError(e(409, { error: "pack_mismatch" }))).toMatchObject({ kind: "other", refetch: true, message: expect.stringMatching(/roles or tags this room's pack doesn't have/) });
+    expect(classifyPoolError(e(409, { error: "price_mismatch" }))).toMatchObject({ kind: "other", refetch: true, message: expect.stringMatching(/purse or price steps don't allow/) });
     expect(classifyPoolError(e(500, null))).toMatchObject({ kind: "other", refetch: false });
     expect(classifyPoolError(new Error("offline"))).toMatchObject({ kind: "other", refetch: false });
   });
