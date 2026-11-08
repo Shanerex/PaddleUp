@@ -4,6 +4,38 @@
  */
 
 export interface paths {
+    "/api/rooms/{id}/pool/sets": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put: operations["saveSets"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/rooms/{id}/pool/players/{playerId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put: operations["edit"];
+        post?: never;
+        delete: operations["remove"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/rooms/{id}/config": {
         parameters: {
             query?: never;
@@ -46,6 +78,38 @@ export interface paths {
         get: operations["history"];
         put?: never;
         post: operations["advance"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/rooms/{id}/pool/reset": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["reset"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/rooms/{id}/pool/players": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["add"];
         delete?: never;
         options?: never;
         head?: never;
@@ -164,6 +228,22 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/admin/datasets": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["versions"];
+        put?: never;
+        post: operations["importFile"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/rooms/{id}/franchises/{franchiseId}": {
         parameters: {
             query?: never;
@@ -174,10 +254,10 @@ export interface paths {
         get?: never;
         put?: never;
         post?: never;
-        delete: operations["remove"];
+        delete: operations["remove_1"];
         options?: never;
         head?: never;
-        patch: operations["edit"];
+        patch: operations["edit_1"];
         trace?: never;
     };
     "/api/me": {
@@ -204,6 +284,22 @@ export interface paths {
             cookie?: never;
         };
         get: operations["get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/rooms/{id}/pool": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["get_1"];
         put?: never;
         post?: never;
         delete?: never;
@@ -260,10 +356,77 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/admin/datasets/packs": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["packs_1"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
     schemas: {
+        PoolSetsRequest: {
+            /** Format: int32 */
+            version?: number;
+            order?: string[];
+        };
+        PoolDto: {
+            hasPool: boolean;
+            /** Format: int32 */
+            version: number;
+            /** Format: int32 */
+            datasetVersion?: number | null;
+            /** Format: int32 */
+            latestDatasetVersion?: number | null;
+            latestFit?: "none" | "fits" | "pack" | "price" | null;
+            /** Format: int32 */
+            editCount: number;
+            canEdit: boolean;
+            players: components["schemas"]["PoolPlayerDto"][];
+            sets: components["schemas"]["PoolSetDto"][];
+        };
+        PoolPlayerDto: {
+            /** Format: uuid */
+            id: string;
+            name: string;
+            country: string;
+            role: string;
+            tags: string[];
+            /** Format: int64 */
+            basePrice: number;
+            set: string;
+            providerId?: string | null;
+            /** @enum {string} */
+            origin: "source" | "edited" | "added";
+        };
+        PoolSetDto: {
+            name: string;
+            /** Format: int32 */
+            players: number;
+        };
+        PoolPlayerRequest: {
+            /** Format: int32 */
+            version?: number;
+            name?: string;
+            country?: string;
+            role?: string;
+            tags?: string[];
+            /** Format: int64 */
+            basePrice?: number;
+            set?: string;
+            providerId?: string;
+        };
         AiSettingsDto: {
             enabled: boolean;
             lifelines: {
@@ -471,6 +634,10 @@ export interface components {
             /** Format: date-time */
             occurredAt: string;
         };
+        PoolResetRequest: {
+            /** Format: int32 */
+            version?: number;
+        };
         InviteDto: {
             code: string;
             link: string;
@@ -541,6 +708,28 @@ export interface components {
         EmailStartRequest: {
             email?: string;
         };
+        ImportReportDto: {
+            /** Format: int32 */
+            version?: number | null;
+            packId: string;
+            packVersion: string;
+            /** Format: int32 */
+            totalRows: number;
+            /** Format: int32 */
+            imported: number;
+            /** Format: int32 */
+            skipped: number;
+            rows: components["schemas"]["RejectedRowDto"][];
+            /** Format: int32 */
+            moreProblems: number;
+        };
+        RejectedRowDto: {
+            /** Format: int32 */
+            row: number;
+            field: string;
+            value: string;
+            message: string;
+        };
         UpdateProfileRequest: {
             displayName?: string;
             avatar?: string;
@@ -588,6 +777,28 @@ export interface components {
         AvatarPresetsDto: {
             presets: string[];
         };
+        DatasetSummaryDto: {
+            /** Format: uuid */
+            id: string;
+            /** Format: int32 */
+            version: number;
+            packVersion: string;
+            sourceFormat: string;
+            /** Format: date-time */
+            importedAt: string;
+            /** Format: int32 */
+            playerCount: number;
+            /** Format: int32 */
+            rejectedCount: number;
+        };
+        DatasetPackDto: {
+            id: string;
+            version: string;
+            name: string;
+            icon?: string | null;
+            roles: components["schemas"]["RoleDto"][];
+            tags: components["schemas"]["TagDto"][];
+        };
     };
     responses: never;
     parameters: never;
@@ -597,6 +808,84 @@ export interface components {
 }
 export type $defs = Record<string, never>;
 export interface operations {
+    saveSets: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PoolSetsRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["PoolDto"];
+                };
+            };
+        };
+    };
+    edit: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+                playerId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PoolPlayerRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["PoolDto"];
+                };
+            };
+        };
+    };
+    remove: {
+        parameters: {
+            query: {
+                version: number;
+            };
+            header?: never;
+            path: {
+                id: string;
+                playerId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["PoolDto"];
+                };
+            };
+        };
+    };
     saveConfig: {
         parameters: {
             query?: never;
@@ -711,6 +1000,58 @@ export interface operations {
                 };
                 content: {
                     "*/*": components["schemas"]["TransitionDto"];
+                };
+            };
+        };
+    };
+    reset: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PoolResetRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["PoolDto"];
+                };
+            };
+        };
+    };
+    add: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PoolPlayerRequest"];
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["PoolDto"];
                 };
             };
         };
@@ -925,7 +1266,58 @@ export interface operations {
             };
         };
     };
-    remove: {
+    versions: {
+        parameters: {
+            query: {
+                packId: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["DatasetSummaryDto"][];
+                };
+            };
+        };
+    };
+    importFile: {
+        parameters: {
+            query: {
+                packId: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "multipart/form-data": {
+                    /** Format: binary */
+                    file: string;
+                };
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ImportReportDto"];
+                };
+            };
+        };
+    };
+    remove_1: {
         parameters: {
             query?: never;
             header?: never;
@@ -948,7 +1340,7 @@ export interface operations {
             };
         };
     };
-    edit: {
+    edit_1: {
         parameters: {
             query?: never;
             header?: never;
@@ -1041,6 +1433,28 @@ export interface operations {
             };
         };
     };
+    get_1: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["PoolDto"];
+                };
+            };
+        };
+    };
     members: {
         parameters: {
             query?: never;
@@ -1099,6 +1513,26 @@ export interface operations {
                 };
                 content: {
                     "*/*": components["schemas"]["AvatarPresetsDto"];
+                };
+            };
+        };
+    };
+    packs_1: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["DatasetPackDto"][];
                 };
             };
         };

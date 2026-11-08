@@ -18,7 +18,7 @@ export function initials(name: string): string {
 }
 
 /** Home.dc.html top bar: wordmark home link and the avatar that opens the profile. No bell in v1. */
-export function AppTopBar() {
+export function AppTopBar({ badge }: { badge?: string }) {
   const [name, setName] = useState<string | null>(null);
   useEffect(() => {
     let active = true;
@@ -37,6 +37,7 @@ export function AppTopBar() {
           Paddle<span className={s.up}>Up</span>
         </span>
       </Link>
+      {badge && <span className={s.badge}>{badge}</span>}
       <span className={s.spacer} />
       <Link href="/profile" className={s.avatar} aria-label="Your profile">
         {name ? initials(name) : ""}
@@ -60,7 +61,10 @@ export function AppShell({
   children,
   centered = false,
   bleed = false,
+  badge,
 }: {
+  /** A pill beside the wordmark, such as "APP ADMIN" (AdminImport top bar). */
+  badge?: string;
   children: ReactNode;
   centered?: boolean;
   /** Full-bleed content (the wizard draws its own rail and footer). */
@@ -69,7 +73,7 @@ export function AppShell({
   const cls = [s.main, centered && s.centered, bleed && s.bleed].filter(Boolean).join(" ");
   return (
     <div className={s.app}>
-      <AppTopBar />
+      <AppTopBar badge={badge} />
       <main data-shell className={cls}>
         {children}
       </main>

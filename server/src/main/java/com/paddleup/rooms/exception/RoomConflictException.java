@@ -8,6 +8,8 @@ public class RoomConflictException extends RuntimeException {
   public static final String ROOM_FULL = "room_full";
   public static final String ROOM_LOCKED = "room_locked";
   public static final String DUPLICATE = "duplicate";
+  public static final String PACK_MISMATCH = "pack_mismatch";
+  public static final String PRICE_MISMATCH = "price_mismatch";
 
   private final String code;
 

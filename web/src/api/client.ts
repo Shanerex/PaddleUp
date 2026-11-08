@@ -18,6 +18,13 @@ export type Transition = components["schemas"]["TransitionDto"];
 export type Handover = components["schemas"]["HandoverDto"];
 export type JoinPreview = components["schemas"]["JoinPreviewDto"];
 export type JoinResult = components["schemas"]["JoinResultDto"];
+export type Pool = components["schemas"]["PoolDto"];
+export type PoolPlayer = components["schemas"]["PoolPlayerDto"];
+export type PoolSet = components["schemas"]["PoolSetDto"];
+export type PoolPlayerInput = components["schemas"]["PoolPlayerRequest"];
+export type DatasetPack = components["schemas"]["DatasetPackDto"];
+export type DatasetSummary = components["schemas"]["DatasetSummaryDto"];
+export type ImportReport = components["schemas"]["ImportReportDto"];
 
 /** A non-2xx answer from the server. */
 export class ApiError extends Error {
@@ -32,7 +39,8 @@ export class ApiError extends Error {
 }
 
 async function request(path: string, init: RequestInit = {}): Promise<Response> {
-  const headers = init.body ? { "Content-Type": "application/json" } : undefined;
+  // A FormData body sets its own multipart Content-Type (with the boundary).
+  const headers = init.body && !(init.body instanceof FormData) ? { "Content-Type": "application/json" } : undefined;
   const response = await fetch(path, { credentials: "same-origin", headers, ...init });
   if (!response.ok) {
     const retry = Number(response.headers?.get?.("Retry-After"));
@@ -170,4 +178,52 @@ export async function previewJoin(code: string): Promise<JoinPreview> {
 
 export async function joinRoom(code: string, franchise: FranchiseInput): Promise<JoinResult> {
   return (await send("POST", "/api/join", { code, franchise })).json();
+}
+
+/** A room's player pool. `hasPool` is false until the room has a copy of the season data. */
+export async function getPool(id: string): Promise<Pool> {
+  return (await request(`${room(id)}/pool`)).json();
+}
+
+export async function addPoolPlayer(id: string, input: PoolPlayerInput): Promise<Pool> {
+  return (await send("POST", `${room(id)}/pool/players`, input)).json();
+}
+
+export async function editPoolPlayer(id: string, playerId: string, input: PoolPlayerInput): Promise<Pool> {
+  return (await send("PUT", `${room(id)}/pool/players/${encodeURIComponent(playerId)}`, input)).json();
+}
+
+export async function removePoolPlayer(id: string, playerId: string, version: number): Promise<Pool> {
+  return (await send("DELETE", `${room(id)}/pool/players/${encodeURIComponent(playerId)}?version=${version}`)).json();
+}
+
+/** Replaces the pool and set order with the latest season data. Version 0 when the room has no copy. */
+export async function resetPool(id: string, version: number): Promise<Pool> {
+  return (await send("POST", `${room(id)}/pool/reset`, { version })).json();
+}
+
+/** Saves the whole set order; `version` is the pool version the screen read. */
+export async function saveSetOrder(id: string, version: number, order: string[]): Promise<Pool> {
+  return (await send("PUT", `${room(id)}/pool/sets`, { version, order })).json();
+}
+
+/** Packs an app admin can import season data for (403 when the caller is not an admin). */
+export async function listDatasetPacks(): Promise<DatasetPack[]> {
+  return (await request("/api/admin/datasets/packs")).json();
+}
+
+/** Every season data version of a pack, newest first. */
+export async function listDatasets(packId: string): Promise<DatasetSummary[]> {
+  return (await request(`/api/admin/datasets?packId=${encodeURIComponent(packId)}`)).json();
+}
+
+/**
+ * Imports a CSV or JSON file. Resolves with the report when a version was made; a file with no
+ * valid row rejects with an ApiError (422) whose body carries `report`.
+ */
+export async function importDataset(packId: string, file: File): Promise<ImportReport> {
+  const form = new FormData();
+  form.append("packId", packId);
+  form.append("file", file);
+  return (await request("/api/admin/datasets", { method: "POST", body: form })).json();
 }

@@ -43,6 +43,17 @@ class RoomsExceptionHandler {
         .body(new Body("invalid_config", e.getMessage(), null, e.violations()));
   }
 
+  @ExceptionHandler(PoolRejectedException.class)
+  ResponseEntity<Body> poolRejected(PoolRejectedException e) {
+    return ResponseEntity.status(HttpStatus.UNPROCESSABLE_ENTITY)
+        .body(new Body("invalid_player", e.getMessage(), null, e.violations()));
+  }
+
+  @ExceptionHandler(PoolPlayerNotFoundException.class)
+  ResponseEntity<Body> playerNotFound() {
+    return ResponseEntity.status(HttpStatus.NOT_FOUND).body(Body.of("player_not_found", null));
+  }
+
   @ExceptionHandler(RoomsRequestException.class)
   ResponseEntity<Body> invalidRequest(RoomsRequestException e) {
     return ResponseEntity.badRequest()

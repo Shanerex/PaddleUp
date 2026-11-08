@@ -42,6 +42,7 @@ public class RoomService {
   private final RoomLogRepository log;
   private final MembershipGuard guard;
   private final RoomViews views;
+  private final PoolService pool;
   private final Clock clock;
 
   RoomService(
@@ -53,6 +54,7 @@ public class RoomService {
       RoomLogRepository log,
       MembershipGuard guard,
       RoomViews views,
+      PoolService pool,
       Clock clock) {
     this.packs = packs;
     this.factory = factory;
@@ -62,6 +64,7 @@ public class RoomService {
     this.log = log;
     this.guard = guard;
     this.views = views;
+    this.pool = pool;
     this.clock = clock;
   }
 
@@ -157,6 +160,7 @@ public class RoomService {
         caller.value(),
         Map.of("packId", pack.id(), "packVersion", pack.version(), "presetId", preset.id()),
         now);
+    pool.copyLatest(room, caller);
     return views.room(guard.member(room.id(), caller));
   }
 
@@ -192,6 +196,7 @@ public class RoomService {
                 DisplayNameSanitiser.sanitise(request.config().name()),
                 DisplayNameSanitiser.sanitise(request.config().competition()));
     failOn(validator.validate(config, room.packSnapshot(), franchises.count(roomId)));
+    pool.requireFits(roomId, config);
     Instant now = clock.instant();
     if (!rooms.updateConfig(roomId, config, room.configVersion(), now)) {
       throw new RoomConflictException(

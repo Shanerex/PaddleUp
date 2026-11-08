@@ -81,7 +81,7 @@ export function Field({
   narrow = false,
   ...input
 }: {
-  label: string;
+  label: ReactNode;
   helper?: ReactNode;
   error?: string | null;
   mono?: boolean;

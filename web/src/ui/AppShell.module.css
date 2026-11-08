@@ -43,6 +43,16 @@
   color: var(--brand);
 }
 
+.badge {
+  padding: 4px 9px;
+  border-radius: 999px;
+  background: var(--inverse);
+  color: var(--on-inverse);
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.05em;
+}
+
 .spacer {
   flex: 1;
 }
