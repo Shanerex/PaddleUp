@@ -147,6 +147,55 @@ class AuctionRecoveryIT extends AbstractAuctionIT {
   }
 
   @Test
+  void aRejectedIntentKeepsItsFirstAnswerAcrossARestartEvenWhenItWouldNowBeAccepted() {
+    Room room = room(2, 6);
+    goLive(room);
+    UUID early = UUID.randomUUID();
+    // Rejected: the first bid must be the base price, 20.
+    assertThat(outcome(bid(room, room.manager(1), early, 1, 25))).isEqualTo("rejected:outbid");
+    bid(room, room.manager(0), 1, 20);
+    long seq = lastSeq(room);
+
+    try (Server restarted = new Server(clock.instant())) {
+      // 25 is the right amount now, so a fresh decision would accept it.
+      var resent = restarted.bid(room, room.manager(1), early, 1, 25);
+
+      assertThat(outcome(resent)).isEqualTo("rejected:outbid");
+      assertThat(lastSeq(room)).isEqualTo(seq);
+    }
+  }
+
+  @Test
+  void aRoomWhoseLogCannotBeReplayedDoesNotStopTheServerOrTheOtherRooms() {
+    Room broken = room(2, 6);
+    goLive(broken);
+    Room healthy = room(2, 6);
+    goLive(healthy);
+    bid(healthy, healthy.manager(0), 1, 20);
+    // Damage the broken room: a lot card its log refers to is gone (the tables are append-only,
+    // so the guard trigger is lifted for this one statement).
+    jdbc.execute("ALTER TABLE auction_lots DISABLE TRIGGER auction_lots_no_update_delete");
+    try {
+      jdbc.update(
+          "DELETE FROM auction_lots WHERE room_id = ? AND lot_no = 1",
+          UUID.fromString(broken.id()));
+    } finally {
+      jdbc.execute("ALTER TABLE auction_lots ENABLE TRIGGER auction_lots_no_update_delete");
+    }
+
+    try (Server restarted = new Server(clock.instant())) {
+      JsonNode state = restarted.state(healthy, healthy.commissioner());
+
+      assertThat(state.get("phase").asText()).isEqualTo("live");
+      assertThat(state.get("currentBid").asLong()).isEqualTo(20);
+    } finally {
+      // Keep the damaged room out of every later restart in this shared database.
+      jdbc.update(
+          "UPDATE auctions SET phase = 'ended' WHERE room_id = ?", UUID.fromString(broken.id()));
+    }
+  }
+
+  @Test
   void aDeadlinePassedInDowntimeLogsAResumeAndGivesAFreshTBidOnce() {
     Room room = room(2, 6);
     goLive(room);

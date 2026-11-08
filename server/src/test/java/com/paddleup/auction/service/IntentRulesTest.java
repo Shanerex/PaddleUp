@@ -175,7 +175,8 @@ class IntentRulesTest {
 
     var open = AuctionFixtures.lotOneOpen();
     var gap = AuctionReducer.replay(open, TimerRules.due(open, T0.plusSeconds(20)));
-    assertThat(bid(gap, A, USER_A, 1, 20)).isEqualTo(new Decision.PhaseError(Reason.NO_OPEN_LOT));
+    assertThat(bid(gap, A, USER_A, 2, 20)).isEqualTo(new Decision.PhaseError(Reason.NO_OPEN_LOT));
+    assertThat(pass(gap, A, USER_A, 2)).isEqualTo(new Decision.PhaseError(Reason.NO_OPEN_LOT));
 
     var last = AuctionFixtures.lotOneOpen();
     for (int lot = 1; lot <= 3; lot++) {
@@ -187,6 +188,25 @@ class IntentRulesTest {
       }
     }
     assertThat(last.phase().value()).isEqualTo("ended");
-    assertThat(bid(last, A, USER_A, 3, 20)).isEqualTo(new Decision.PhaseError(Reason.ENDED));
+    assertThat(bid(last, A, USER_A, 4, 20)).isEqualTo(new Decision.PhaseError(Reason.ENDED));
+  }
+
+  @Test
+  void anIntentNamingALotThatAlreadyClosedIsLotClosedInTheGapAndAfterTheEnd() {
+    var open = AuctionFixtures.lotOneOpen();
+    var gap = AuctionReducer.replay(open, TimerRules.due(open, T0.plusSeconds(20)));
+    assertRejected(bid(gap, A, USER_A, 1, 20), Reason.LOT_CLOSED);
+    assertRejected(pass(gap, A, USER_A, 1), Reason.LOT_CLOSED);
+
+    var last = AuctionFixtures.lotOneOpen();
+    for (int lot = 1; lot <= 3; lot++) {
+      var s = last;
+      last = AuctionReducer.replay(s, TimerRules.due(s, s.deadline()));
+      if (lot < 3) {
+        last = AuctionReducer.replay(last, TimerRules.due(last, last.nextOpenAt()));
+      }
+    }
+    assertRejected(bid(last, A, USER_A, 3, 20), Reason.LOT_CLOSED);
+    assertRejected(bid(last, A, USER_A, 1, 20), Reason.LOT_CLOSED);
   }
 }

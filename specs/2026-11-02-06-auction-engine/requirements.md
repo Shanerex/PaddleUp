@@ -11,8 +11,8 @@ Lifetime: one auction. The pack is frozen from scheduling (FR-15); pool, set ord
 |---|---|---|---|---|---|
 | Commissioner schedule | creates (R-1) | replaces time, logged (R-1) | 409 | 409 | 409 |
 | Start instant reached | n/a | goes live, lot 1 opens; if refused stays scheduled, start_refused logged (R-2) | n/a | n/a | n/a |
-| Bid intent | 409 not_live | 409 not_live | first = base price, then +step; wrong amount or lost race = outbid (R-4,R-9) | 409 no_open_lot | 409 |
-| Pass intent | 409 | 409 | logged, bars that lot only (R-6) | 409 | 409 |
+| Bid intent | 409 not_live | 409 not_live | first = base price, then +step; wrong amount or lost race = outbid (R-4,R-9) | naming the lot just closed: `lot_closed`; a later lot: 409 no_open_lot | naming a lot that closed: `lot_closed`; a lot past the last: 409 ended |
+| Pass intent | 409 | 409 | logged, bars that lot only (R-6) | as bid | as bid |
 | Deadline reached | n/a | n/a | sold or unsold, then gap (R-8) | next lot, or ended after the last (R-8) | n/a |
 | Server restart | n/a | kept; start passed in downtime goes live or is refused (R-14) | rebuilt from log; past deadline = resume event + fresh T_bid (R-14) | continues (R-14) | stays ended |
 | Member connects, reconnects, new tab | 404 | lobby state, incl. start_refused reason (R-13) | full state + deadline (R-13) | last result + next lot (R-13) | final state (R-13) |

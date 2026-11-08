@@ -15,10 +15,10 @@ import com.paddleup.auction.model.Intent;
 import com.paddleup.auction.model.Lot;
 import com.paddleup.auction.model.Outcome;
 import com.paddleup.auction.model.Phase;
-import com.paddleup.auction.model.Reason;
 import com.paddleup.auction.model.Step;
 import com.paddleup.auction.repository.AuctionEventRepository;
 import com.paddleup.auction.repository.AuctionLotRepository;
+import com.paddleup.auction.repository.AuctionRejectionRepository;
 import com.paddleup.auction.repository.AuctionRepository;
 import com.paddleup.auction.util.SerialExecutor;
 import com.paddleup.rooms.dto.AuctionInputsDto;
@@ -29,6 +29,7 @@ import com.paddleup.rooms.service.RoomLifecycle;
 import java.time.Clock;
 import java.time.Duration;
 import java.time.Instant;
+import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -63,6 +64,7 @@ final class AuctionRunner {
       AuctionRepository headers,
       AuctionEventRepository events,
       AuctionLotRepository lots,
+      AuctionRejectionRepository rejections,
       TransactionTemplate tx,
       AuctionBroadcaster broadcaster,
       List<BidGuard> guards,
@@ -70,8 +72,6 @@ final class AuctionRunner {
       RoomLifecycle lifecycle,
       AuctionProperties props,
       Executor pool) {}
-
-  private record IntentKey(UUID actor, UUID intentId) {}
 
   /** Room changes that must stand or fall with the events in one transaction. */
   private interface RoomWork {
@@ -81,8 +81,8 @@ final class AuctionRunner {
   private final UUID roomId;
   private final Deps d;
   private final SerialExecutor serial;
-  private final Map<IntentKey, Outcome> rejections;
 
+  private CompletableFuture<Void> queuedTick;
   private volatile AuctionState state;
   private UUID scheduledBy;
   private Instant startRefusedAt;
@@ -96,14 +96,6 @@ final class AuctionRunner {
     this.scheduledBy = header == null ? null : header.scheduledBy();
     this.startRefusedAt = header == null ? null : header.startRefusedAt();
     this.pendingResume = header != null;
-    int max = d.props().rejectionCacheSize();
-    this.rejections =
-        new LinkedHashMap<>() {
-          @Override
-          protected boolean removeEldestEntry(Map.Entry<IntentKey, Outcome> eldest) {
-            return size() > max;
-          }
-        };
   }
 
   /** Rebuilds the auction of {@code roomId} from its log; an empty one if it has none. */
@@ -128,54 +120,78 @@ final class AuctionRunner {
     return serial.submit(() -> doSchedule(actor, startsAt));
   }
 
-  /** One clock step: go live at the start instant, close and open lots as they fall due. */
-  CompletableFuture<Void> tick() {
-    return serial.submit(
-        () -> {
-          doTick();
-          return null;
-        });
+  /**
+   * One clock step: go live at the start instant, close and open lots as they fall due. A tick
+   * asked for while another is still waiting its turn shares it, so a slow auction never builds a
+   * queue of clock steps; one that is already running does not count, since it may have read the
+   * clock before this call.
+   */
+  synchronized CompletableFuture<Void> tick() {
+    if (queuedTick == null) {
+      queuedTick =
+          serial.submit(
+              () -> {
+                startTick();
+                doTick();
+                return null;
+              });
+    }
+    return queuedTick;
+  }
+
+  private synchronized void startTick() {
+    queuedTick = null;
+  }
+
+  /**
+   * The server clock, cut to microseconds: that is all a timestamptz keeps, so a time used by the
+   * live state is exactly the time a replay of the stored log reads back.
+   */
+  private Instant now() {
+    return d.clock().instant().truncatedTo(ChronoUnit.MICROS);
   }
 
   // ---- everything below happens on the serial queue ----
 
   private Outcome handle(Intent intent) {
-    Instant now = d.clock().instant();
+    Instant now = now();
     resumeIfPending(now);
     Outcome prior = prior(intent);
     if (prior != null) {
       return prior;
     }
-    int openBefore = state.lotOpen() ? state.currentLot() : 0;
     advanceTimers(now);
-    if (openBefore == intent.lot() && !(state.lotOpen() && state.currentLot() == openBefore)) {
-      // The lot this intent names closed on the deadline just now: it is too late, not a phase
-      // error.
-      Outcome late = Outcome.rejected(intent.lot(), Reason.LOT_CLOSED);
-      rejections.put(new IntentKey(intent.actor(), intent.intentId()), late);
-      return late;
-    }
     Decision decision = IntentRules.decide(state, intent, now, d.guards());
     return switch (decision) {
       case Decision.Accepted accepted -> {
         commit(accepted.events(), scheduledBy, null);
         yield outcome(accepted.events().get(0));
       }
-      case Decision.Rejected rejected -> {
-        Outcome out = Outcome.rejected(intent.lot(), rejected.reason());
-        rejections.put(new IntentKey(intent.actor(), intent.intentId()), out);
-        yield out;
-      }
+      case Decision.Rejected rejected -> reject(intent, now, rejected.reason());
       case Decision.PhaseError phase ->
           throw new AuctionConflictException(phase.code(), phase.code());
     };
   }
 
+  /**
+   * Stores the rejection, then answers with it, so a resend of this intent id gets the same answer
+   * even after a restart. If it cannot be stored nothing is answered and the client may retry.
+   */
+  private Outcome reject(Intent intent, Instant now, String reason) {
+    Outcome out = Outcome.rejected(intent.lot(), reason);
+    try {
+      d.rejections().append(roomId, intent.actor(), intent.intentId(), out, now);
+    } catch (DataAccessException e) {
+      throw new LogWriteException(e);
+    }
+    return out;
+  }
+
   /** The first answer to this intent id, if it was already decided. */
   private Outcome prior(Intent intent) {
-    Outcome rejected = rejections.get(new IntentKey(intent.actor(), intent.intentId()));
-    if (rejected != null) {
-      return rejected;
+    Optional<Outcome> rejected = d.rejections().find(roomId, intent.actor(), intent.intentId());
+    if (rejected.isPresent()) {
+      return rejected.get();
     }
     Optional<AuctionEvent> logged = d.events().byIntent(roomId, intent.actor(), intent.intentId());
     return logged.map(AuctionRunner::outcome).orElse(null);
@@ -188,7 +204,7 @@ final class AuctionRunner {
   }
 
   private AuctionState doSchedule(UserId actor, Instant startsAt) {
-    Instant now = d.clock().instant();
+    Instant now = now();
     if (startsAt == null || !startsAt.isAfter(now)) {
       throw new AuctionRequestException("startsAt", "The start must be in the future");
     }
@@ -219,7 +235,7 @@ final class AuctionRunner {
   }
 
   private void doTick() {
-    Instant now = d.clock().instant();
+    Instant now = now();
     resumeIfPending(now);
     switch (state.phase()) {
       case SCHEDULED -> {
@@ -373,7 +389,7 @@ final class AuctionRunner {
     AuctionHeader header =
         new AuctionHeader(
             roomId, next.phase(), next.startsAt(), by, refusedAt(events, next), next.lastSeq());
-    if (!d.headers().upsert(header, state.lastSeq(), d.clock().instant())) {
+    if (!d.headers().upsert(header, state.lastSeq(), now())) {
       throw new LogWriteException("The auction log moved under this writer");
     }
   }

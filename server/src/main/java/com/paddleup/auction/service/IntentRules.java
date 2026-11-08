@@ -5,6 +5,7 @@ import com.paddleup.auction.model.AuctionState;
 import com.paddleup.auction.model.Decision;
 import com.paddleup.auction.model.Events;
 import com.paddleup.auction.model.Intent;
+import com.paddleup.auction.model.Phase;
 import com.paddleup.auction.model.Reason;
 import com.paddleup.auction.util.Ladder;
 import java.time.Duration;
@@ -22,6 +23,9 @@ public final class IntentRules {
   private IntentRules() {}
 
   public static Decision decide(AuctionState s, Intent intent, Instant now, List<BidGuard> guards) {
+    if (namesClosedLot(s, intent)) {
+      return new Decision.Rejected(Reason.LOT_CLOSED);
+    }
     Optional<Decision> phase = phase(s);
     if (phase.isPresent()) {
       return phase.get();
@@ -54,6 +58,17 @@ public final class IntentRules {
                       intent.actor(),
                       intent.intentId())));
     };
+  }
+
+  /**
+   * True when the intent names a lot that has already closed while the auction is live (in the gap)
+   * or ended. It is too late for that lot, whether or not the tick has happened yet, so the answer
+   * is the same either way; only a lot that never opened is a phase error.
+   */
+  private static boolean namesClosedLot(AuctionState s, Intent intent) {
+    return (s.phase() == Phase.LIVE || s.phase() == Phase.ENDED)
+        && !s.lotOpen()
+        && intent.lot() <= s.currentLot();
   }
 
   private static Optional<Decision> phase(AuctionState s) {

@@ -150,14 +150,8 @@ class AuctionLifecycleIT extends AbstractAuctionIT {
     assertThat(lastSeq(room)).isEqualTo(seq);
     // The room stays auction_live: season start belongs to a later spec.
     assertThat(roomState(room)).isEqualTo("auction_live");
-    assertThat(
-            post(
-                    room.manager(0),
-                    auction(room, "/bids"),
-                    java.util.Map.of(
-                        "intentId", UUID.randomUUID().toString(), "lot", 3, "amount", 20))
-                .getStatusCode()
-                .value())
-        .isEqualTo(409);
+    // Lot 3 closed with the auction: a late bid on it is too late; a lot past the end is a 409.
+    assertThat(outcome(bid(room, room.manager(0), 3, 20))).isEqualTo("rejected:lot_closed");
+    assertThat(bid(room, room.manager(0), 4, 20).getStatusCode().value()).isEqualTo(409);
   }
 }

@@ -2,12 +2,14 @@ package com.paddleup.auction.service;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.paddleup.auction.AbstractAuctionIT;
+import com.paddleup.auction.model.AuctionState;
 import com.paddleup.auction.repository.AuctionEventRepository;
 import com.paddleup.auction.util.Ladder;
 import java.util.ArrayList;
@@ -28,6 +30,7 @@ class AuctionRunnerIT extends AbstractAuctionIT {
 
   @MockitoSpyBean AuctionEventRepository eventLog;
   @MockitoSpyBean AuctionBroadcaster broadcaster;
+  @org.springframework.beans.factory.annotation.Autowired AuctionRegistry registry;
 
   @Test
   void aForcedLogWriteFailureReturnsAnErrorBroadcastsNothingAndLeavesStateUnchanged() {
@@ -58,6 +61,72 @@ class AuctionRunnerIT extends AbstractAuctionIT {
     assertThat(outcome(retry)).isEqualTo("accepted");
     assertThat(body(retry).get("seq").asLong()).isEqualTo(seqBefore + 1);
     assertThat(lastSeq(room)).isEqualTo(seqBefore + 1);
+  }
+
+  @Test
+  void liveStateEqualsTheReplayOfTheStoredLogWhenTheClockHasNanoseconds() {
+    Room room = room(2, 6);
+    goLive(room);
+    clock.freeze(T0.plusSeconds(1).plusNanos(123_456_789));
+    bid(room, room.manager(0), 1, 20);
+    clock.freeze(T0.plusSeconds(11).plusNanos(123_456_789));
+    tick();
+    assertThat(eventCount(room, "lot_sold")).isEqualTo(1);
+
+    UUID roomId = UUID.fromString(room.id());
+    var live = registry.runner(roomId).state();
+    var replayed =
+        AuctionReducer.replay(AuctionState.initial(roomId, live.catalog()), eventLog.all(roomId));
+
+    assertThat(live).isEqualTo(replayed);
+    assertThat(live.nextOpenAt().getNano() % 1000).isZero();
+  }
+
+  @Test
+  void aStuckRoomDoesNotFreezeTheClockOfOtherRoomsAndItsTicksDoNotPileUp() throws Exception {
+    Room stuck = room(2, 6);
+    goLive(stuck);
+    Room other = room(2, 6);
+    goLive(other);
+    bid(stuck, stuck.manager(0), 1, 20);
+    bid(other, other.manager(0), 1, 20);
+    advance(10);
+    UUID stuckId = UUID.fromString(stuck.id());
+    var entered = new java.util.concurrent.CountDownLatch(1);
+    var release = new java.util.concurrent.CountDownLatch(1);
+    doAnswer(
+            call -> {
+              if (stuckId.equals(call.getArgument(0))) {
+                entered.countDown();
+                release.await(30, java.util.concurrent.TimeUnit.SECONDS);
+              }
+              return call.callRealMethod();
+            })
+        .when(eventLog)
+        .append(any(), any());
+    try {
+      ticker.requestTicks();
+
+      assertThat(entered.await(5, java.util.concurrent.TimeUnit.SECONDS)).isTrue();
+      waitUntil(() -> eventCount(other, "lot_sold") == 1);
+      assertThat(eventCount(stuck, "lot_sold")).isZero();
+      // Ticks asked for while one is running share one queued tick instead of piling up.
+      var queued = registry.runner(stuckId).tick();
+      assertThat(registry.runner(stuckId).tick()).isSameAs(queued);
+    } finally {
+      release.countDown();
+      org.mockito.Mockito.reset(eventLog);
+    }
+    waitUntil(() -> eventCount(stuck, "lot_sold") == 1);
+  }
+
+  private static void waitUntil(java.util.function.BooleanSupplier condition)
+      throws InterruptedException {
+    long give = System.nanoTime() + java.util.concurrent.TimeUnit.SECONDS.toNanos(5);
+    while (!condition.getAsBoolean() && System.nanoTime() < give) {
+      Thread.sleep(20);
+    }
+    assertThat(condition.getAsBoolean()).as("condition met within 5 s").isTrue();
   }
 
   @Test

@@ -185,6 +185,8 @@ class RoomConfigValidator {
       }
       if (step.from() < 0 || step.from() <= previous) {
         out.add(new Violation(at + ".from", "Must be 0 or more and above the previous step"));
+      } else if (i == 0 && step.from() > 0) {
+        out.add(new Violation(at + ".from", "The first step must start at 0"));
       }
       previous = Math.max(previous, step.from());
     }

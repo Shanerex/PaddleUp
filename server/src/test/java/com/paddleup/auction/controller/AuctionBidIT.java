@@ -138,6 +138,28 @@ class AuctionBidIT extends AbstractAuctionIT {
   }
 
   @Test
+  void aLateBidGetsTheSameAnswerBeforeAndAfterTheTickAndAfterTheEnd() {
+    Room room = room(2, 3);
+    goLive(room);
+    bid(room, room.manager(0), 1, 20);
+
+    advance(10);
+    assertThat(outcome(bid(room, room.manager(1), 1, 25))).isEqualTo("rejected:lot_closed");
+    tick();
+    assertThat(outcome(bid(room, room.manager(1), 1, 25))).isEqualTo("rejected:lot_closed");
+    assertThat(outcome(pass(room, room.manager(1), 1))).isEqualTo("rejected:lot_closed");
+
+    for (int i = 0; i < 2; i++) {
+      advance(5);
+      tick();
+      advance(20);
+      tick();
+    }
+    assertThat(state(room, room.commissioner()).get("phase").asText()).isEqualTo("ended");
+    assertThat(outcome(bid(room, room.manager(1), 3, 20))).isEqualTo("rejected:lot_closed");
+  }
+
+  @Test
   void aBidJustBeforeTheDeadlineCounts() {
     Room room = room(2, 6);
     goLive(room);
@@ -167,10 +189,10 @@ class AuctionBidIT extends AbstractAuctionIT {
     tick();
     advance(20);
     tick();
-    var gap = bid(room, room.manager(0), 1, 20);
+    var gap = bid(room, room.manager(0), 2, 20);
     assertThat(gap.getStatusCode()).isEqualTo(HttpStatus.CONFLICT);
     assertThat(body(gap).get("error").asText()).isEqualTo("no_open_lot");
-    assertThat(body(pass(room, room.manager(0), 1)).get("error").asText()).isEqualTo("no_open_lot");
+    assertThat(body(pass(room, room.manager(0), 2)).get("error").asText()).isEqualTo("no_open_lot");
 
     for (int i = 0; i < 2; i++) {
       advance(5);
@@ -178,7 +200,7 @@ class AuctionBidIT extends AbstractAuctionIT {
       advance(20);
       tick();
     }
-    var ended = bid(room, room.manager(0), 3, 20);
+    var ended = bid(room, room.manager(0), 4, 20);
     assertThat(ended.getStatusCode()).isEqualTo(HttpStatus.CONFLICT);
     assertThat(body(ended).get("error").asText()).isEqualTo("ended");
   }

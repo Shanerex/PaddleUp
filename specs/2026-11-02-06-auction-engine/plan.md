@@ -107,7 +107,7 @@ Server module `com.paddleup.auction` (MVCS plus exception/config/util):
 - AuctionExceptionHandler. Room errors from the port keep their own 404/403 mapping.
 
 **config**
-- `AuctionProperties`: tick, ticketTtl (30s), rejectionCacheSize.
+- `AuctionProperties`: tick, ticketTtl (30s).
 - `WebSocketConfig`: endpoint `/api/ws`, allowed origin = web-base-url, simple broker `/topic` with preservePublishOrder, no application destinations, and a handshake handler that passes on any session principal.
 - `StompAuthInterceptor`: calls `StompAuth`. CONNECT needs either a session principal or a valid ticket. SUBSCRIBE is allowed only to the user's own room topics. SEND is refused.
 - `AuctionSchedulingConfig`: a module-private ThreadPoolTaskScheduler.
@@ -160,7 +160,7 @@ Approved answers are folded in; the implementer applies these to docs/knowledge/
 - Two STOMP auth paths could drift. Mitigation: one `StompAuth` and one membership check, with the STOMP tests run on both paths.
 - The anonymous `/api/ws` handshake is an open endpoint. Mitigation: CONNECT without a principal or a valid single-use ticket is refused, along with the origin allow-list and the 30 s ticket TTL.
 - The simple broker may reorder sends. Mitigation: preservePublishOrder, and the client resyncs on any seq gap (AC-13).
-- The rejection cache is lost on restart. Mitigation: a resent rejected intent is decided again, and these rules can only reject it again (purse only falls, price only rises).
+- A resent rejected intent could be decided again after a restart and accepted (a first bid of 25 is rejected at 0, valid once 20 is bid). Mitigation: rejections are stored in `auction_rejections` and a resend returns the first answer (decision 2026-11-08-auction-rejections-persisted).
 - A refused start leaves a room stuck in the lobby. Mitigation: the reason shows in the lobby, and a reschedule clears it.
 - The tick adds up to 100 ms of close lag. Mitigation: the deadline still decides, because intents close overdue lots first; the broadcast lag stays within NFR-2.
 - A large pool snapshot in one event would hit Jackson's 256 KB limit. Mitigation: card fields live in `auction_lots`, and the event holds only ids.

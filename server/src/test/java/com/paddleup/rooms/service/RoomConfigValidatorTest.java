@@ -144,9 +144,16 @@ class RoomConfigValidatorTest {
                 e ->
                     e.incrementLadder =
                         List.of(
+                            new PresetDto.IncrementStep(0, 5),
                             new PresetDto.IncrementStep(100, 5),
                             new PresetDto.IncrementStep(50, 5))))
-        .containsExactly("incrementLadder[1].from");
+        .containsExactly("incrementLadder[2].from");
+  }
+
+  @Test
+  void aLadderWhoseFirstBandDoesNotStartAtZeroNamesThatBand() {
+    assertThat(fields(e -> e.incrementLadder = List.of(new PresetDto.IncrementStep(1000, 100))))
+        .containsExactly("incrementLadder[0].from");
   }
 
   @Test
