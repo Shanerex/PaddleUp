@@ -45,6 +45,44 @@ class RoomConfigValidatorTest {
   }
 
   @Test
+  void timersOutsideTheirRangesNameTheField() {
+    assertThat(fields(e -> e.openSeconds = 4)).containsExactly("openSeconds");
+    assertThat(fields(e -> e.openSeconds = 121)).containsExactly("openSeconds");
+    assertThat(fields(e -> e.bidSeconds = 2)).containsExactly("bidSeconds");
+    assertThat(fields(e -> e.bidSeconds = 61)).containsExactly("bidSeconds");
+    assertThat(fields(e -> e.gapSeconds = -1)).containsExactly("gapSeconds");
+    assertThat(fields(e -> e.gapSeconds = 31)).containsExactly("gapSeconds");
+  }
+
+  @Test
+  void timersAtTheEdgesOfTheirRangesAndAbsentTimersAreValid() {
+    assertThat(
+            fields(
+                e -> {
+                  e.openSeconds = 5;
+                  e.bidSeconds = 3;
+                  e.gapSeconds = 0;
+                }))
+        .isEmpty();
+    assertThat(
+            fields(
+                e -> {
+                  e.openSeconds = 120;
+                  e.bidSeconds = 60;
+                  e.gapSeconds = 30;
+                }))
+        .isEmpty();
+    assertThat(
+            fields(
+                e -> {
+                  e.openSeconds = null;
+                  e.bidSeconds = null;
+                  e.gapSeconds = null;
+                }))
+        .isEmpty();
+  }
+
+  @Test
   void roleMinimumsAboveSquadMinNamesRoleMinimums() {
     assertThat(fields(e -> e.squadMin = 10)).contains("roleMinimums");
   }
@@ -106,9 +144,16 @@ class RoomConfigValidatorTest {
                 e ->
                     e.incrementLadder =
                         List.of(
+                            new PresetDto.IncrementStep(0, 5),
                             new PresetDto.IncrementStep(100, 5),
                             new PresetDto.IncrementStep(50, 5))))
-        .containsExactly("incrementLadder[1].from");
+        .containsExactly("incrementLadder[2].from");
+  }
+
+  @Test
+  void aLadderWhoseFirstBandDoesNotStartAtZeroNamesThatBand() {
+    assertThat(fields(e -> e.incrementLadder = List.of(new PresetDto.IncrementStep(1000, 100))))
+        .containsExactly("incrementLadder[0].from");
   }
 
   @Test

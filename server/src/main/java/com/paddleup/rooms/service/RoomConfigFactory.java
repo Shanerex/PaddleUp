@@ -55,7 +55,10 @@ class RoomConfigFactory {
         quotas,
         preset.retention(),
         pack.defaultRuleSet(),
-        new AiSettingsDto(true, lifelines, REPORT_ROOM));
+        new AiSettingsDto(true, lifelines, REPORT_ROOM),
+        RoomConfigDto.DEFAULT_OPEN_SECONDS,
+        RoomConfigDto.DEFAULT_BID_SECONDS,
+        RoomConfigDto.DEFAULT_GAP_SECONDS);
   }
 
   /** The ids and labels the room keeps after creation. */

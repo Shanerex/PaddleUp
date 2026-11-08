@@ -16,7 +16,6 @@ import com.paddleup.packs.service.PriceRule;
 import com.paddleup.packs.service.SeasonDatasetService;
 import com.paddleup.rooms.dto.DatasetFit;
 import com.paddleup.rooms.dto.PackLabelsDto;
-import com.paddleup.rooms.dto.RoomConfigDto;
 import com.paddleup.rooms.dto.PoolDto;
 import com.paddleup.rooms.dto.PoolOrigin;
 import com.paddleup.rooms.dto.PoolPlayerDto;
@@ -24,6 +23,7 @@ import com.paddleup.rooms.dto.PoolPlayerRequest;
 import com.paddleup.rooms.dto.PoolResetRequest;
 import com.paddleup.rooms.dto.PoolSetDto;
 import com.paddleup.rooms.dto.PoolSetsRequest;
+import com.paddleup.rooms.dto.RoomConfigDto;
 import com.paddleup.rooms.dto.Violation;
 import com.paddleup.rooms.exception.InvalidConfigException;
 import com.paddleup.rooms.exception.PoolPlayerNotFoundException;
@@ -452,7 +452,8 @@ public class PoolService {
       return;
     }
     boolean overPurse = misfits.stream().anyMatch(p -> p.basePrice() > config.purse());
-    String names = misfits.stream().limit(3).map(PoolPlayer::name).collect(Collectors.joining(", "));
+    String names =
+        misfits.stream().limit(3).map(PoolPlayer::name).collect(Collectors.joining(", "));
     String more = misfits.size() > 3 ? " and " + (misfits.size() - 3) + " more" : "";
     throw new InvalidConfigException(
         List.of(

@@ -3,6 +3,7 @@ package com.paddleup.rooms.service;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import com.paddleup.packs.dto.PackDto;
+import com.paddleup.rooms.ConfigEdit;
 import com.paddleup.rooms.RoomsTestSupport;
 import com.paddleup.rooms.dto.RoomConfigDto;
 import java.util.Map;
@@ -36,6 +37,25 @@ class RoomConfigFactoryTest {
     assertThat(config.categoryQuotas()).isEqualTo(Map.of("overseas-cap", 8));
     assertThat(config.minManagers()).isEqualTo(2);
     assertThat(config.maxManagers()).isEqualTo(10);
+    assertThat(config.openSeconds()).isEqualTo(20);
+    assertThat(config.bidSeconds()).isEqualTo(10);
+    assertThat(config.gapSeconds()).isEqualTo(5);
+  }
+
+  @Test
+  void aConfigWithoutTimersReadsTheDefaults() {
+    var config =
+        ConfigEdit.of(
+            factory.create(PACK, RoomsTestSupport.preset(PACK, "standard"), "Friends", ""));
+    config.openSeconds = null;
+    config.bidSeconds = null;
+    config.gapSeconds = null;
+
+    var built = config.build();
+
+    assertThat(built.openSeconds()).isEqualTo(20);
+    assertThat(built.bidSeconds()).isEqualTo(10);
+    assertThat(built.gapSeconds()).isEqualTo(5);
   }
 
   @Test

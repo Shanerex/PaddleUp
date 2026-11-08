@@ -36,6 +36,17 @@ class RoomConfigValidator {
   static final int LABEL_MAX = 20;
   static final int RULE_ID_MAX = 60;
 
+  /**
+   * Auction timers, in seconds: how long a lot waits for a bid, a bid keeps it open, and the gap.
+   */
+  static final int OPEN_SECONDS_MIN = 5;
+
+  static final int OPEN_SECONDS_MAX = 120;
+  static final int BID_SECONDS_MIN = 3;
+  static final int BID_SECONDS_MAX = 60;
+  static final int GAP_SECONDS_MIN = 0;
+  static final int GAP_SECONDS_MAX = 30;
+
   /** Largest list or map a config may carry, so a saved config stays small. */
   static final int COLLECTION_MAX = 50;
 
@@ -71,6 +82,7 @@ class RoomConfigValidator {
     quotas(config, snapshot, out);
     retention(config, snapshot, out);
     ai(config.ai(), out);
+    timers(config, out);
     scoring(config, snapshot, out);
     return out;
   }
@@ -173,8 +185,23 @@ class RoomConfigValidator {
       }
       if (step.from() < 0 || step.from() <= previous) {
         out.add(new Violation(at + ".from", "Must be 0 or more and above the previous step"));
+      } else if (i == 0 && step.from() > 0) {
+        out.add(new Violation(at + ".from", "The first step must start at 0"));
       }
       previous = Math.max(previous, step.from());
+    }
+  }
+
+  private static void timers(RoomConfigDto c, List<Violation> out) {
+    timer("openSeconds", c.openSeconds(), OPEN_SECONDS_MIN, OPEN_SECONDS_MAX, out);
+    timer("bidSeconds", c.bidSeconds(), BID_SECONDS_MIN, BID_SECONDS_MAX, out);
+    timer("gapSeconds", c.gapSeconds(), GAP_SECONDS_MIN, GAP_SECONDS_MAX, out);
+  }
+
+  /** A timer left out reads as its default, so only a given value is range-checked. */
+  private static void timer(String field, Integer value, int min, int max, List<Violation> out) {
+    if (value != null && (value < min || value > max)) {
+      out.add(new Violation(field, "Must be " + min + " to " + max + " seconds"));
     }
   }
 

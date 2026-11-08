@@ -46,6 +46,45 @@ class RoomConfigIT extends AbstractRoomsIT {
   }
 
   @Test
+  void aStoredConfigWithoutTimersReadsTheDefaultsAndTimersSaveWithinRange() {
+    Person commissioner = person();
+    String roomId = createRoom(commissioner);
+    jdbc.update(
+        "UPDATE rooms SET config = config - 'openSeconds' - 'bidSeconds' - 'gapSeconds'"
+            + " WHERE id = ?",
+        UUID.fromString(roomId));
+
+    ObjectNode stored = config(commissioner, roomId);
+    assertThat(stored.get("openSeconds").asInt()).isEqualTo(20);
+    assertThat(stored.get("bidSeconds").asInt()).isEqualTo(10);
+    assertThat(stored.get("gapSeconds").asInt()).isEqualTo(5);
+    stored.put("openSeconds", 30).put("bidSeconds", 8).put("gapSeconds", 0);
+    var saved = save(commissioner, roomId, 1, stored);
+
+    assertThat(saved.getStatusCode()).as(saved.getBody()).isEqualTo(HttpStatus.OK);
+    JsonNode read = body(get(commissioner, "/api/rooms/" + roomId)).get("config");
+    assertThat(read.get("openSeconds").asInt()).isEqualTo(30);
+    assertThat(read.get("bidSeconds").asInt()).isEqualTo(8);
+    assertThat(read.get("gapSeconds").asInt()).isEqualTo(0);
+  }
+
+  @Test
+  void aNewRoomCarriesTheDefaultTimersAndOutOfRangeTimersAreRefused() {
+    Person commissioner = person();
+    String roomId = createRoom(commissioner);
+    ObjectNode config = config(commissioner, roomId);
+    assertThat(config.get("openSeconds").asInt()).isEqualTo(20);
+    assertThat(config.get("bidSeconds").asInt()).isEqualTo(10);
+    assertThat(config.get("gapSeconds").asInt()).isEqualTo(5);
+
+    config.put("openSeconds", 4).put("bidSeconds", 61).put("gapSeconds", 31);
+
+    assertThat(violationFields(save(commissioner, roomId, 1, config)))
+        .containsExactlyInAnyOrder("openSeconds", "bidSeconds", "gapSeconds");
+    assertThat(configVersion(commissioner, roomId)).isEqualTo(1);
+  }
+
+  @Test
   void aValidSavePersistsBumpsTheVersionAndIsLogged() {
     Person commissioner = person();
     String roomId = createRoom(commissioner);

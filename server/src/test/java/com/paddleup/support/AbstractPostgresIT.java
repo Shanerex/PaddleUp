@@ -15,7 +15,11 @@ import org.testcontainers.containers.PostgreSQLContainer;
     properties = {
       "paddleup.auth.throttle.start-per-ip=100000",
       "paddleup.auth.throttle.failed-per-ip=100000",
-      "paddleup.rooms.join-throttle.failed-per-ip=100000"
+      "paddleup.rooms.join-throttle.failed-per-ip=100000",
+      // No test context runs the auction clock or recovers earlier tests' auctions from the shared
+      // database; auction tests step a mutable clock by hand and opt in to recovery themselves.
+      "paddleup.auction.tick=0",
+      "paddleup.auction.recovery=false"
     })
 public abstract class AbstractPostgresIT {
 

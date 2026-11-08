@@ -25,6 +25,9 @@ public final class ConfigEdit {
   public PresetDto.Retention retention;
   public RuleSetDto scoringRules;
   public AiSettingsDto ai;
+  public Integer openSeconds;
+  public Integer bidSeconds;
+  public Integer gapSeconds;
 
   public ConfigEdit(RoomConfigDto c) {
     name = c.name();
@@ -42,6 +45,9 @@ public final class ConfigEdit {
     retention = c.retention();
     scoringRules = c.scoringRules();
     ai = c.ai();
+    openSeconds = c.openSeconds();
+    bidSeconds = c.bidSeconds();
+    gapSeconds = c.gapSeconds();
   }
 
   public RoomConfigDto build() {
@@ -60,7 +66,10 @@ public final class ConfigEdit {
         categoryQuotas,
         retention,
         scoringRules,
-        ai);
+        ai,
+        openSeconds,
+        bidSeconds,
+        gapSeconds);
   }
 
   public static ConfigEdit of(RoomConfigDto c) {

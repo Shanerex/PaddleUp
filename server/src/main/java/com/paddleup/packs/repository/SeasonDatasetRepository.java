@@ -145,7 +145,8 @@ public class SeasonDatasetRepository {
                 new DatasetFacetsDto(
                     d.version(),
                     Set.copyOf(
-                        jdbc.sql("SELECT DISTINCT role_key FROM season_players WHERE dataset_id = ?")
+                        jdbc.sql(
+                                "SELECT DISTINCT role_key FROM season_players WHERE dataset_id = ?")
                             .param(d.id())
                             .query(String.class)
                             .list()),
