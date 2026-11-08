@@ -12,8 +12,8 @@ import java.util.List;
  * latestDatasetVersion} is the newest one for the pack, or null when none exists. {@code latestFit}
  * says whether the room can load that newest dataset (its roles, tags and base prices against the
  * room's pack, purse and increment ladder) and, if not, whether the pack or the prices are the
- * reason; it is null for anyone who cannot edit, who has no use for it. {@code canEdit}
- * is true only for the Commissioner before the auction.
+ * reason; it is null for anyone who cannot edit, who has no use for it. {@code canEdit} is true
+ * only for the Commissioner before the auction.
  */
 public record PoolDto(
     @Schema(requiredMode = REQUIRED) boolean hasPool,

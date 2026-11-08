@@ -45,6 +45,44 @@ class RoomConfigValidatorTest {
   }
 
   @Test
+  void timersOutsideTheirRangesNameTheField() {
+    assertThat(fields(e -> e.openSeconds = 4)).containsExactly("openSeconds");
+    assertThat(fields(e -> e.openSeconds = 121)).containsExactly("openSeconds");
+    assertThat(fields(e -> e.bidSeconds = 2)).containsExactly("bidSeconds");
+    assertThat(fields(e -> e.bidSeconds = 61)).containsExactly("bidSeconds");
+    assertThat(fields(e -> e.gapSeconds = -1)).containsExactly("gapSeconds");
+    assertThat(fields(e -> e.gapSeconds = 31)).containsExactly("gapSeconds");
+  }
+
+  @Test
+  void timersAtTheEdgesOfTheirRangesAndAbsentTimersAreValid() {
+    assertThat(
+            fields(
+                e -> {
+                  e.openSeconds = 5;
+                  e.bidSeconds = 3;
+                  e.gapSeconds = 0;
+                }))
+        .isEmpty();
+    assertThat(
+            fields(
+                e -> {
+                  e.openSeconds = 120;
+                  e.bidSeconds = 60;
+                  e.gapSeconds = 30;
+                }))
+        .isEmpty();
+    assertThat(
+            fields(
+                e -> {
+                  e.openSeconds = null;
+                  e.bidSeconds = null;
+                  e.gapSeconds = null;
+                }))
+        .isEmpty();
+  }
+
+  @Test
   void roleMinimumsAboveSquadMinNamesRoleMinimums() {
     assertThat(fields(e -> e.squadMin = 10)).contains("roleMinimums");
   }

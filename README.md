@@ -42,6 +42,16 @@ Each Sport Pack has versioned season datasets. An app admin imports one at `/adm
 - Import is partial: valid rows become the next version (v1, v2, ...) and rejected rows are listed with row, field and problem. A file with no valid row creates no version and answers 422 with the report. Versions are immutable; existing room copies never change.
 - Rooms without a copy (no season data when they were created) cannot start the auction. The Commissioner uses "Load season data" on the player pool screen once a version exists.
 
+## Auction
+
+The auction runs on one server instance: a single-writer runner per auction applies bids in arrival order and writes every event to an append-only log before it broadcasts. A restart rebuilds each unended auction from its log. Under `/api/rooms/{roomId}/auction` (members only; a non-member gets 404):
+
+- `PUT /schedule` `{startsAt}` (Commissioner): schedule or, before go-live, reschedule a future UTC start. Refused (409 `not_ready`) without a big enough pool copy or enough franchises. The auction goes live at that instant with no request; if the room cannot start it logs one `start_refused`, stays scheduled and waits for a reschedule. Pool, set-order and config writes return 409 from go-live.
+- `GET /` full state with `serverNow`, deadline, purses, squads, `lastSeq` and who is connected; `GET /events?after=N&limit=` the log from seq N+1.
+- `POST /bids` `{intentId, lot, amount}` and `POST /passes` `{intentId, lot}`. The amount must be the base price, then the current bid plus the step of the ladder band. A rule rejection answers 200 `{outcome: "rejected", reason}` with reason `not_a_franchise`, `leader`, `passed`, `purse`, `outbid` or `lot_closed`; a wrong phase answers 409 `not_live`, `no_open_lot` or `ended`. Resending an `intentId` returns the first answer. Bids are irrevocable: there is no cancel or undo route.
+- Timers come from room config (`openSeconds` 20, `bidSeconds` 10, `gapSeconds` 5 by default); clients never send a time. `paddleup.auction.tick` (default `100ms`, `0` turns it off) is the clock step and `paddleup.auction.recovery` rebuilds auctions on boot.
+- STOMP at `/api/ws` carries broadcasts only: subscribe to `/topic/auctions/{roomId}` for events (each has a gap-free `seq`; on a jump refetch `GET /events?after=<last seq>` or `GET /`) and `/topic/auctions/{roomId}/presence` for connected franchises. Two connection modes, one auth check: same origin through the `/api` rewrite with the session cookie, or directly to the server origin with a ticket (`POST .../auction/ticket`, single use, 30 s) in a `ticket` CONNECT header. Sending a frame is refused.
+
 ## Layout
 
 - `server/` Spring Boot modular monolith: modules `accounts`, `rooms`, `auction`, `scoring`, `packs`, `advisor` under `com.paddleup`, each split into `controller`, `service`, `repository`, `model`, `dto`, `exception`, `config` and `util` packages (see `docs/knowledge/architecture.md`)

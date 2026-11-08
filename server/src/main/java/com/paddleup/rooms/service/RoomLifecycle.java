@@ -129,7 +129,7 @@ public class RoomLifecycle {
   }
 
   /** The auction locks the pool, so it needs enough players to fill every squad to its minimum. */
-  private java.util.Optional<String> poolRefusal(Room room) {
+  java.util.Optional<String> poolRefusal(Room room) {
     if (!pools.exists(room.id())) {
       return java.util.Optional.of("No player pool yet; load season data first");
     }

@@ -45,6 +45,10 @@ class SecurityConfig {
                         "/api/oauth2/**",
                         "/api/login/oauth2/**",
                         "/error", // ERROR dispatch: keeps the original status for anonymous callers
+                        // The socket handshake: a user without a session cookie must present a
+                        // ticket on CONNECT, which the auction module checks.
+                        "/api/ws",
+                        "/api/ws/**",
                         "/actuator/health",
                         "/v3/api-docs",
                         "/v3/api-docs/**")

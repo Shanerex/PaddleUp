@@ -1,6 +1,6 @@
 # Architecture
 
-Source: specs/2026-11-01-project-scaffold/plan.md (proposed; pending review); Sport Packs section from specs/2026-11-02-02-sport-pack-framework/plan.md; Rooms section from specs/2026-11-02-04-rooms/plan.md.
+Source: specs/2026-11-01-project-scaffold/plan.md (proposed; pending review); Sport Packs section from specs/2026-11-02-02-sport-pack-framework/plan.md; Rooms section from specs/2026-11-02-04-rooms/plan.md; Auction engine from specs/2026-11-02-06-auction-engine/plan.md.
 
 ## Repo layout
 - `server/`: Spring Boot modular monolith, single Maven module (Java 21, Maven wrapper).
@@ -26,7 +26,15 @@ Source: specs/2026-11-01-project-scaffold/plan.md (proposed; pending review); Sp
 - Membership = the Commissioner column on the room plus franchise owners. Non-members get 404, non-Commissioners get 403 on Commissioner endpoints.
 - `room_log` is append-only, enforced by a DB trigger that blocks UPDATE and DELETE.
 - Other modules change room state only through `rooms.service.RoomLifecycle`. REST cannot start the auction.
+- The auction reads a room only through `rooms.service.AuctionRoomPort` (access, auctionRefusal, liveInputs, markScheduled). Config carries `openSeconds`, `bidSeconds` and `gapSeconds` (never null on read: absent means 20, 10 and 5 s; ranges 5-120, 3-60, 0-30). Non-members get 404 and non-Commissioners 403 on the auction routes too.
 - Invites are a revocable 12-char code or link that expires after 7 days; joining is throttled per user and per IP.
+
+## Auction engine
+- One single-writer runner per unended auction holds its state in memory. Every intent, timer step and schedule change is a task on its serial queue; arrival order is queue order.
+- `auction_events` (PK room_id+seq, append-only by trigger) is the only source of truth. Each change is persisted, applied, broadcast, then replied to; boot replays the log through the pure `AuctionReducer`. `auctions` is only a boot index; `auction_lots` holds the card fields frozen at go-live.
+- Auctions run on one server instance; a second writer fails on the seq key and cannot fork the log. A refused start logs `start_refused` once and stays scheduled until the Commissioner reschedules.
+- Timers: the server `Clock` plus a 100 ms tick (`paddleup.auction.tick`, 0 turns it off). Intents close overdue lots first, so `lot_closed` is exact. Tests step a mutable Clock.
+- Realtime: STOMP at `/api/ws`, broadcasts on `/topic/auctions/{roomId}` only; bids and passes are REST. Two ways in through one auth check (`StompAuth`): the session cookie on a same-origin handshake, or a single-use 30 s ticket from `POST .../auction/ticket` on CONNECT (Vercel does not proxy upgrades). SEND is always refused. The origin allow-list is `paddleup.auth.web-base-url`.
 
 ## Shared infrastructure
 - `accounts.service.ClientAddress` is the one way to resolve the client IP (also used for throttle keys).
