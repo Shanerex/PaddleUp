@@ -20,6 +20,9 @@ Source of truth for UI. Build agents: read this file first, then open `design-sy
 | Join | Join room via code, create franchise (name, monogram, colour) | Home `join` | FR-11 |
 | Setup | 6-step wizard: Sport · Basics · Squad rules · Scoring · AI · Invite | Home `wizard:1–6` | FR-10–15, FR-70–72 |
 | Pre-auction | Lobby (countdown, readiness, house rules) | Room `lobby` | FR-40 |
+| Pre-auction (v1) | Lobby variants (added 2026-11-09, pending approval): past start time, offline (ready locked, countdown frozen), Commissioner without a franchise | Room `lobbyLate`, `lobbyOffline`, `lobbyAdmin` (App Screens 3b1-3b3) | FR-40, FR-111 |
+| Pre-auction (v1) | Schedule the auction (added 2026-11-09, approved): Commissioner picks date and time in their own zone (room), time already gone, pool too small; Change time from the lobby (Commissioner only) | Room `sheetSchedule`, `sheetScheduleError`, `sheetScheduleRefused`, `lobbyReschedule` (App Screens 6o1-6o3, 3b4) | FR-40, NFR-9 |
+| Auction (v1) | Spotlight states added 2026-11-09, pending approval: Commissioner without a franchise (watching, no bid button, cause stated), auction ended (no auction UI, link to room); no auction yet with Schedule auction for the Commissioner (added 2026-11-09, approved); entering an adjourned auction is 3e | Auction A scenes `observer` (3k), `closed` (3l), `noAuction` (3m) | FR-41, FR-47 |
 | Pre-auction | Retention (slabs, RTM cards) | Room `retention` | FR-30–32 |
 | Auction | Live auction, 3 directions; Team Table advisor; RTM; all states | Auction A/B/C | FR-41–52, FR-120–125 |
 | Post-auction | Summary + validation flags | Room `summary` | FR-52 |

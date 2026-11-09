@@ -22,9 +22,11 @@ public class Presence {
 
   private final Map<Key, Seat> seats = new ConcurrentHashMap<>();
   private final AuctionBroadcaster broadcaster;
+  private final Readiness readiness;
 
-  Presence(AuctionBroadcaster broadcaster) {
+  Presence(AuctionBroadcaster broadcaster, Readiness readiness) {
     this.broadcaster = broadcaster;
+    this.readiness = readiness;
   }
 
   /** The franchises connected to {@code roomId} now. */
@@ -47,14 +49,14 @@ public class Presence {
       return;
     }
     seats.put(new Key(session, subscription), new Seat(roomId, franchiseId));
-    broadcaster.presence(roomId, connected(roomId));
+    broadcaster.presence(roomId, connected(roomId), readiness.ready(roomId));
   }
 
   /** One subscription ended. */
   public void leave(String session, String subscription) {
     Seat seat = seats.remove(new Key(session, subscription));
     if (seat != null) {
-      broadcaster.presence(seat.roomId(), connected(seat.roomId()));
+      broadcaster.presence(seat.roomId(), connected(seat.roomId()), readiness.ready(seat.roomId()));
     }
   }
 
@@ -71,6 +73,6 @@ public class Presence {
               }
               return mine;
             });
-    rooms.forEach(room -> broadcaster.presence(room, connected(room)));
+    rooms.forEach(room -> broadcaster.presence(room, connected(room), readiness.ready(room)));
   }
 }

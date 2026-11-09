@@ -8,11 +8,13 @@
 <body>
 <x-dc>
 <div style="display:flex;gap:10px;align-items:stretch;width:100%;font-family:'Plus Jakarta Sans',system-ui,sans-serif">
+  <sc-if value="{{ v.hasFranchise }}" hint-placeholder-val="{{ true }}">
   <button onClick="{{ onAsk }}" style="width:72px;min-height:72px;flex-shrink:0;border:0;border-radius:20px;background:var(--inverse);color:var(--on-inverse);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;cursor:pointer;position:relative;font:inherit" style-active="transform:scale(0.96)">
     <span style="font-family:'Material Symbols Rounded';font-size:24px;line-height:1;color:var(--coach)">forum</span>
     <span style="font-size:11px;font-weight:700">Table</span>
     <span style="position:absolute;top:6px;right:6px;min-width:18px;height:18px;border-radius:9px;background:var(--coach);color:oklch(0.25 0.05 70);font-family:'DM Mono',monospace;font-size:11px;font-weight:500;display:flex;align-items:center;justify-content:center">{{ v.lifelinesLeft }}</span>
   </button>
+  </sc-if>
   <sc-if value="{{ v.bidReady }}" hint-placeholder-val="{{ true }}">
     <button onClick="{{ onBid }}" style="flex:1;min-width:0;min-height:72px;border:0;border-radius:20px;background:var(--team);color:var(--on-team);font:inherit;display:flex;align-items:center;justify-content:space-between;gap:12px;padding:0 20px;cursor:pointer;box-shadow:var(--shadow)" style-hover="background:var(--team-strong)" style-active="transform:scale(0.97)">
       <span style="display:flex;flex-direction:column;align-items:flex-start;gap:2px"><span style="font-size:12px;font-weight:700;opacity:0.85;letter-spacing:0.04em">RAISE PADDLE</span><span style="font-family:'DM Mono',monospace;font-size:26px;font-weight:500;letter-spacing:-0.03em;line-height:1.1">{{ v.next }}</span></span>
@@ -30,6 +32,9 @@
   </sc-if>
   <sc-if value="{{ v.bidBlocked }}" hint-placeholder-val="{{ false }}">
     <div style="flex:1;min-width:0;min-height:72px;border-radius:20px;background:var(--surface-2);color:var(--ink-2);display:flex;align-items:center;gap:10px;padding:0 20px"><span style="font-family:'Material Symbols Rounded';font-size:24px;line-height:1">block</span><span style="font-weight:800;font-size:15px">{{ v.blockLabel }}</span></div>
+  </sc-if>
+  <sc-if value="{{ v.bidObserver }}" hint-placeholder-val="{{ false }}">
+    <div style="flex:1;min-width:0;min-height:72px;box-sizing:border-box;border-radius:20px;background:var(--surface-2);color:var(--ink-2);display:flex;align-items:center;gap:12px;padding:10px 18px"><span style="font-family:'Material Symbols Rounded';font-size:24px;line-height:1">visibility</span><span style="display:flex;flex-direction:column;gap:2px;min-width:0"><span style="font-weight:800;font-size:15px;color:var(--ink)">Watching only</span><span style="font-size:12px;line-height:1.35;text-wrap:pretty">You lead this room without a franchise. Franchises bid; you watch.</span></span></div>
   </sc-if>
   <sc-if value="{{ v.bidResolved }}" hint-placeholder-val="{{ false }}">
     <div style="flex:1;min-width:0;min-height:72px;border-radius:20px;background:var(--surface-2);color:var(--ink-2);display:flex;align-items:center;gap:10px;padding:0 20px"><span style="font-family:'Material Symbols Rounded';font-size:24px;line-height:1">gavel</span><span style="font-weight:700;font-size:15px">Next lot coming up…</span></div>

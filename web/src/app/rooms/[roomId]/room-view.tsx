@@ -1,12 +1,14 @@
 "use client";
 
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useRef, useState } from "react";
 import {
   advanceRoom,
   ApiError,
   createOwnFranchise,
   editFranchise,
+  getAuction,
   getInvite,
   getMembers,
   getPool,
@@ -23,12 +25,14 @@ import {
   type RoomState,
   type Transition,
 } from "../../../api/client";
+import { pageClock } from "../../../auction/clock";
 import { HOME } from "../../../auth/redirect";
 import { formatCode } from "../../../rooms/codes";
 import { explainRoomError } from "../../../rooms/errors";
 import { checkFranchise, firstFreeColour, FranchiseFields, type FranchiseDraft } from "../../../rooms/franchise-fields";
 import { hueOf } from "../../../rooms/hues";
 import { formatMoney } from "../../../rooms/money";
+import { ScheduleSheet } from "../../../rooms/schedule-sheet";
 import { isPreAuction } from "../../../rooms/state";
 import { AppShell, shell } from "../../../ui/AppShell";
 import { Button, ButtonLink } from "../../../ui/Button";
@@ -51,8 +55,9 @@ const PHASE_OF: Record<RoomState, number> = {
 const LIFELINE_SHORT: Record<string, string> = { "fit-check": "Fit", "price-ceiling": "Ceiling", "rival-scan": "Scan" };
 const ADVANCE: Partial<Record<RoomState, { label: string; icon: string; title: string }>> = {
   retention: { label: "Open retention", icon: "bookmark", title: "Open retention?" },
-  auction_scheduled: { label: "Schedule auction", icon: "gavel", title: "Schedule the auction?" },
 };
+/** Scheduling is not a plain advance: the sheet picks the start and the engine moves the room. */
+const SCHEDULE = { label: "Schedule auction", icon: "gavel" };
 const VERB: Record<RoomState, string> = {
   setup: "reopened setup",
   retention: "opened retention",
@@ -77,6 +82,7 @@ type SheetState =
   | { kind: "remove"; member: Member }
   | { kind: "handover"; member: Member }
   | { kind: "advance"; to: RoomState }
+  | { kind: "schedule" }
   | { kind: "revoke" }
   | { kind: "franchise"; create: boolean };
 
@@ -87,6 +93,8 @@ interface Data {
   invite: Invite | null;
   /** The pool summary for the card; null when it could not be read. */
   pool: Pool | null;
+  /** The room is scheduled but has no auction (no start time was ever set). */
+  noAuction: boolean;
 }
 
 /**
@@ -95,6 +103,7 @@ interface Data {
  * drives the room; a Commissioner without a franchise gets the brand hue.
  */
 export function RoomView({ roomId }: { roomId: string }) {
+  const router = useRouter();
   const [data, setData] = useState<Data | null>(null);
   const [missing, setMissing] = useState(false);
   const [loadFailed, setLoadFailed] = useState<string | null>(null);
@@ -115,7 +124,14 @@ export function RoomView({ roomId }: { roomId: string }) {
         const invite = room.myRole === "commissioner" ? await getInvite(roomId).catch(() => null) : null;
         // The pool card is a summary; failing to read it never breaks the page either.
         const pool = await getPool(roomId).catch(() => null);
-        return { room, members, history, invite, pool };
+        // A room that says "scheduled" with no auction has no start time yet.
+        const noAuction =
+          room.state === "auction_scheduled" &&
+          (await getAuction(roomId).then(
+            () => false,
+            (e) => e instanceof ApiError && e.status === 404,
+          ));
+        return { room, members, history, invite, pool, noAuction };
       })
       .then((next) => {
         setData(next);
@@ -232,6 +248,12 @@ export function RoomView({ roomId }: { roomId: string }) {
   const taken = members.map((m) => m.franchise?.colour).filter((c): c is string => !!c);
   const sub = !room ? "" : mine ? `${mine.name}${commish ? " · Commissioner" : ""}` : "Commissioner · no franchise";
   const advanceTo = (room?.advanceTo ?? []).filter((t) => ADVANCE[t]);
+  const noAuction = data?.noAuction ?? false;
+  const canSchedule = !!room && (room.advanceTo.includes("auction_scheduled") || (room.state === "auction_scheduled" && noAuction));
+  const nextSteps = [
+    ...advanceTo.map((to) => ({ key: to, ...ADVANCE[to]!, onClick: () => open({ kind: "advance", to }) })),
+    ...(canSchedule ? [{ key: "schedule", ...SCHEDULE, onClick: () => open({ kind: "schedule" }) }] : []),
+  ];
   const short = Math.max(0, min - joined);
 
   function openFranchise(create: boolean) {
@@ -379,6 +401,20 @@ export function RoomView({ roomId }: { roomId: string }) {
             />
           )}
 
+          {sheet?.kind === "schedule" && room && (
+            <ScheduleSheet
+              roomId={room.id}
+              mode="new"
+              serverNow={() => (pageClock.ready ? pageClock.now() : null)}
+              poolHref={`/rooms/${room.id}/pool`}
+              onClose={() => setSheet(null)}
+              onDone={() => {
+                setSheet(null);
+                router.push(`/rooms/${room.id}/auction`);
+              }}
+            />
+          )}
+
           {sheet?.kind === "revoke" && room && (
             <ConfirmSheet
               icon="key_off"
@@ -511,7 +547,11 @@ export function RoomView({ roomId }: { roomId: string }) {
                               : "Season complete"}
                     </span>
                     <span className={s.heroLine}>
-                      {room.state === "auction_scheduled"
+                      {room.state === "auction_scheduled" && noAuction
+                        ? commish
+                          ? "No start time is set yet. Schedule the auction to open the lobby."
+                          : `${room.commissioner.displayName} sets the start time. The lobby opens once it's set.`
+                        : room.state === "auction_scheduled"
                         ? `The rules are set. ${commish ? "You start" : `${room.commissioner.displayName} starts`} the auction when everyone is ready.`
                         : room.state === "retention"
                           ? `${room.commissioner.displayName} schedules the auction when retention closes.`
@@ -519,19 +559,31 @@ export function RoomView({ roomId }: { roomId: string }) {
                     </span>
                   </>
                 )}
-                {commish && advanceTo.length > 0 && (
+                {(room.state === "auction_live" || (room.state === "auction_scheduled" && !noAuction)) && (
+                  <div className={s.actions}>
+                    <ButtonLink
+                      href={`/rooms/${roomId}/auction`}
+                      size="M48"
+                      variant="onTeam"
+                      icon={room.state === "auction_live" ? "gavel" : "front_hand"}
+                    >
+                      {room.state === "auction_live" ? "Open the live auction" : "Open the lobby"}
+                    </ButtonLink>
+                  </div>
+                )}
+                {commish && nextSteps.length > 0 && (
                   <>
                     <div className={s.actions}>
-                      {advanceTo.map((to, i) => (
+                      {nextSteps.map((step, i) => (
                         <Button
-                          key={to}
+                          key={step.key}
                           size="M48"
                           variant={i === 0 && short === 0 ? "onTeam" : "glass"}
-                          icon={ADVANCE[to]!.icon}
+                          icon={step.icon}
                           disabled={short > 0 || busy}
-                          onClick={() => open({ kind: "advance", to })}
+                          onClick={step.onClick}
                         >
-                          {ADVANCE[to]!.label}
+                          {step.label}
                         </Button>
                       ))}
                     </div>

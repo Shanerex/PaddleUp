@@ -1,3 +1,4 @@
+import { pageClock } from "../auction/clock";
 import type { components } from "./generated";
 
 export type Profile = components["schemas"]["ProfileDto"];
@@ -25,6 +26,24 @@ export type PoolPlayerInput = components["schemas"]["PoolPlayerRequest"];
 export type DatasetPack = components["schemas"]["DatasetPackDto"];
 export type DatasetSummary = components["schemas"]["DatasetSummaryDto"];
 export type ImportReport = components["schemas"]["ImportReportDto"];
+export type AuctionState = components["schemas"]["AuctionStateDto"];
+export type AuctionLot = components["schemas"]["LotDto"];
+export type AuctionStanding = components["schemas"]["StandingDto"];
+export type Presence = components["schemas"]["PresenceDto"];
+export type IntentResult = components["schemas"]["IntentResultDto"];
+export type BidInput = components["schemas"]["BidRequest"];
+export type Ticket = components["schemas"]["TicketDto"];
+
+/** One logged auction event as the socket and the log deliver it. */
+export type AuctionEvent = {
+  seq: number;
+  at: string;
+  kind: string;
+  franchiseId?: string;
+  lot?: number;
+  payload: Record<string, unknown>;
+  serverNow?: string;
+};
 
 /** A non-2xx answer from the server. */
 export class ApiError extends Error {
@@ -41,7 +60,11 @@ export class ApiError extends Error {
 async function request(path: string, init: RequestInit = {}): Promise<Response> {
   // A FormData body sets its own multipart Content-Type (with the boundary).
   const headers = init.body && !(init.body instanceof FormData) ? { "Content-Type": "application/json" } : undefined;
+  const sentAt = performance.now();
   const response = await fetch(path, { credentials: "same-origin", headers, ...init });
+  // The Date header is the server's clock to the second: enough for a preview, never for a bid.
+  const date = Date.parse(response.headers?.get?.("Date") ?? "");
+  if (Number.isFinite(date)) pageClock.observe(date + 500, sentAt, performance.now());
   if (!response.ok) {
     const retry = Number(response.headers?.get?.("Retry-After"));
     throw new ApiError(
@@ -226,4 +249,33 @@ export async function importDataset(packId: string, file: File): Promise<ImportR
   form.append("packId", packId);
   form.append("file", file);
   return (await request("/api/admin/datasets", { method: "POST", body: form })).json();
+}
+
+/** The auction's full state; rejects with a 404 `no_auction` until one is scheduled. */
+export async function getAuction(id: string): Promise<AuctionState> {
+  return (await request(`${room(id)}/auction`)).json();
+}
+
+/**
+ * Sets or moves the auction start. `startsAt` is one UTC instant (ISO 8601). The server answers a
+ * past time with a 400 whose body names the field `startsAt`, a pool refusal with a 409
+ * `not_ready` and a reason message, a live or ended auction with a 409, a non-Commissioner with a 403.
+ */
+export async function scheduleAuction(id: string, startsAt: string): Promise<AuctionState> {
+  return (await send("PUT", `${room(id)}/auction/schedule`, { startsAt })).json();
+}
+
+/** A bid intent. The server decides: a rule rejection is a 200 with `outcome: "rejected"` and a reason. */
+export async function bid(id: string, input: BidInput): Promise<IntentResult> {
+  return (await send("POST", `${room(id)}/auction/bids`, input)).json();
+}
+
+/** Marks the caller's franchise ready (or not) in the lobby; answers with the lobby presence. */
+export async function setReady(id: string, ready: boolean): Promise<Presence> {
+  return (await send("PUT", `${room(id)}/auction/ready`, { ready })).json();
+}
+
+/** A single-use ticket for the auction socket. */
+export async function getTicket(id: string): Promise<Ticket> {
+  return (await send("POST", `${room(id)}/auction/ticket`)).json();
 }

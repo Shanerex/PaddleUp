@@ -15,6 +15,7 @@ import com.paddleup.auction.model.EventKind;
 import com.paddleup.auction.model.Lot;
 import com.paddleup.auction.model.Outcome;
 import com.paddleup.auction.model.Phase;
+import com.paddleup.auction.util.Ladder;
 import java.time.Instant;
 import java.util.Collection;
 import java.util.LinkedHashMap;
@@ -42,7 +43,8 @@ final class AuctionViews {
             l.basePrice());
   }
 
-  static AuctionStateDto state(AuctionState s, Instant serverNow, Collection<UUID> connected) {
+  static AuctionStateDto state(
+      AuctionState s, Instant serverNow, Collection<UUID> connected, Collection<UUID> ready) {
     boolean started = s.phase() == Phase.LIVE || s.phase() == Phase.ENDED;
     AuctionConfigDto config =
         started
@@ -88,7 +90,17 @@ final class AuctionViews {
                 s.lastResult().franchiseId(),
                 s.lastResult().amount()),
         lot(s.nextLot()),
-        List.copyOf(connected));
+        List.copyOf(connected),
+        s.phase() == Phase.SCHEDULED ? List.copyOf(ready) : List.of(),
+        nextBid(s));
+  }
+
+  /** The only amount the next bid may have, or null when no lot is open. */
+  private static Long nextBid(AuctionState s) {
+    Lot lot = s.lot();
+    return s.phase() == Phase.LIVE && s.lotOpen() && lot != null
+        ? Ladder.required(s.ladder(), lot.basePrice(), s.currentBid())
+        : null;
   }
 
   /**
@@ -97,9 +109,16 @@ final class AuctionViews {
    */
   static AuctionEventDto event(AuctionEvent e, AuctionState state, Instant serverNow) {
     Map<String, Object> payload = e.payload();
-    if (e.kind() == EventKind.LOT_OPENED && e.lot() != null && e.lot() <= state.lots().size()) {
+    boolean opened =
+        e.kind() == EventKind.LOT_OPENED && e.lot() != null && e.lot() <= state.lots().size();
+    if (opened) {
+      Lot card = state.lots().get(e.lot() - 1);
       payload = new LinkedHashMap<>(payload);
-      payload.put("card", lot(state.lots().get(e.lot() - 1)));
+      payload.put("card", lot(card));
+      payload.put("nextBid", Ladder.first(card.basePrice()));
+    } else if (e.kind() == EventKind.BID_ACCEPTED) {
+      payload = new LinkedHashMap<>(payload);
+      payload.put("nextBid", Ladder.next(state.ladder(), e.number("amount")));
     }
     return new AuctionEventDto(
         e.seq(), e.at(), e.kind().value(), e.franchiseId(), e.lot(), payload, serverNow);

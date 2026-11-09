@@ -20,20 +20,22 @@
   <div style="background:var(--team);color:var(--on-team);padding:10px 16px;display:flex;align-items:center;gap:12px;flex-shrink:0">
     <span style="font-family:'Material Symbols Rounded';font-size:22px;line-height:1">arrow_back</span>
     <div style="flex:1;min-width:0;display:flex;flex-direction:column;gap:2px">
-      <div style="display:flex;align-items:center;gap:8px"><span style="font-weight:700;font-size:15px;white-space:nowrap">Monsoon League</span><span style="font-size:10px;font-weight:800;letter-spacing:0.05em;padding:3px 8px;border-radius:999px;background:oklch(1 0 0 / 0.2);display:flex;align-items:center;gap:5px"><span style="width:6px;height:6px;border-radius:3px;background:#fff"></span>LIVE</span></div>
-      <span style="font-size:12px;opacity:0.85;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ lot.setRaw }} · Lot {{ lot.n }}</span>
+      <div style="display:flex;align-items:center;gap:8px"><span style="font-weight:700;font-size:15px;white-space:nowrap">Monsoon League</span><span style="font-size:10px;font-weight:800;letter-spacing:0.05em;padding:3px 8px;border-radius:999px;background:oklch(1 0 0 / 0.2);display:flex;align-items:center;gap:5px"><span style="width:6px;height:6px;border-radius:3px;background:#fff;display:{{ pillDot }}"></span>{{ pillLabel }}</span></div>
+      <span style="font-size:12px;opacity:0.85;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ headSub }}</span>
     </div>
-    <div style="display:flex;flex-direction:column;align-items:flex-end;gap:1px"><span style="font-size:10px;font-weight:700;letter-spacing:0.06em;opacity:0.85">YOUR PURSE</span><span style="font-family:'DM Mono',monospace;font-size:16px;font-weight:500">{{ me.purse }}</span></div>
-    <div style="width:36px;height:36px;border-radius:11px;background:var(--on-team);color:var(--team);display:flex;align-items:center;justify-content:center;font-weight:800;font-size:13px;flex-shrink:0">MR</div>
+    <sc-if value="{{ showPurse }}" hint-placeholder-val="{{ true }}"><div style="display:flex;flex-direction:column;align-items:flex-end;gap:1px"><span style="font-size:10px;font-weight:700;letter-spacing:0.06em;opacity:0.85">YOUR PURSE</span><span style="font-family:'DM Mono',monospace;font-size:16px;font-weight:500">{{ me.purse }}</span></div></sc-if>
+    <sc-if value="{{ isObserver }}" hint-placeholder-val="{{ false }}"><div style="display:flex;flex-direction:column;align-items:flex-end;gap:1px"><span style="font-size:10px;font-weight:700;letter-spacing:0.06em;opacity:0.85">WATCHING AS</span><span style="font-size:14px;font-weight:700">Commissioner</span></div></sc-if>
+    <sc-if value="{{ hasFranchise }}" hint-placeholder-val="{{ true }}"><div style="width:36px;height:36px;border-radius:11px;background:var(--on-team);color:var(--team);display:flex;align-items:center;justify-content:center;font-weight:800;font-size:13px;flex-shrink:0">MR</div></sc-if>
+    <sc-if value="{{ isObserver }}" hint-placeholder-val="{{ false }}"><div style="width:36px;height:36px;border-radius:11px;background:var(--on-team);color:var(--team);display:flex;align-items:center;justify-content:center;font-family:'Material Symbols Rounded';font-size:20px;flex-shrink:0">shield_person</div></sc-if>
   </div>
 
   <div style="flex:1;min-height:0;display:flex">
     <div style="flex:1;min-width:0;display:flex;flex-direction:column;position:relative">
-      <div style="display:flex;gap:8px;padding:12px 16px 0;flex-shrink:0;overflow-x:auto">
+      <sc-if value="{{ showChips }}" hint-placeholder-val="{{ true }}"><div style="display:flex;gap:8px;padding:12px 16px 0;flex-shrink:0;overflow-x:auto">
         <button onClick="{{ openRivals }}" style="height:36px;padding:0 12px;border:1px solid var(--line);border-radius:12px;background:var(--surface);color:var(--ink);font:inherit;font-size:13px;font-weight:700;display:flex;align-items:center;gap:6px;cursor:pointer;white-space:nowrap"><span style="font-family:'Material Symbols Rounded';font-size:18px;line-height:1">groups</span>Rivals</button>
         <button onClick="{{ openFeed }}" style="height:36px;padding:0 12px;border:1px solid var(--line);border-radius:12px;background:var(--surface);color:var(--ink);font:inherit;font-size:13px;font-weight:700;display:flex;align-items:center;gap:6px;cursor:pointer;white-space:nowrap"><span style="font-family:'Material Symbols Rounded';font-size:18px;line-height:1">history</span>Bids</button>
-        <button onClick="{{ openSquad }}" style="height:36px;padding:0 12px;border:1px solid var(--line);border-radius:12px;background:var(--surface);color:var(--ink);font:inherit;font-size:13px;font-weight:700;display:flex;align-items:center;gap:6px;cursor:pointer;white-space:nowrap"><span style="font-family:'Material Symbols Rounded';font-size:18px;line-height:1">shield</span>My squad</button>
-      </div>
+        <sc-if value="{{ hasFranchise }}" hint-placeholder-val="{{ true }}"><button onClick="{{ openSquad }}" style="height:36px;padding:0 12px;border:1px solid var(--line);border-radius:12px;background:var(--surface);color:var(--ink);font:inherit;font-size:13px;font-weight:700;display:flex;align-items:center;gap:6px;cursor:pointer;white-space:nowrap"><span style="font-family:'Material Symbols Rounded';font-size:18px;line-height:1">shield</span>My squad</button></sc-if>
+      </div></sc-if>
 
       <div style="flex:1;min-height:0;overflow:auto;padding:12px 16px 16px">
         <sc-if value="{{ showLot }}" hint-placeholder-val="{{ true }}">
@@ -68,11 +70,11 @@
             <button onClick="{{ openFeed }}" style="background:var(--surface);border:0;border-radius:24px;padding:8px;text-align:left;font:inherit;color:inherit;cursor:pointer;max-height:150px;overflow:hidden;box-shadow:var(--shadow)">
               <dc-import name="AuctionFeed" v="{{ v }}" hint-size="100%,140px"></dc-import>
             </button>
-            <button onClick="{{ openSquad }}" style="background:var(--surface);border:0;border-radius:24px;padding:14px;font:inherit;color:inherit;cursor:pointer;display:flex;flex-direction:column;gap:10px;box-shadow:var(--shadow)">
+            <sc-if value="{{ hasFranchise }}" hint-placeholder-val="{{ true }}"><button onClick="{{ openSquad }}" style="background:var(--surface);border:0;border-radius:24px;padding:14px;font:inherit;color:inherit;cursor:pointer;display:flex;flex-direction:column;gap:10px;box-shadow:var(--shadow)">
               <div style="display:flex;justify-content:space-between;width:100%;font-size:13px"><span style="font-weight:700">Your needs</span><span style="color:var(--team-ink);font-weight:700">Max bid {{ me.max }}</span></div>
               <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:6px;width:100%"><sc-for list="{{ me.roles }}" as="r" hint-placeholder-count="4"><div style="border-radius:12px;padding:6px 4px;background:{{ r.bg }};display:flex;flex-direction:column;align-items:center"><span style="font-size:10px;font-weight:800;color:{{ r.ink }}">{{ r.label }}</span><span style="font-family:'DM Mono',monospace;font-size:13px;color:{{ r.ink }}">{{ r.text }}</span></div></sc-for></div>
               <div style="display:flex;justify-content:space-between;width:100%;font-size:12px;color:var(--ink-2)"><span style="white-space:nowrap">Squad <span style="font-family:'DM Mono',monospace;color:var(--ink)">{{ me.squad }} / {{ me.squadRange }}</span></span><span>Overseas <span style="font-family:'DM Mono',monospace;color:var(--ink)">{{ me.os }}</span></span></div>
-            </button>
+            </button></sc-if>
           </div>
         </div>
         </sc-if>
@@ -89,11 +91,31 @@
             <button onClick="{{ openSquad }}" style="height:44px;padding:0 18px;border:0;border-radius:14px;background:var(--team-tint);color:var(--team-ink);font:inherit;font-weight:700;font-size:15px;cursor:pointer;margin-top:6px">Review my squad</button>
           </div>
         </sc-if>
+        <!-- No auction yet (R-13): Schedule auction shows for the Commissioner only; managers get Back to room alone. -->
+        <sc-if value="{{ isNoAuction }}" hint-placeholder-val="{{ false }}">
+          <div style="max-width:560px;margin:24px auto;background:var(--surface);border-radius:28px;padding:28px;display:flex;flex-direction:column;align-items:center;gap:12px;text-align:center;box-shadow:var(--shadow)">
+            <span style="width:64px;height:64px;border-radius:20px;background:var(--surface-2);color:var(--ink-2);display:flex;align-items:center;justify-content:center;font-family:'Material Symbols Rounded';font-size:32px">event_busy</span>
+            <div style="font-size:24px;font-weight:800;letter-spacing:-0.02em">No auction yet</div>
+            <div style="font-size:15px;color:var(--ink-2);line-height:1.5;max-width:36ch">Nothing is scheduled for this room. The Commissioner sets the start time.</div>
+            <div style="display:flex;gap:8px;flex-wrap:wrap;justify-content:center;margin-top:6px">
+              <button style="height:44px;padding:0 18px;border:0;border-radius:14px;background:var(--team);color:var(--on-team);font:inherit;font-weight:700;font-size:15px;cursor:pointer;display:flex;align-items:center;gap:6px"><span style="font-family:'Material Symbols Rounded';font-size:20px;line-height:1">event</span>Schedule auction</button>
+              <button style="height:44px;padding:0 18px;border:0;border-radius:14px;background:var(--team-tint);color:var(--team-ink);font:inherit;font-weight:700;font-size:15px;cursor:pointer;display:flex;align-items:center;gap:6px"><span style="font-family:'Material Symbols Rounded';font-size:20px;line-height:1">arrow_back</span>Back to room</button>
+            </div>
+          </div>
+        </sc-if>
+        <sc-if value="{{ isClosed }}" hint-placeholder-val="{{ false }}">
+          <div style="max-width:560px;margin:24px auto;background:var(--surface);border-radius:28px;padding:28px;display:flex;flex-direction:column;align-items:center;gap:12px;text-align:center;box-shadow:var(--shadow)">
+            <span style="width:64px;height:64px;border-radius:20px;background:var(--surface-2);color:var(--ink-2);display:flex;align-items:center;justify-content:center;font-family:'Material Symbols Rounded';font-size:32px">flag</span>
+            <div style="font-size:24px;font-weight:800;letter-spacing:-0.02em">That's a wrap</div>
+            <div style="font-size:15px;color:var(--ink-2);line-height:1.5;max-width:36ch">The auction is over and every squad is locked in. There's nothing left to bid on.</div>
+            <button style="height:44px;padding:0 18px;border:0;border-radius:14px;background:var(--team);color:var(--on-team);font:inherit;font-weight:700;font-size:15px;cursor:pointer;margin-top:6px;display:flex;align-items:center;gap:6px"><span style="font-family:'Material Symbols Rounded';font-size:20px;line-height:1">arrow_back</span>Back to room</button>
+          </div>
+        </sc-if>
       </div>
 
-      <div style="flex-shrink:0;padding:12px 16px 16px;background:var(--surface);border-top:1px solid var(--line)">
+      <sc-if value="{{ showDock }}" hint-placeholder-val="{{ true }}"><div style="flex-shrink:0;padding:12px 16px 16px;background:var(--surface);border-top:1px solid var(--line)">
         <div style="max-width:560px;margin:0 auto"><dc-import name="AuctionBidDock" v="{{ v }}" on-bid="{{ onBid }}" on-ask="{{ onAsk }}" hint-size="100%,72px"></dc-import></div>
-      </div>
+      </div></sc-if>
 
       <div style="position:absolute;top:56px;left:12px;right:12px;display:flex;justify-content:center;pointer-events:none;z-index:30"><div style="width:100%;max-width:520px"><dc-import name="AuctionNotices" v="{{ v }}" on-reconnect="{{ onReconnect }}" on-dismiss="{{ onDismiss }}" hint-size="100%,0px"></dc-import></div></div>
 
@@ -124,7 +146,7 @@
   </sc-if>
 </div>
 </x-dc>
-<script type="text/x-dc" data-dc-script data-props="{&quot;scene&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;live&quot;,&quot;outbid&quot;,&quot;rejected&quot;,&quot;rtm&quot;,&quot;paused&quot;,&quot;adjourned&quot;,&quot;reconnecting&quot;,&quot;sold&quot;,&quot;unsold&quot;,&quot;advisor&quot;,&quot;advisorFail&quot;],&quot;default&quot;:&quot;live&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;Prototype&quot;},&quot;advisor&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;sheet&quot;,&quot;panel&quot;],&quot;default&quot;:&quot;sheet&quot;,&quot;tsType&quot;:&quot;'sheet'|'panel'&quot;,&quot;section&quot;:&quot;Prototype&quot;},&quot;mode&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;light&quot;,&quot;dark&quot;],&quot;default&quot;:&quot;light&quot;,&quot;tsType&quot;:&quot;'light'|'dark'&quot;,&quot;section&quot;:&quot;Theme&quot;},&quot;hue&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;15&quot;,&quot;45&quot;,&quot;75&quot;,&quot;105&quot;,&quot;135&quot;,&quot;165&quot;,&quot;195&quot;,&quot;225&quot;,&quot;255&quot;,&quot;285&quot;,&quot;315&quot;,&quot;345&quot;],&quot;default&quot;:&quot;195&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;Theme&quot;},&quot;height&quot;:{&quot;editor&quot;:null,&quot;tsType&quot;:&quot;string&quot;}}">
+<script type="text/x-dc" data-dc-script data-props="{&quot;scene&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;live&quot;,&quot;outbid&quot;,&quot;rejected&quot;,&quot;rtm&quot;,&quot;paused&quot;,&quot;adjourned&quot;,&quot;closed&quot;,&quot;noAuction&quot;,&quot;observer&quot;,&quot;reconnecting&quot;,&quot;sold&quot;,&quot;unsold&quot;,&quot;advisor&quot;,&quot;advisorFail&quot;],&quot;default&quot;:&quot;live&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;Prototype&quot;},&quot;advisor&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;sheet&quot;,&quot;panel&quot;],&quot;default&quot;:&quot;sheet&quot;,&quot;tsType&quot;:&quot;'sheet'|'panel'&quot;,&quot;section&quot;:&quot;Prototype&quot;},&quot;mode&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;light&quot;,&quot;dark&quot;],&quot;default&quot;:&quot;light&quot;,&quot;tsType&quot;:&quot;'light'|'dark'&quot;,&quot;section&quot;:&quot;Theme&quot;},&quot;hue&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;15&quot;,&quot;45&quot;,&quot;75&quot;,&quot;105&quot;,&quot;135&quot;,&quot;165&quot;,&quot;195&quot;,&quot;225&quot;,&quot;255&quot;,&quot;285&quot;,&quot;315&quot;,&quot;345&quot;],&quot;default&quot;:&quot;195&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;Theme&quot;},&quot;height&quot;:{&quot;editor&quot;:null,&quot;tsType&quot;:&quot;string&quot;}}">
 class Component extends DCLogic {
   state = { v: null, bp: 'phone', sheet: null, chooser: false, advOpen: false };
   rootRef = React.createRef();
@@ -138,7 +160,7 @@ class Component extends DCLogic {
     };
     go();
   }
-  theme() { window.PaddleSim && PaddleSim.applyTheme(this.rootRef.current, this.props.mode ?? 'light', Number(this.props.hue ?? 195)); }
+  theme() { window.PaddleSim && PaddleSim.applyTheme(this.rootRef.current, this.props.mode ?? 'light', this.props.scene === 'observer' ? 38 : Number(this.props.hue ?? 195)); }
   startSim() {
     this.sim && this.sim.destroy();
     const sc = this.props.scene ?? 'live';
@@ -171,6 +193,7 @@ class Component extends DCLogic {
       tableAsOverlay: tableOpen && !asPanel, tableAsPanel: asPanel, tableStyle, chooser: this.state.chooser,
       showSession: !!v.hasSession && !this.state.chooser,
       sheetOpen: !!sheet, sheetStyle, sheetRivals: sheet === 'rivals', sheetFeed: sheet === 'feed', sheetSquad: sheet === 'squad',
+      headSub: v.isNoAuction ? 'Auction' : (v.lot ? v.lot.setRaw + ' · Lot ' + v.lot.n : ''),
       sheetTitle: sheet === 'rivals' ? 'The room' : sheet === 'feed' ? 'Bids on Lot ' + (v.lot ? v.lot.n : '') : 'Monsoon Riders',
       openRivals: () => this.setState({ sheet: 'rivals' }), openFeed: () => this.setState({ sheet: 'feed' }), openSquad: () => this.setState({ sheet: 'squad' }), closeSheet: () => this.setState({ sheet: null }),
       onBid: () => sim() && sim().bid(),

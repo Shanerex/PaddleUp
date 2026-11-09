@@ -4,3 +4,6 @@ paddleup:
     cookie-secure: false
     throttle:
       trusted-proxy-hops: 0
+  # Test accounts and a ready-to-schedule room (see DevSeedRunner). Idempotent.
+  dev-seed:
+    enabled: true

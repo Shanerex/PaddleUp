@@ -1,0 +1,168 @@
+/* Room `sheetSchedule`, `sheetScheduleError`, `sheetScheduleRefused`: the date and time wells, the
+   preview strip and the refusal panel. The sheet frame itself is ui/Sheet. */
+.pickers {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+
+.pick {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 0;
+}
+
+.pickLabel {
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.well {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px;
+  height: 48px;
+  box-sizing: border-box;
+  padding: 0 10px 0 14px;
+  border: 1.5px solid transparent;
+  border-radius: 14px;
+  background: var(--surface-2);
+}
+
+.well:focus-within {
+  border-color: var(--focus, var(--brand));
+}
+
+.wellBad,
+.wellBad:focus-within {
+  border-color: var(--bad);
+}
+
+.input {
+  flex: 1;
+  min-width: 0;
+  height: 100%;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--ink);
+  font: inherit;
+  font-size: 15px;
+  font-weight: 500;
+  outline: none;
+  appearance: none;
+  -webkit-appearance: none;
+}
+
+.mono {
+  font-family: var(--font-num);
+  font-weight: 400;
+}
+
+/* The native picker icon covers the well so a tap anywhere opens it; ours is the one that shows. */
+.input::-webkit-calendar-picker-indicator {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  opacity: 0;
+  cursor: pointer;
+}
+
+.wellIcon {
+  color: var(--ink-2);
+  pointer-events: none;
+}
+
+.fieldError {
+  margin-top: -8px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--bad);
+}
+
+.zone {
+  margin-top: -6px;
+  font-size: 12px;
+  line-height: 1.45;
+  color: var(--ink-2);
+}
+
+.preview {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px 14px;
+  border-radius: 16px;
+  background: var(--surface-2);
+}
+
+.previewText {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.previewLabel {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  color: var(--ink-2);
+}
+
+.previewWhen {
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.previewIn {
+  font-family: var(--font-num);
+  font-size: 15px;
+  white-space: nowrap;
+}
+
+.previewNone {
+  color: var(--ink-3);
+}
+
+.refused {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 12px 14px;
+  border-radius: 16px;
+  background: var(--bad-tint);
+}
+
+.refusedText {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.refusedTitle {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--bad);
+}
+
+.refusedBody {
+  font-size: 13px;
+  line-height: 1.45;
+  color: var(--ink-2);
+}
+
+.refusedLink {
+  align-self: flex-start;
+  margin-top: 4px;
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--ink);
+  text-decoration: underline;
+}

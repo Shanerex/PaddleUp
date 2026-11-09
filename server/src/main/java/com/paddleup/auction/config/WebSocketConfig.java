@@ -5,6 +5,7 @@ import com.paddleup.accounts.service.CurrentUser;
 import com.paddleup.auction.service.Presence;
 import com.paddleup.auction.service.StompAuth;
 import com.paddleup.auction.service.StompUser;
+import jakarta.annotation.PreDestroy;
 import java.security.Principal;
 import java.util.List;
 import java.util.Map;
@@ -17,6 +18,7 @@ import org.springframework.messaging.converter.MappingJackson2MessageConverter;
 import org.springframework.messaging.converter.MessageConverter;
 import org.springframework.messaging.simp.config.ChannelRegistration;
 import org.springframework.messaging.simp.config.MessageBrokerRegistry;
+import org.springframework.scheduling.concurrent.ThreadPoolTaskScheduler;
 import org.springframework.util.MimeTypeUtils;
 import org.springframework.web.socket.WebSocketHandler;
 import org.springframework.web.socket.config.annotation.EnableWebSocketMessageBroker;
@@ -38,6 +40,10 @@ class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
   /** Longest STOMP frame a client may send; it only ever sends CONNECT and SUBSCRIBE. */
   private static final int MAX_FRAME_BYTES = 16 * 1024;
 
+  /** Heartbeat each way, so a client sees a silent drop within a few seconds (AC-13). */
+  private static final long HEARTBEAT_MS = 1000;
+
+  private final ThreadPoolTaskScheduler heartbeats = new ThreadPoolTaskScheduler();
   private final StompAuth auth;
   private final Presence presence;
   private final CurrentUser currentUser;
@@ -76,7 +82,14 @@ class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
 
   @Override
   public void configureMessageBroker(MessageBrokerRegistry registry) {
-    registry.enableSimpleBroker("/topic");
+    heartbeats.setPoolSize(1);
+    heartbeats.setThreadNamePrefix("stomp-heartbeat-");
+    heartbeats.setDaemon(true);
+    heartbeats.initialize();
+    registry
+        .enableSimpleBroker("/topic")
+        .setHeartbeatValue(new long[] {HEARTBEAT_MS, HEARTBEAT_MS})
+        .setTaskScheduler(heartbeats);
     registry.setPreservePublishOrder(true);
   }
 
@@ -99,6 +112,11 @@ class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
     converter.setContentTypeResolver(resolver);
     converters.add(converter);
     return false;
+  }
+
+  @PreDestroy
+  void stopHeartbeats() {
+    heartbeats.shutdown();
   }
 
   /** A socket that closes without a DISCONNECT frame still leaves the room. */

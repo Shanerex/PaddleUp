@@ -1,14 +1,18 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
+import { pageClock } from "../auction/clock";
 import {
   advanceRoom,
+  bid,
   ApiError,
   createOwnFranchise,
   createRoom,
   editFranchise,
+  getAuction,
   getInvite,
   getMe,
   getMembers,
   getRoom,
+  getTicket,
   getTransitions,
   handOver,
   issueInvite,
@@ -19,6 +23,8 @@ import {
   removeFranchise,
   revokeInvite,
   saveConfig,
+  scheduleAuction,
+  setReady,
   signOut,
   startEmail,
   updateProfile,
@@ -162,5 +168,58 @@ describe("room api", () => {
       status: 409,
       body: { error: "stale_version" },
     });
+  });
+
+  it("reads the auction, sends bids and the ready toggle, and asks for a ticket", async () => {
+    const fetchMock = respond(200, { phase: "scheduled" });
+    vi.stubGlobal("fetch", fetchMock);
+
+    await getAuction("r 1");
+    await bid("r1", { intentId: "i-1", lot: 3, amount: 25 });
+    await setReady("r1", true);
+    await getTicket("r1");
+
+    const calls = fetchMock.mock.calls.map(([url, init]) => [url, init.method, init.body]);
+    expect(calls).toEqual([
+      ["/api/rooms/r%201/auction", undefined, undefined],
+      ["/api/rooms/r1/auction/bids", "POST", JSON.stringify({ intentId: "i-1", lot: 3, amount: 25 })],
+      ["/api/rooms/r1/auction/ready", "PUT", JSON.stringify({ ready: true })],
+      ["/api/rooms/r1/auction/ticket", "POST", undefined],
+    ]);
+  });
+
+  it("schedules the auction with one UTC instant", async () => {
+    const fetchMock = respond(200, { phase: "scheduled" });
+    vi.stubGlobal("fetch", fetchMock);
+
+    await scheduleAuction("r 1", "2031-01-02T20:00:00.000Z");
+
+    const [url, init] = fetchMock.mock.calls[0];
+    expect(url).toBe("/api/rooms/r%201/auction/schedule");
+    expect(init.method).toBe("PUT");
+    expect(init.body).toBe(JSON.stringify({ startsAt: "2031-01-02T20:00:00.000Z" }));
+  });
+
+  it("surfaces a startsAt field error and a pool refusal from the server", async () => {
+    vi.stubGlobal("fetch", respond(400, { error: "invalid_request", message: "The start must be in the future", field: "startsAt" }));
+    const past = await scheduleAuction("r1", "2000-01-01T00:00:00Z").catch((e) => e);
+    expect(past).toBeInstanceOf(ApiError);
+    expect(past.status).toBe(400);
+    expect(past.body).toMatchObject({ field: "startsAt" });
+
+    vi.stubGlobal("fetch", respond(409, { error: "not_ready", message: "The pool has 64 players and this room needs at least 72." }));
+    const refused = await scheduleAuction("r1", "2031-01-02T20:00:00Z").catch((e) => e);
+    expect(refused.status).toBe(409);
+    expect(refused.body).toMatchObject({ error: "not_ready", message: expect.stringContaining("64 players") });
+  });
+
+  it("feeds the page clock from the server's Date header, never from the browser's", async () => {
+    const server = Date.parse("2031-01-02T10:00:00Z");
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue(new Response("{}", { status: 200, headers: { "Content-Type": "application/json", Date: new Date(server).toUTCString() } })));
+
+    await getAuction("r1");
+
+    expect(pageClock.ready).toBe(true);
+    expect(Math.abs(pageClock.now() - server)).toBeLessThan(2000);
   });
 });

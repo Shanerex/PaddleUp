@@ -113,7 +113,7 @@
     const s = {
       scene, lotIdx: 0, lotN: 42, bid: null, leader: null, feed: [], endsAt: Date.now() + T_OPEN, frozenLeft: null,
       phase: 'open', pending: false, toast: null, nextRivalAt: Date.now() + 2500, life: { fit: 1, ceil: 1, scan: 1 }, used: {}, refunded: {},
-      session: null, rtm: null, connected: true, myLast: null
+      session: null, rtm: null, connected: true, myLast: null, observer: scene === 'observer'
     };
     const now = () => Date.now();
     const lot = () => LOTS[s.lotIdx % LOTS.length];
@@ -163,6 +163,10 @@
     if (scene === 'paused') { placeBid('CC', 760); placeBid('SS', 780); s.phase = 'paused'; s.frozenLeft = 9000; }
     if (scene === 'adjourned') { s.phase = 'adjourned'; s.lotN = 87; s.frozenLeft = 30000; }
     if (scene === 'reconnecting') { placeBid('CC', 760); placeBid('SS', 780); s.connected = false; s.frozenLeft = 7000; }
+    if (scene === 'observer') { placeBid('CC', 760); placeBid('SS', 780); s.frozenLeft = 11000; }
+    if (scene === 'closed') { s.phase = 'closed'; s.lotN = 120; s.frozenLeft = 0; }
+    // noAuction (auction-screen R-13): room scheduled with no start; the Commissioner gets Schedule auction.
+    if (scene === 'noAuction') { s.phase = 'closed'; s.noAuction = true; s.lotN = 0; s.frozenLeft = 0; }
     if (scene === 'sold') { placeBid('BB', 900); placeBid('CC', 980); s.phase = 'sold'; s.frozenLeft = 0; }
     if (scene === 'unsold') { s.phase = 'unsold'; s.frozenLeft = 0; }
     if (scene === 'advisor' || scene === 'advisorFail') {
@@ -199,12 +203,12 @@
       const total = s.bid == null ? T_OPEN : T_BID;
       const secs = Math.ceil(left / 1000);
       const nxt = nextAmt(); const g = guard(nxt); const leaderT = s.leader ? team(s.leader) : null;
-      const blocked = !s.connected || s.phase === 'paused' || s.phase === 'adjourned' || s.phase === 'rtm';
+      const blocked = !s.connected || s.phase === 'paused' || s.phase === 'adjourned' || s.phase === 'rtm' || s.phase === 'closed';
       const resolved = s.phase === 'sold' || s.phase === 'unsold';
       let bidState = 'ready';
-      if (resolved) bidState = 'resolved'; else if (blocked) bidState = 'blocked'; else if (s.pending) bidState = 'sending';
+      if (resolved) bidState = 'resolved'; else if (s.observer) bidState = 'observer'; else if (blocked) bidState = 'blocked'; else if (s.pending) bidState = 'sending';
       else if (s.leader === 'MR') bidState = 'top'; else if (!g.ok) bidState = 'locked';
-      const blockLabel = !s.connected ? 'Reconnecting…' : s.phase === 'paused' ? 'Auction paused' : s.phase === 'adjourned' ? 'Adjourned' : s.phase === 'rtm' ? 'RTM decision in progress' : '';
+      const blockLabel = !s.connected ? 'Reconnecting…' : s.phase === 'paused' ? 'Auction paused' : s.phase === 'adjourned' ? 'Adjourned' : s.phase === 'closed' ? 'Auction ended' : s.phase === 'rtm' ? 'RTM decision in progress' : '';
       const spent = PURSE - me.purse; const reserve = Math.max(0, me.purse - Math.max(0, g.max));
       const roles = ROLES.map((r) => { const have = me.squad.filter((p) => p.role === r).length; const met = have >= MINS[r];
         return { label: r, have, min: MINS[r], met, text: have + '/' + MINS[r], short: !met, bg: met ? 'var(--ok-tint)' : have === 0 ? 'var(--bad-tint)' : 'var(--surface-2)', ink: met ? 'var(--ok)' : have === 0 ? 'var(--bad)' : 'var(--ink)' }; });
@@ -255,10 +259,11 @@
         time: '0:' + String(secs).padStart(2, '0'), timePct: Math.max(0, Math.min(100, (left / total) * 100)).toFixed(1) + '%', urgent,
         timerColor: urgent ? 'var(--bad)' : blocked ? 'var(--ink-3)' : 'var(--ink)', barColor: urgent ? 'var(--bad)' : 'var(--team)', barTrack: urgent ? 'var(--bad-tint)' : 'var(--team-tint-2)',
         ring: `conic-gradient(${urgent ? 'var(--bad)' : blocked ? 'var(--ink-3)' : 'var(--team)'} ${Math.max(0, Math.min(100, (left / total) * 100)).toFixed(1)}%, ${urgent ? 'var(--bad-tint)' : 'var(--team-tint-2)'} 0)`,
-        timerNote: blocked ? (s.phase === 'paused' ? 'PAUSED' : s.phase === 'rtm' ? 'RTM HOLD' : 'WAITING') : urgent ? 'GOING…' : s.bid == null ? 'opening clock' : 'resets to 15s',
-        isOpen: s.phase === 'open', isSold: s.phase === 'sold', isUnsold: s.phase === 'unsold', isResolved: resolved, isPaused: s.phase === 'paused', isRtm: s.phase === 'rtm', isAdjourned: s.phase === 'adjourned', isOffline: !s.connected, showLot: s.phase !== 'adjourned',
+        timerNote: blocked ? (s.phase === 'closed' ? 'ENDED' : s.phase === 'paused' ? 'PAUSED' : s.phase === 'rtm' ? 'RTM HOLD' : 'WAITING') : urgent ? 'GOING…' : s.bid == null ? 'opening clock' : 'resets to 15s',
+        isOpen: s.phase === 'open', isSold: s.phase === 'sold', isUnsold: s.phase === 'unsold', isResolved: resolved, isPaused: s.phase === 'paused', isRtm: s.phase === 'rtm', isAdjourned: s.phase === 'adjourned', isClosed: s.phase === 'closed' && !s.noAuction, isNoAuction: !!s.noAuction, isOffline: !s.connected, showLot: s.phase !== 'adjourned' && s.phase !== 'closed',
+        isObserver: s.observer, hasFranchise: !s.observer, showPurse: !s.observer && s.phase !== 'closed', showDock: s.phase !== 'closed', showChips: s.phase !== 'closed', pillLabel: s.phase === 'closed' ? (s.noAuction ? 'AUCTION NEXT' : 'ENDED') : 'LIVE', pillDot: s.phase === 'closed' ? 'none' : 'block',
         soldTo: leaderT ? (leaderT.me ? 'You' : leaderT.name) : '', soldBg: leaderT ? `oklch(0.56 0.15 ${leaderT.hue})` : '', soldId: leaderT ? leaderT.id : '',
-        bidReady: bidState === 'ready', bidTop: bidState === 'top', bidSending: bidState === 'sending', bidLocked: bidState === 'locked', bidBlocked: bidState === 'blocked', bidResolved: bidState === 'resolved',
+        bidReady: bidState === 'ready', bidTop: bidState === 'top', bidSending: bidState === 'sending', bidLocked: bidState === 'locked', bidBlocked: bidState === 'blocked', bidResolved: bidState === 'resolved', bidObserver: bidState === 'observer',
         lockReason: g.reason || '', blockLabel,
         me: { purse: fmt(me.purse), purseShort: fmtShort(me.purse), max: fmt(Math.max(0, g.max)), squad: me.squad.length, squadRange: SQUAD_MIN + '–' + SQUAD_MAX, os: me.os + '/' + OS_MAX,
           spentPct: (spent / PURSE * 100).toFixed(1) + '%', reservePct: (reserve / PURSE * 100).toFixed(1) + '%', roles, osSlots,

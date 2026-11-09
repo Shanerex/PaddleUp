@@ -15,6 +15,7 @@ import com.paddleup.auction.model.Intent;
 import com.paddleup.auction.model.Lot;
 import com.paddleup.auction.model.Outcome;
 import com.paddleup.auction.model.Phase;
+import com.paddleup.auction.model.Reason;
 import com.paddleup.auction.model.Step;
 import com.paddleup.auction.repository.AuctionEventRepository;
 import com.paddleup.auction.repository.AuctionLotRepository;
@@ -38,6 +39,7 @@ import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executor;
+import java.util.function.Consumer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.dao.DataAccessException;
@@ -67,6 +69,7 @@ final class AuctionRunner {
       AuctionRejectionRepository rejections,
       TransactionTemplate tx,
       AuctionBroadcaster broadcaster,
+      Readiness readiness,
       List<BidGuard> guards,
       AuctionRoomPort port,
       RoomLifecycle lifecycle,
@@ -114,6 +117,30 @@ final class AuctionRunner {
 
   CompletableFuture<Outcome> intent(Intent intent) {
     return serial.submit(() -> handle(intent));
+  }
+
+  /**
+   * Marks a franchise ready or not ready, on the serial queue so it cannot interleave with the
+   * start of the auction that clears readiness. {@code onChange} is called there too, only when the
+   * value changed. Refused unless the auction is scheduled and the caller has a franchise.
+   */
+  CompletableFuture<Boolean> ready(UUID franchiseId, boolean on, Consumer<UUID> onChange) {
+    return serial.submit(
+        () -> {
+          if (state.phase() != Phase.SCHEDULED) {
+            throw new AuctionConflictException(
+                Reason.NOT_SCHEDULED, "Ready can only be set before the auction starts");
+          }
+          if (franchiseId == null) {
+            throw new AuctionConflictException(
+                Reason.NOT_A_FRANCHISE, "Only a franchise can mark itself ready");
+          }
+          boolean changed = d.readiness().set(roomId, franchiseId, on);
+          if (changed) {
+            onChange.accept(roomId);
+          }
+          return changed;
+        });
   }
 
   CompletableFuture<AuctionState> schedule(UserId actor, Instant startsAt) {
@@ -408,6 +435,9 @@ final class AuctionRunner {
     this.state = next;
     this.scheduledBy = by;
     this.startRefusedAt = refusedAt(events, next);
+    if (events.stream().anyMatch(e -> e.kind() == EventKind.AUCTION_STARTED)) {
+      d.readiness().clear(roomId);
+    }
     d.broadcaster().events(roomId, events, next);
   }
 }
