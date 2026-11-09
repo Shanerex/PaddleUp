@@ -33,6 +33,7 @@ public final class StompProbe implements AutoCloseable {
       new java.util.concurrent.ConcurrentHashMap<>();
 
   private final CountDownLatch settled = new CountDownLatch(1);
+  private volatile long[] heartbeat = {0, 0};
   private final WebSocketStompClient client;
   private volatile StompSession session;
 
@@ -49,7 +50,30 @@ public final class StompProbe implements AutoCloseable {
    */
   public static StompProbe connect(
       ObjectMapper mapper, int port, String cookie, String ticket, String origin) throws Exception {
+    return connect(mapper, port, cookie, ticket, origin, false);
+  }
+
+  /**
+   * As {@link #connect(ObjectMapper, int, String, String, String)}. With {@code heartbeats} the
+   * client asks for a 1 s heartbeat each way and treats a silent server as a transport error.
+   */
+  public static StompProbe connect(
+      ObjectMapper mapper,
+      int port,
+      String cookie,
+      String ticket,
+      String origin,
+      boolean heartbeats)
+      throws Exception {
     StompProbe probe = new StompProbe(mapper);
+    if (heartbeats) {
+      var scheduler = new org.springframework.scheduling.concurrent.ThreadPoolTaskScheduler();
+      scheduler.setPoolSize(1);
+      scheduler.setDaemon(true);
+      scheduler.initialize();
+      probe.client.setTaskScheduler(scheduler);
+      probe.client.setDefaultHeartbeat(new long[] {1000, 1000});
+    }
     var http = new WebSocketHttpHeaders();
     if (cookie != null) {
       http.add("Cookie", cookie);
@@ -65,6 +89,11 @@ public final class StompProbe implements AutoCloseable {
         "ws://localhost:" + port + "/api/ws", http, stomp, probe.new Handler());
     probe.settled.await(5, TimeUnit.SECONDS);
     return probe;
+  }
+
+  /** The heartbeat the server agreed to in CONNECTED: send and receive intervals in ms. */
+  public long[] heartbeat() {
+    return heartbeat;
   }
 
   public boolean connected() {
@@ -122,6 +151,7 @@ public final class StompProbe implements AutoCloseable {
     @Override
     public void afterConnected(StompSession connected, StompHeaders headers) {
       session = connected;
+      heartbeat = headers.getHeartbeat() == null ? new long[] {0, 0} : headers.getHeartbeat();
       settled.countDown();
     }
 

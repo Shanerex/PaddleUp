@@ -17,4 +17,7 @@ public final class Reason {
   public static final String NOT_LIVE = "not_live";
   public static final String NO_OPEN_LOT = "no_open_lot";
   public static final String ENDED = "ended";
+
+  // The lobby ready toggle is refused (answered 409).
+  public static final String NOT_SCHEDULED = "not_scheduled";
 }

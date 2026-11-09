@@ -9,7 +9,9 @@ import java.util.UUID;
 /**
  * Full auction state for a connecting or reconnecting member. Deadlines are absolute UTC instants;
  * {@code serverNow} is the server clock when the state was read, so a client can correct for its
- * own clock. {@code lastSeq} is the seq of the last event the state includes.
+ * own clock. {@code lastSeq} is the seq of the last event the state includes. {@code ready} is the
+ * lobby readiness (empty once the auction starts) and {@code nextBid} the only amount the next bid
+ * on the open lot may have, from the increment ladder.
  */
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public record AuctionStateDto(
@@ -31,4 +33,6 @@ public record AuctionStateDto(
     Instant nextOpenAt,
     LastResultDto lastResult,
     LotDto nextLot,
-    @Schema(requiredMode = Schema.RequiredMode.REQUIRED) List<UUID> connected) {}
+    @Schema(requiredMode = Schema.RequiredMode.REQUIRED) List<UUID> connected,
+    @Schema(requiredMode = Schema.RequiredMode.REQUIRED) List<UUID> ready,
+    Long nextBid) {}

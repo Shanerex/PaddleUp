@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-import { act, cleanup, render, screen, waitFor, within } from "@testing-library/react";
+import { act, cleanup, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
@@ -10,6 +10,8 @@ vi.mock("next/link", () => ({
     </a>
   ),
 }));
+const push = vi.hoisted(() => vi.fn());
+vi.mock("next/navigation", () => ({ useRouter: () => ({ push }) }));
 vi.mock("../../../api/client", async (importOriginal) => ({
   ...(await importOriginal<typeof import("../../../api/client")>()),
   getMe: vi.fn().mockResolvedValue(null),
@@ -18,6 +20,8 @@ vi.mock("../../../api/client", async (importOriginal) => ({
   getTransitions: vi.fn(),
   getInvite: vi.fn(),
   getPool: vi.fn(),
+  getAuction: vi.fn(),
+  scheduleAuction: vi.fn(),
   advanceRoom: vi.fn(),
   issueInvite: vi.fn(),
   revokeInvite: vi.fn(),
@@ -32,6 +36,7 @@ import {
   ApiError,
   createOwnFranchise,
   editFranchise,
+  getAuction,
   getInvite,
   getMembers,
   getPool,
@@ -41,6 +46,8 @@ import {
   issueInvite,
   removeFranchise,
   revokeInvite,
+  scheduleAuction,
+  type AuctionState,
   type Member,
   type Pool,
   type Room,
@@ -129,6 +136,7 @@ beforeEach(() => {
   vi.mocked(getRoom).mockResolvedValue(room("setup"));
   vi.mocked(getMembers).mockResolvedValue(members);
   vi.mocked(getTransitions).mockResolvedValue([]);
+  vi.mocked(getAuction).mockResolvedValue({ phase: "scheduled" } as AuctionState);
   vi.mocked(getInvite).mockResolvedValue({
     code: "ABCDEFGHJKMN",
     link: "http://localhost:3000/join/ABCDEFGHJKMN",
@@ -158,7 +166,20 @@ describe("RoomView as a manager (Room `setupManager`)", () => {
     expect(membersList().getByText("Ben XI")).toBeTruthy();
     expect(screen.queryByRole("region", { name: "Invite code" })).toBeNull();
     expect(screen.queryByRole("button", { name: /Manage/ })).toBeNull();
+    expect(screen.queryByRole("button", { name: /Schedule auction/ })).toBeNull();
     expect(getInvite).not.toHaveBeenCalled();
+  });
+
+  it("links to the auction lobby while scheduled and to the live auction once it is live", async () => {
+    render(<RoomView roomId="room-1" />);
+    const lobby = await screen.findByRole("link", { name: /Open the lobby/ });
+    expect(lobby.getAttribute("href")).toBe("/rooms/room-1/auction");
+    cleanup();
+
+    vi.mocked(getRoom).mockResolvedValue(room("auction_live", { myRole: "manager", myFranchiseId: "f-ben", advanceTo: [] }));
+    render(<RoomView roomId="room-1" />);
+    const live = await screen.findByRole("link", { name: /Open the live auction/ });
+    expect(live.getAttribute("href")).toBe("/rooms/room-1/auction");
   });
 
   it("paints the room in the manager's own franchise colour", async () => {
@@ -244,6 +265,60 @@ describe("RoomView as the Commissioner (Room `setup`, `setupReady`, `setupAdmin`
 
     await waitFor(() => expect(advanceRoom).toHaveBeenCalledWith("room-1", "retention"));
     await waitFor(() => expect(screen.getByTestId("room-state").textContent).toBe("RETENTION"));
+  });
+
+  it("opens the schedule sheet, not the room advance, and lands in the lobby once the server accepts", async () => {
+    vi.mocked(getRoom).mockResolvedValue(room("retention"));
+    vi.mocked(scheduleAuction).mockResolvedValue({ phase: "scheduled" } as AuctionState);
+    const user = userEvent.setup();
+    render(<RoomView roomId="room-1" />);
+
+    await user.click(await screen.findByRole("button", { name: "Schedule auction" }));
+    const sheet = within(screen.getByRole("dialog", { name: "Schedule the auction" }));
+    expect((sheet.getByRole("button", { name: "Schedule auction" }) as HTMLButtonElement).disabled).toBe(true);
+    fireEvent.change(sheet.getByLabelText("Date"), { target: { value: "2031-02-03" } });
+    fireEvent.change(sheet.getByLabelText("Start time"), { target: { value: "20:15" } });
+    await user.click(sheet.getByRole("button", { name: "Schedule auction" }));
+
+    // One instant, built from the local fields; the room is moved by the engine, not by an advance.
+    await waitFor(() => expect(scheduleAuction).toHaveBeenCalledWith("room-1", new Date(2031, 1, 3, 20, 15).toISOString()));
+    expect(advanceRoom).not.toHaveBeenCalled();
+    await waitFor(() => expect(push).toHaveBeenCalledWith("/rooms/room-1/auction"));
+  });
+
+  it("keeps the sheet open with the server's reason when scheduling is refused, and changes nothing", async () => {
+    vi.mocked(getRoom).mockResolvedValue(room("retention"));
+    vi.mocked(scheduleAuction).mockRejectedValue(new ApiError(409, { error: "not_ready", message: "No player pool yet; load season data first" }));
+    const user = userEvent.setup();
+    render(<RoomView roomId="room-1" />);
+
+    await user.click(await screen.findByRole("button", { name: "Schedule auction" }));
+    const sheet = within(screen.getByRole("dialog", { name: "Schedule the auction" }));
+    fireEvent.change(sheet.getByLabelText("Date"), { target: { value: "2031-02-03" } });
+    fireEvent.change(sheet.getByLabelText("Start time"), { target: { value: "20:15" } });
+    await user.click(sheet.getByRole("button", { name: "Schedule auction" }));
+
+    expect((await screen.findByTestId("schedule-refused")).textContent).toContain("No player pool yet; load season data first. Nothing was saved.");
+    expect(push).not.toHaveBeenCalled();
+    expect(screen.getByTestId("room-state").textContent).toBe("RETENTION");
+  });
+
+  it("offers a scheduled room with no auction the sheet, in place of the lobby link", async () => {
+    vi.mocked(getRoom).mockResolvedValue(room("auction_scheduled"));
+    vi.mocked(getAuction).mockRejectedValue(new ApiError(404, { error: "no_auction" }));
+    render(<RoomView roomId="room-1" />);
+
+    expect(await screen.findByRole("button", { name: "Schedule auction" })).toBeTruthy();
+    expect(screen.queryByRole("link", { name: "Open the lobby" })).toBeNull();
+    expect(screen.getByText("No start time is set yet. Schedule the auction to open the lobby.")).toBeTruthy();
+  });
+
+  it("offers a scheduled room that has a start the lobby, not the sheet", async () => {
+    vi.mocked(getRoom).mockResolvedValue(room("auction_scheduled"));
+    render(<RoomView roomId="room-1" />);
+
+    expect(await screen.findByRole("link", { name: "Open the lobby" })).toBeTruthy();
+    expect(screen.queryByRole("button", { name: "Schedule auction" })).toBeNull();
   });
 
   it("disables moving on until enough franchises have joined", async () => {

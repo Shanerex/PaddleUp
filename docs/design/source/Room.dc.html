@@ -81,10 +81,13 @@
   <div style="display:flex;flex-wrap:wrap;gap:16px;align-items:flex-start">
     <div style="flex:3 1 380px;min-width:0;display:flex;flex-direction:column;gap:16px">
       <div style="border-radius:28px;background:var(--surface);padding:24px;display:flex;flex-direction:column;align-items:center;gap:10px;text-align:center;box-shadow:var(--shadow)">
-        <span style="font-size:11px;font-weight:700;letter-spacing:0.06em;color:var(--ink-2)">AUCTION STARTS IN</span>
-        <span style="font-family:'DM Mono',monospace;font-size:56px;line-height:1;font-weight:500;letter-spacing:-0.04em">{{ countdown }}</span>
+        <sc-if value="{{ lx.late }}" hint-placeholder-val="{{ false }}"><div style="align-self:stretch;display:flex;gap:12px;align-items:flex-start;padding:12px 14px;border-radius:16px;background:var(--info-tint);text-align:left"><span style="font-family:'Material Symbols Rounded';font-size:22px;line-height:1;color:var(--info)">hourglass_top</span><div style="flex:1;display:flex;flex-direction:column;gap:2px"><span style="font-weight:700;font-size:14px">Past the start time</span><span style="font-size:13px;color:var(--ink-2);line-height:1.45">The Commissioner starts the auction. Stay on this page: it opens on its own.</span></div></div></sc-if>
+        <sc-if value="{{ lx.off }}" hint-placeholder-val="{{ false }}"><div style="align-self:stretch;display:flex;align-items:center;gap:12px;padding:12px 14px;border-radius:16px;background:var(--inverse);color:var(--on-inverse);text-align:left"><span style="font-family:'Material Symbols Rounded';font-size:22px;line-height:1">wifi_off</span><div style="flex:1;display:flex;flex-direction:column;gap:2px"><span style="font-weight:700;font-size:14px">Reconnecting…</span><span style="font-size:12px;color:var(--on-inverse-2)">Ready is locked until you're back. Nothing is lost.</span></div><span style="height:32px;padding:0 12px;border-radius:10px;background:var(--inverse-2);color:var(--on-inverse);font-size:12px;font-weight:700;display:flex;align-items:center">Retry</span></div></sc-if>
+        <div style="display:flex;justify-content:center;gap:10px;align-items:center"><span style="font-size:11px;font-weight:700;letter-spacing:0.06em;color:var(--ink-2)">{{ lx.label }}</span><sc-if value="{{ lx.off }}" hint-placeholder-val="{{ false }}"><span style="font-size:11px;font-weight:700;letter-spacing:0.06em;color:var(--ink-3)">{{ lx.cdNote }}</span></sc-if></div>
+        <span style="font-family:'DM Mono',monospace;font-size:56px;line-height:1;font-weight:500;letter-spacing:-0.04em;color:{{ lx.cdInk }}">{{ lx.cd }}</span>
         <span style="font-size:14px;color:var(--ink-2)">Sat 2 Nov · <b style="color:var(--ink)">8:00 PM your time</b> · 120-player short pool</span>
-        <button onClick="{{ toggleReady }}" style="margin-top:8px;height:56px;width:100%;max-width:360px;border:{{ readyBorder }};border-radius:16px;background:{{ readyBg }};color:{{ readyInk }};font:inherit;font-weight:800;font-size:16px;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px"><span style="font-family:'Material Symbols Rounded';font-size:22px;line-height:1;font-variation-settings:'FILL' 1">{{ readyIcon }}</span>{{ readyLabel }}</button>
+        <sc-if value="{{ lx.admin }}" hint-placeholder-val="{{ false }}"><div style="align-self:stretch;margin-top:8px;display:flex;gap:12px;align-items:flex-start;padding:14px 16px;border-radius:16px;background:var(--team-tint);text-align:left"><span style="font-family:'Material Symbols Rounded';font-size:22px;line-height:1;color:var(--team-ink)">visibility</span><div style="flex:1;display:flex;flex-direction:column;gap:2px"><span style="font-weight:700;font-size:14px;color:var(--team-ink)">You run this one, you don't play it</span><span style="font-size:13px;color:var(--ink-2);line-height:1.45">You lead this room without a team, so there's no ready tap. Franchises ready up and you start the auction. You'll watch every bid.</span></div></div></sc-if>
+        <sc-if value="{{ lx.showReady }}" hint-placeholder-val="{{ true }}"><button onClick="{{ toggleReady }}" style="margin-top:8px;height:56px;width:100%;max-width:360px;border:{{ readyBorder }};border-radius:16px;background:{{ readyBg }};color:{{ readyInk }};font:inherit;font-weight:800;font-size:16px;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px"><span style="font-family:'Material Symbols Rounded';font-size:22px;line-height:1;font-variation-settings:'FILL' 1">{{ readyIcon }}</span>{{ readyLabel }}</button></sc-if>
       </div>
       <div style="border-radius:24px;background:var(--surface);padding:18px;display:flex;flex-direction:column;gap:12px;box-shadow:var(--shadow)">
         <span style="font-size:11px;font-weight:700;letter-spacing:0.06em;color:var(--ink-2)">HOUSE RULES</span>
@@ -100,9 +103,9 @@
       </div>
     </div>
     <div style="flex:2 1 300px;min-width:0;border-radius:24px;background:var(--surface);padding:8px;display:flex;flex-direction:column;box-shadow:var(--shadow)">
-      <div style="display:flex;justify-content:space-between;padding:10px"><span style="font-size:11px;font-weight:700;letter-spacing:0.06em;color:var(--ink-2)">IN THE ROOM</span><span style="font-family:'DM Mono',monospace;font-size:12px;color:var(--ink-2)">{{ readyCount }}/8 ready</span></div>
+      <div style="display:flex;justify-content:space-between;padding:10px"><span style="font-size:11px;font-weight:700;letter-spacing:0.06em;color:var(--ink-2)">IN THE ROOM</span><span style="font-family:'DM Mono',monospace;font-size:12px;color:var(--ink-2)">{{ lx.count }}</span></div>
       <sc-for list="{{ lobby }}" as="m" hint-placeholder-count="8"><div style="display:flex;align-items:center;gap:12px;padding:10px;border-radius:14px;background:{{ m.rowBg }}"><span style="width:36px;height:36px;border-radius:11px;background:{{ m.bg }};color:#fff;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:13px;opacity:{{ m.op }}">{{ m.id }}</span><div style="flex:1;display:flex;flex-direction:column;min-width:0"><span style="font-weight:700;font-size:14px">{{ m.name }}</span><span style="font-size:12px;color:var(--ink-2)">{{ m.mgr }} · {{ m.local }}</span></div><span style="font-size:11px;font-weight:800;padding:4px 9px;border-radius:999px;background:{{ m.stBg }};color:{{ m.stInk }}">{{ m.status }}</span></div></sc-for>
-      <div style="padding:10px;display:flex;gap:8px;flex-wrap:wrap;border-top:1px solid var(--line);margin-top:6px"><span style="font-size:12px;font-weight:700;color:var(--ink-2);display:flex;align-items:center;gap:6px"><span style="font-family:'Material Symbols Rounded';font-size:18px">shield_person</span>Commissioner</span><span style="flex:1"></span><span style="height:36px;padding:0 14px;border-radius:12px;background:var(--team);color:var(--on-team);font-size:13px;font-weight:700;display:flex;align-items:center">Start now</span></div>
+      <div style="padding:10px;display:flex;gap:8px;flex-wrap:wrap;border-top:1px solid var(--line);margin-top:6px"><span style="font-size:12px;font-weight:700;color:var(--ink-2);display:flex;align-items:center;gap:6px"><span style="font-family:'Material Symbols Rounded';font-size:18px">shield_person</span>Commissioner</span><span style="flex:1"></span><sc-if value="{{ lx.canMove }}" hint-placeholder-val="{{ false }}"><button data-s="lobbyReschedule" onClick="{{ nav }}" style="height:36px;padding:0 12px;border:1px solid var(--line);border-radius:12px;background:var(--surface);color:var(--ink);font:inherit;font-size:13px;font-weight:700;display:flex;align-items:center;gap:6px;cursor:pointer"><span style="font-family:'Material Symbols Rounded';font-size:18px;line-height:1">edit_calendar</span>Change time</button></sc-if><span style="height:36px;padding:0 14px;border-radius:12px;background:{{ lx.startBg }};color:{{ lx.startInk }};font-size:13px;font-weight:700;display:flex;align-items:center;cursor:{{ lx.startCur }}">Start now</span></div>
     </div>
   </div>
 </sc-if>
@@ -355,7 +358,7 @@
           <sc-if value="{{ sx.showHeadline }}" hint-placeholder-val="{{ false }}"><span style="font-size:26px;line-height:1.15;font-weight:800;letter-spacing:-0.025em">{{ sx.headline }}</span></sc-if>
           <span style="font-size:15px;line-height:1.45;opacity:0.92">{{ sx.heroLine }}</span>
           <sc-if value="{{ sx.isCommish }}" hint-placeholder-val="{{ true }}">
-            <div style="display:flex;gap:8px;flex-wrap:wrap"><button onClick="{{ goAdvance }}" style="height:48px;padding:0 18px;border:0;border-radius:14px;background:{{ sx.advBg }};color:{{ sx.advInk }};font:inherit;font-weight:700;font-size:15px;cursor:pointer;display:flex;align-items:center;gap:6px"><span style="font-family:'Material Symbols Rounded';font-size:20px;line-height:1">bookmark</span>Open retention</button><button onClick="{{ goAdvance }}" style="height:48px;padding:0 18px;border:0;border-radius:14px;background:oklch(1 0 0 / 0.18);color:var(--on-team);opacity:{{ sx.advOp }};font:inherit;font-weight:700;font-size:15px;cursor:pointer;display:flex;align-items:center;gap:6px"><span style="font-family:'Material Symbols Rounded';font-size:20px;line-height:1">gavel</span>Schedule auction</button></div>
+            <div style="display:flex;gap:8px;flex-wrap:wrap"><button onClick="{{ goAdvance }}" style="height:48px;padding:0 18px;border:0;border-radius:14px;background:{{ sx.advBg }};color:{{ sx.advInk }};font:inherit;font-weight:700;font-size:15px;cursor:pointer;display:flex;align-items:center;gap:6px"><span style="font-family:'Material Symbols Rounded';font-size:20px;line-height:1">bookmark</span>Open retention</button><button onClick="{{ goSchedule }}" style="height:48px;padding:0 18px;border:0;border-radius:14px;background:oklch(1 0 0 / 0.18);color:var(--on-team);opacity:{{ sx.advOp }};font:inherit;font-weight:700;font-size:15px;cursor:pointer;display:flex;align-items:center;gap:6px"><span style="font-family:'Material Symbols Rounded';font-size:20px;line-height:1">gavel</span>Schedule auction</button></div>
             <sc-if value="{{ sx.blocked }}" hint-placeholder-val="{{ true }}"><span style="font-size:13px;opacity:0.85">Needs {{ sx.min }} managers to move on. Only franchises count.</span></sc-if>
           </sc-if>
         </div>
@@ -533,6 +536,21 @@
           <div style="display:flex;gap:10px"><button data-s="{{ cf.back }}" onClick="{{ nav }}" style="height:52px;padding:0 20px;border:1px solid var(--line);border-radius:14px;background:var(--surface);color:var(--ink);font:inherit;font-weight:700;font-size:15px;cursor:pointer">Cancel</button><button data-s="{{ cf.done }}" onClick="{{ nav }}" style="flex:1;height:52px;border:0;border-radius:14px;background:{{ cf.ctaBg }};color:{{ cf.ctaInk }};font:inherit;font-weight:700;font-size:16px;cursor:pointer">{{ cf.cta }}</button></div>
         </sc-if>
 
+        <!-- Schedule the auction (auction-screen spec R-13). App: native date and time inputs in the viewer's zone, sent as one UTC instant; errors come from the server reply. -->
+        <sc-if value="{{ shSchedule }}" hint-placeholder-val="{{ false }}">
+          <span style="width:56px;height:56px;border-radius:17px;background:var(--team-tint);color:var(--team-ink);display:flex;align-items:center;justify-content:center;font-family:'Material Symbols Rounded';font-size:28px">{{ sch.icon }}</span>
+          <div style="display:flex;flex-direction:column;gap:6px"><span style="font-size:22px;line-height:28px;font-weight:800;letter-spacing:-0.02em">{{ sch.title }}</span><span style="font-size:15px;line-height:22px;color:var(--ink-2)">{{ sch.body }}</span></div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+            <label style="display:flex;flex-direction:column;gap:6px;min-width:0"><span style="font-size:13px;font-weight:700">Date</span><div style="height:48px;border-radius:14px;background:var(--surface-2);display:flex;align-items:center;justify-content:space-between;gap:6px;padding:0 10px 0 14px;font-size:15px;font-weight:500"><span style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ sch.date }}</span><span style="font-family:'Material Symbols Rounded';font-size:20px;color:var(--ink-2)">calendar_month</span></div></label>
+            <label style="display:flex;flex-direction:column;gap:6px;min-width:0"><span style="font-size:13px;font-weight:700">Start time</span><div style="height:48px;border-radius:14px;background:var(--surface-2);border:1.5px solid {{ sch.timeBorder }};box-sizing:border-box;display:flex;align-items:center;justify-content:space-between;gap:6px;padding:0 10px 0 14px;font-family:'DM Mono',monospace;font-size:15px"><span>{{ sch.time }}</span><span style="font-family:'Material Symbols Rounded';font-size:20px;color:var(--ink-2)">schedule</span></div></label>
+          </div>
+          <sc-if value="{{ sch.past }}" hint-placeholder-val="{{ false }}"><span style="margin-top:-8px;font-size:12px;color:var(--bad);font-weight:600">That time has already gone. Pick a later one.</span></sc-if>
+          <span style="margin-top:-6px;font-size:12px;color:var(--ink-2);line-height:1.45">{{ sch.tz }}</span>
+          <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;padding:12px 14px;border-radius:16px;background:var(--surface-2)"><div style="display:flex;flex-direction:column;gap:2px;min-width:0"><span style="font-size:11px;font-weight:700;letter-spacing:0.06em;color:var(--ink-2)">BIDDING OPENS</span><span style="font-size:14px;font-weight:700">{{ sch.when }}</span></div><span style="font-family:'DM Mono',monospace;font-size:15px;color:{{ sch.inInk }};white-space:nowrap">{{ sch.inVal }}</span></div>
+          <sc-if value="{{ sch.refused }}" hint-placeholder-val="{{ false }}"><div style="display:flex;gap:12px;align-items:flex-start;padding:12px 14px;border-radius:16px;background:var(--bad-tint)"><span style="font-family:'Material Symbols Rounded';font-size:22px;line-height:1;color:var(--bad)">block</span><div style="flex:1;display:flex;flex-direction:column;gap:2px"><span style="font-weight:700;font-size:14px;color:var(--bad)">Can't schedule yet</span><span style="font-size:13px;color:var(--ink-2);line-height:1.45">The pool has 64 players and this room needs at least 72. Nothing was saved.</span><button data-s="pool" onClick="{{ nav }}" style="align-self:flex-start;margin-top:4px;height:32px;padding:0;border:0;background:transparent;color:var(--ink);font:inherit;font-size:13px;font-weight:700;text-decoration:underline;cursor:pointer">Open player pool</button></div></div></sc-if>
+          <div style="display:flex;gap:10px"><button data-s="{{ sch.back }}" onClick="{{ nav }}" style="height:52px;padding:0 20px;border:1px solid var(--line);border-radius:14px;background:var(--surface);color:var(--ink);font:inherit;font-weight:700;font-size:15px;cursor:pointer">Cancel</button><button data-s="{{ sch.done }}" onClick="{{ nav }}" style="flex:1;height:52px;border:0;border-radius:14px;background:var(--team);color:var(--on-team);font:inherit;font-weight:700;font-size:16px;cursor:pointer">{{ sch.cta }}</button></div>
+        </sc-if>
+
         <sc-if value="{{ shPoolEdit }}" hint-placeholder-val="{{ false }}">
           <div style="display:flex;flex-direction:column;gap:2px"><span style="font-size:22px;line-height:28px;font-weight:800;letter-spacing:-0.02em">{{ pe.title }}</span><span style="font-size:13px;color:var(--ink-2)">Changes apply to this room only. The season data stays as it is.</span></div>
           <label style="display:flex;flex-direction:column;gap:6px"><span style="font-size:13px;font-weight:700">Name</span><div style="height:48px;border-radius:14px;background:var(--surface-2);display:flex;align-items:center;padding:0 14px;font-size:15px;font-weight:500">{{ pe.name }}</div></label>
@@ -578,7 +596,7 @@
   </sc-if>
 </div>
 </x-dc>
-<script type="text/x-dc" data-dc-script data-props="{&quot;screen&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;overview&quot;,&quot;lobby&quot;,&quot;retention&quot;,&quot;squad&quot;,&quot;standings&quot;,&quot;offline&quot;,&quot;players&quot;,&quot;matches&quot;,&quot;matchesEmpty&quot;,&quot;match&quot;,&quot;breakdown&quot;,&quot;summary&quot;,&quot;report&quot;,&quot;audit&quot;,&quot;commish&quot;,&quot;setup&quot;,&quot;setupReady&quot;,&quot;setupAdmin&quot;,&quot;setupManager&quot;,&quot;sheetMember&quot;,&quot;sheetRemove&quot;,&quot;sheetHandover&quot;,&quot;sheetAdvance&quot;,&quot;editFranchise&quot;,&quot;copied&quot;,&quot;loading&quot;,&quot;loadError&quot;,&quot;staleAction&quot;,&quot;pool&quot;,&quot;poolMember&quot;,&quot;poolLive&quot;,&quot;poolEmpty&quot;,&quot;poolEmptyUnfit&quot;,&quot;poolEmptyUnfitPack&quot;,&quot;poolUnfit&quot;,&quot;poolUnfitPack&quot;,&quot;poolStale&quot;,&quot;poolEdit&quot;,&quot;poolAdd&quot;,&quot;poolRemove&quot;,&quot;poolReset&quot;,&quot;sets&quot;,&quot;setsMember&quot;],&quot;default&quot;:&quot;overview&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;Prototype&quot;},&quot;mode&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;light&quot;,&quot;dark&quot;],&quot;default&quot;:&quot;light&quot;,&quot;tsType&quot;:&quot;'light'|'dark'&quot;,&quot;section&quot;:&quot;Theme&quot;},&quot;hue&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;15&quot;,&quot;45&quot;,&quot;75&quot;,&quot;105&quot;,&quot;135&quot;,&quot;165&quot;,&quot;195&quot;,&quot;225&quot;,&quot;255&quot;,&quot;285&quot;,&quot;315&quot;,&quot;345&quot;],&quot;default&quot;:&quot;195&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;Theme&quot;},&quot;height&quot;:{&quot;editor&quot;:null,&quot;tsType&quot;:&quot;string&quot;}}">
+<script type="text/x-dc" data-dc-script data-props="{&quot;screen&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;overview&quot;,&quot;lobby&quot;,&quot;lobbyLate&quot;,&quot;lobbyOffline&quot;,&quot;lobbyAdmin&quot;,&quot;lobbyReschedule&quot;,&quot;retention&quot;,&quot;squad&quot;,&quot;standings&quot;,&quot;offline&quot;,&quot;players&quot;,&quot;matches&quot;,&quot;matchesEmpty&quot;,&quot;match&quot;,&quot;breakdown&quot;,&quot;summary&quot;,&quot;report&quot;,&quot;audit&quot;,&quot;commish&quot;,&quot;setup&quot;,&quot;setupReady&quot;,&quot;setupAdmin&quot;,&quot;setupManager&quot;,&quot;sheetMember&quot;,&quot;sheetRemove&quot;,&quot;sheetHandover&quot;,&quot;sheetAdvance&quot;,&quot;sheetSchedule&quot;,&quot;sheetScheduleError&quot;,&quot;sheetScheduleRefused&quot;,&quot;editFranchise&quot;,&quot;copied&quot;,&quot;loading&quot;,&quot;loadError&quot;,&quot;staleAction&quot;,&quot;pool&quot;,&quot;poolMember&quot;,&quot;poolLive&quot;,&quot;poolEmpty&quot;,&quot;poolEmptyUnfit&quot;,&quot;poolEmptyUnfitPack&quot;,&quot;poolUnfit&quot;,&quot;poolUnfitPack&quot;,&quot;poolStale&quot;,&quot;poolEdit&quot;,&quot;poolAdd&quot;,&quot;poolRemove&quot;,&quot;poolReset&quot;,&quot;sets&quot;,&quot;setsMember&quot;],&quot;default&quot;:&quot;overview&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;Prototype&quot;},&quot;mode&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;light&quot;,&quot;dark&quot;],&quot;default&quot;:&quot;light&quot;,&quot;tsType&quot;:&quot;'light'|'dark'&quot;,&quot;section&quot;:&quot;Theme&quot;},&quot;hue&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;15&quot;,&quot;45&quot;,&quot;75&quot;,&quot;105&quot;,&quot;135&quot;,&quot;165&quot;,&quot;195&quot;,&quot;225&quot;,&quot;255&quot;,&quot;285&quot;,&quot;315&quot;,&quot;345&quot;],&quot;default&quot;:&quot;195&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;Theme&quot;},&quot;height&quot;:{&quot;editor&quot;:null,&quot;tsType&quot;:&quot;string&quot;}}">
 class Component extends DCLogic {
   state = { screen: null, bp: 'phone', ready: false, retained: [0, 1, 2, 5], tbl: 'franchises', sqTeam: 'MR', auditF: 'all' };
   rootRef = React.createRef();
@@ -589,19 +607,20 @@ class Component extends DCLogic {
       this.unw = PaddleSim.watchWidth(this.rootRef.current, (bp) => bp !== this.state.bp && this.setState({ bp }));
     };
     go();
-    this.iv = setInterval(() => this.state.screen === 'lobby' || this.props.screen === 'lobby' ? this.forceUpdate() : null, 1000);
+    this.iv = setInterval(() => String(this.state.screen ?? this.props.screen).startsWith('lobby') ? this.forceUpdate() : null, 1000);
   }
-  theme() { const sc = this.state.screen ?? this.props.screen; window.PaddleSim && PaddleSim.applyTheme(this.rootRef.current, this.props.mode ?? 'light', sc === 'setupAdmin' ? 38 : Number(this.props.hue ?? 195)); }
+  theme() { const sc = this.state.screen ?? this.props.screen; window.PaddleSim && PaddleSim.applyTheme(this.rootRef.current, this.props.mode ?? 'light', sc === 'setupAdmin' || sc === 'lobbyAdmin' || sc === 'lobbyReschedule' ? 38 : Number(this.props.hue ?? 195)); }
   componentDidUpdate(pp, ps) { if (pp.mode !== this.props.mode || pp.hue !== this.props.hue || pp.screen !== this.props.screen || (ps && ps.screen !== this.state.screen)) this.theme(); if (pp.screen !== this.props.screen) this.setState({ screen: null }); }
   componentWillUnmount() { clearTimeout(this.t); clearInterval(this.iv); this.unw && this.unw(); }
   data() {
     const T = { MR: ['Monsoon Riders', 'You', 195], CC: ['Chai Chargers', 'Priya', 45], BB: ['Bandra Blasters', 'Arjun', 15], SS: ['Spice Strikers', 'Rohan', 255], HH: ['Hilltop Howlers', 'Meera', 315], DD: ['Deccan Dynamos', 'Zoya', 285], KK: ['Kochi Kites', 'Dev', 75], GG: ['Ghat Gliders', 'Kabir', 135] };
     return { T };
   }
-  renderVals() { return Object.assign(this.baseVals(), this.extra3(), this.extra4()); }
+  renderVals() { return Object.assign(this.baseVals(), this.extra3(), this.extra4(), this.extra5()); }
   baseVals() {
     const sc = this.state.screen ?? this.props.screen ?? 'overview';
-    const screen = sc === 'offline' ? 'standings' : sc === 'matchesEmpty' ? 'matches' : sc;
+    const screen = sc === 'offline' ? 'standings' : sc === 'matchesEmpty' ? 'matches' : (sc === 'lobbyLate' || sc === 'lobbyOffline' || sc === 'lobbyAdmin' || sc === 'lobbyReschedule') ? 'lobby' : sc;
+    const lxLate = sc === 'lobbyLate', lxOff = sc === 'lobbyOffline', lxAdmin = sc === 'lobbyAdmin' || sc === 'lobbyReschedule';
     const bp = this.state.bp; const { T } = this.data();
     const tab = { overview: 'overview', lobby: 'auction', retention: 'auction', summary: 'auction', report: 'auction', audit: 'auction', squad: 'squad', standings: 'standings', players: 'standings', matches: 'matches', match: 'matches', breakdown: 'matches', commish: 'commish' }[screen];
     const navDef = [['overview', 'Room', 'home'], ['summary', 'Auction', 'gavel'], ['squad', 'Squad', 'groups'], ['standings', 'Standings', 'leaderboard'], ['matches', 'Matches', 'sports_cricket']];
@@ -609,7 +628,7 @@ class Component extends DCLogic {
     const mk = (key, label, icon, active) => ({ key, label, icon, fill: active ? 1 : 0, ink: active ? 'var(--team-ink)' : 'var(--ink-2)', pill: active ? 'var(--team-tint)' : 'transparent', bg: active ? 'var(--team-tint)' : 'transparent', weight: active ? '800' : '600' });
     const tabNav = navDef.map(([k, l, i]) => mk(k, l, i, tabKey[k] === tab));
     const railNav = [...navDef.map(([k, l, i]) => mk(k, l, i, tabKey[k] === tab)), mk('report', 'Report card', 'grade', screen === 'report'), mk('audit', 'Audit log', 'receipt_long', screen === 'audit'), mk('lobby', 'Lobby (preview)', 'event', screen === 'lobby'), mk('retention', 'Retention (S2)', 'bookmark', screen === 'retention'), mk('commish', 'Commissioner', 'shield_person', screen === 'commish')];
-    const titles = { overview: 'Monsoon Riders · 2nd of 8', lobby: 'Auction lobby', retention: 'Retention window · Season 2', squad: 'Squads', standings: 'Standings · after 23 matches', players: 'Player leaderboard', matches: 'Matches', match: 'Match 23 · RCB vs KKR', breakdown: 'Jaden Okoro · Match 23', summary: 'Auction summary', report: 'Auction Report Card', audit: 'Audit log', commish: 'Commissioner tools' };
+    const titles = { overview: 'Monsoon Riders · 2nd of 8', lobby: lxAdmin ? 'Auction lobby · Commissioner, no franchise' : 'Auction lobby', retention: 'Retention window · Season 2', squad: 'Squads', standings: 'Standings · after 23 matches', players: 'Player leaderboard', matches: 'Matches', match: 'Match 23 · RCB vs KKR', breakdown: 'Jaden Okoro · Match 23', summary: 'Auction summary', report: 'Auction Report Card', audit: 'Audit log', commish: 'Commissioner tools' };
     const phaseIdx = screen === 'lobby' ? 2 : screen === 'retention' ? 1 : 3;
     const phases = ['Setup', 'Retention', 'Auction', 'Season', 'Completed'].map((l, i) => ({ label: l.toUpperCase(), bg: i === phaseIdx ? 'var(--team)' : i < phaseIdx ? 'var(--team-tint)' : 'var(--surface-2)', ink: i === phaseIdx ? 'var(--on-team)' : i < phaseIdx ? 'var(--team-ink)' : 'var(--ink-3)', sep: i < 4 ? '14px' : '0px' }));
     // lobby
@@ -618,7 +637,16 @@ class Component extends DCLogic {
     const left = Math.max(0, this.lobbyAt - Date.now()); const hh = Math.floor(left / 3600000), mm = Math.floor(left / 60000) % 60, ss = Math.floor(left / 1000) % 60;
     const pad = (n) => String(n).padStart(2, '0');
     const lobbyRaw = [['MR', 'Bengaluru 8:00 PM', this.state.ready ? 'ready' : 'here'], ['CC', 'Bengaluru 8:00 PM', 'ready'], ['BB', 'Mumbai 8:00 PM', 'ready'], ['SS', 'London 2:30 PM', 'ready'], ['HH', 'Dubai 6:30 PM', 'here'], ['DD', 'Toronto 10:30 AM', 'away'], ['KK', 'Kochi 8:00 PM', 'ready'], ['GG', 'Singapore 10:30 PM', 'here']];
-    const lobby = lobbyRaw.map(([id, local, st]) => ({ id, name: T[id][0], mgr: T[id][1], local, bg: `oklch(0.56 0.15 ${T[id][2]})`, op: st === 'away' ? '0.4' : '1', rowBg: id === 'MR' ? 'var(--team-tint)' : 'transparent', status: st === 'ready' ? 'READY' : st === 'here' ? 'IN LOBBY' : 'NOT HERE', stBg: st === 'ready' ? 'var(--ok-tint)' : st === 'here' ? 'var(--surface-2)' : 'var(--surface-2)', stInk: st === 'ready' ? 'var(--ok)' : st === 'here' ? 'var(--ink-2)' : 'var(--ink-3)' }));
+    const lobby = lobbyRaw.filter(([id]) => !(lxAdmin && id === 'MR')).map(([id, local, st]) => ({ id, name: T[id][0], mgr: T[id][1], local, bg: `oklch(0.56 0.15 ${T[id][2]})`, op: st === 'away' || lxOff ? '0.4' : '1', rowBg: id === 'MR' ? 'var(--team-tint)' : 'transparent', status: st === 'ready' ? 'READY' : st === 'here' ? 'IN LOBBY' : 'NOT HERE', stBg: st === 'ready' ? 'var(--ok-tint)' : st === 'here' ? 'var(--surface-2)' : 'var(--surface-2)', stInk: st === 'ready' ? 'var(--ok)' : st === 'here' ? 'var(--ink-2)' : 'var(--ink-3)' }));
+    // P-1 lobby variants (auction-screen spec): lobbyLate (past start, waiting on Commissioner), lobbyOffline (socket dropped), lobbyAdmin (Commissioner without a franchise).
+    const sinceMs = Date.now() - (this.lobbyLateAt || (this.lobbyLateAt = Date.now() - (6 * 60 + 12) * 1000));
+    const lxCd = lxLate ? '+' + pad(Math.floor(sinceMs / 60000)) + ':' + pad(Math.floor(sinceMs / 1000) % 60) : lxOff ? '02:14:36' : `${pad(hh)}:${pad(mm)}:${pad(ss)}`;
+    const lx = {
+      late: lxLate, off: lxOff, admin: lxAdmin, showReady: !lxAdmin, lockReady: lxOff, canMove: lxAdmin,
+      label: lxLate ? 'PAST START TIME' : 'AUCTION STARTS IN', cd: lxCd, cdInk: lxOff ? 'var(--ink-3)' : lxLate ? 'var(--ink-2)' : 'var(--ink)', cdNote: lxOff ? 'WAITING' : '',
+      count: lxOff ? 'last seen 9:41 PM' : `${lobby.filter((m) => m.status === 'READY').length}/${lobby.length} ready`,
+      startBg: lxOff ? 'var(--surface-2)' : 'var(--team)', startInk: lxOff ? 'var(--ink-3)' : 'var(--on-team)', startCur: lxOff ? 'not-allowed' : 'default'
+    };
     // retention
     const prev = [['Kiran Desai', 'BAT', 'Capped', 401], ['Dwayne Pollard', 'AR', 'Capped', 420], ['Jaden Okoro', 'BOWL', 'Capped', 377], ['Callum Webb', 'BOWL', 'Capped', 298], ['Leo Fairbank', 'BAT', 'Capped', 356], ['Arnav Kulkarni', 'AR', 'Uncapped', 170], ['Varun Iyer', 'BAT', 'Uncapped', 65], ['Ravi Teja Nair', 'WK', 'Capped', 312]];
     const slot = { BAT: 1, BOWL: 2, AR: 3, WK: 4 }; const r = this.state.retained;
@@ -632,14 +660,14 @@ class Component extends DCLogic {
     return {
       ...this.extra(screen, sc, T),
       rootRef: this.rootRef, frameH: this.props.height ?? '100vh', isDesktop: bp === 'desktop', notDesktop: bp !== 'desktop', isPhone: bp === 'phone',
-      tabNav, railNav, screenTitle: titles[screen], roomName: 'Monsoon League', myMono: 'MR', myMonoFont: 'inherit', myMonoSize: '13px', railMonoSize: '12px', myName: 'Monsoon Riders', mySub: '2nd · 3,670 pts', showTabs: bp !== 'desktop', phasePill: screen === 'lobby' ? 'AUCTION SAT 8 PM' : screen === 'retention' ? 'RETENTION' : 'SEASON LIVE', phases,
+      tabNav, railNav, screenTitle: titles[screen], roomName: 'Monsoon League', myMono: lxAdmin ? 'shield_person' : 'MR', myMonoFont: lxAdmin ? "'Material Symbols Rounded'" : 'inherit', myMonoSize: lxAdmin ? '20px' : '13px', railMonoSize: lxAdmin ? '18px' : '12px', myName: lxAdmin ? 'Admin-only' : 'Monsoon Riders', mySub: lxAdmin ? 'You lead the room' : '2nd · 3,670 pts', showTabs: bp !== 'desktop', phasePill: screen === 'lobby' ? 'AUCTION SAT 8 PM' : screen === 'retention' ? 'RETENTION' : 'SEASON LIVE', phases,
       offline: sc === 'offline',
       nav: (e) => { go(e.currentTarget.dataset.s); setTimeout(() => this.theme(), 0); },
       sOverview: screen === 'overview', sLobby: screen === 'lobby', sRetention: screen === 'retention',
-      countdown: `${pad(hh)}:${pad(mm)}:${pad(ss)}`, lobby, readyCount: lobby.filter((m) => m.status === 'READY').length,
-      toggleReady: () => this.setState({ ready: !this.state.ready }),
-      readyLabel: this.state.ready ? "You're ready. Paddle up." : "I'm ready", readyIcon: this.state.ready ? 'check_circle' : 'front_hand',
-      readyBg: this.state.ready ? 'var(--team-tint)' : 'var(--team)', readyInk: this.state.ready ? 'var(--team-ink)' : 'var(--on-team)', readyBorder: this.state.ready ? '2px solid var(--team)' : '0',
+      countdown: `${pad(hh)}:${pad(mm)}:${pad(ss)}`, lx, lobby, readyCount: lobby.filter((m) => m.status === 'READY').length,
+      toggleReady: () => lxOff ? null : this.setState({ ready: !this.state.ready }),
+      readyLabel: lxOff ? 'Reconnecting…' : this.state.ready ? "You're ready. Paddle up." : "I'm ready", readyIcon: lxOff ? 'lock' : this.state.ready ? 'check_circle' : 'front_hand',
+      readyBg: lxOff ? 'var(--surface-2)' : this.state.ready ? 'var(--team-tint)' : 'var(--team)', readyInk: lxOff ? 'var(--ink-2)' : this.state.ready ? 'var(--team-ink)' : 'var(--on-team)', readyBorder: lxOff ? '0' : this.state.ready ? '2px solid var(--team)' : '0',
       retain, retCount: r.length, retCapped: capN, retUncapped: unN, retRtm: Math.max(0, 6 - r.length), retPurse: '₹' + ((12000 - cost) / 100).toFixed(2) + ' Cr',
       toggleRetain: (e) => { const i = Number(e.currentTarget.dataset.i); const on = r.includes(i); const p = prev[i];
         if (!on) { if (r.length >= 6) return; if (p[2] === 'Capped' && capN >= 5) return; if (p[2] === 'Uncapped' && unN >= 2) return; }
@@ -649,7 +677,7 @@ class Component extends DCLogic {
   extra3() {
     // v1 pre-auction room. Overrides header, rail and tabs for these screens only.
     const sc = this.state.screen ?? this.props.screen ?? 'overview';
-    const BASE = { setup: 'setup', setupReady: 'setupReady', setupAdmin: 'setupAdmin', setupManager: 'setupManager', sheetMember: 'setupReady', sheetRemove: 'setupReady', sheetHandover: 'setupReady', sheetAdvance: 'setupReady', editFranchise: 'setupReady', loadError: 'setupReady', copied: 'setupReady', staleAction: 'setupManager', loading: 'loading' };
+    const BASE = { setup: 'setup', setupReady: 'setupReady', setupAdmin: 'setupAdmin', setupManager: 'setupManager', sheetMember: 'setupReady', sheetRemove: 'setupReady', sheetHandover: 'setupReady', sheetAdvance: 'setupReady', sheetSchedule: 'setupReady', sheetScheduleError: 'setupReady', sheetScheduleRefused: 'setupReady', editFranchise: 'setupReady', loadError: 'setupReady', copied: 'setupReady', staleAction: 'setupManager', loading: 'loading' };
     const base = BASE[sc];
     if (!base) return { sSetup: false, sLoading: false, sheetOn: false, toastOn: false, bannerOn: false };
     const bp = this.state.bp; const phone = bp === 'phone';
@@ -700,11 +728,34 @@ class Component extends DCLogic {
       phasePill: base === 'loading' ? '' : sc === 'staleAction' ? 'AUCTION LIVE' : mgr ? 'AUCTION NEXT' : 'SETUP', screenTitle: titles[base],
       myMono: admin ? 'shield_person' : mgr ? 'LL' : base === 'loading' ? '' : 'SR', myMonoFont: admin ? "'Material Symbols Rounded'" : 'inherit', myMonoSize: admin ? '20px' : '13px', railMonoSize: admin ? '18px' : '12px',
       myName: loading ? '' : admin ? 'Admin-only' : mgr ? 'Library Legends' : "Shane's Raiders", mySub: loading ? '' : admin ? 'You lead the room' : mgr ? 'Manager' : 'Commissioner',
-      goAdvance: () => sx.blocked ? null : this.setState({ screen: 'sheetAdvance' }), goEdit: () => this.setState({ screen: 'editFranchise' }), copyCode: () => this.setState({ screen: 'copied' }),
+      goAdvance: () => sx.blocked ? null : this.setState({ screen: 'sheetAdvance' }), goSchedule: () => sx.blocked ? null : this.setState({ screen: 'sheetSchedule' }), goEdit: () => this.setState({ screen: 'editFranchise' }), copyCode: () => this.setState({ screen: 'copied' }),
       sheetOn: !!sheet, shMember: sc === 'sheetMember', shConfirm: !!CF[sc], shEdit: sc === 'editFranchise', cf: CF[sc] || CF.sheetRemove, editSwatches,
       sheetAlign: phone ? 'flex-end' : 'center', sheetRadius: phone ? '28px 28px 0 0' : '28px', sheetOuterPad: phone ? '0' : '16px',
       toastOn: sc === 'copied', bannerOn: !!BN[sc], bn: BN[sc] || BN.loadError
     };
+  }
+  extra5() {
+    // Schedule / reschedule sheets (auction-screen spec R-13, added 2026-11-09, pending approval).
+    // sheetSchedule: Commissioner picks the start from the room; sheetScheduleError: a past time (400 startsAt);
+    // sheetScheduleRefused: no pool copy or too small a pool (409); lobbyReschedule: moving the start from the lobby.
+    const sc = this.state.screen ?? this.props.screen ?? 'overview';
+    const k = { sheetSchedule: 'new', sheetScheduleError: 'past', sheetScheduleRefused: 'refused', lobbyReschedule: 'move' }[sc];
+    if (!k) return { shSchedule: false };
+    const phone = this.state.bp === 'phone'; const move = k === 'move', past = k === 'past';
+    const sch = {
+      icon: move ? 'edit_calendar' : 'event',
+      title: move ? 'Change the start time?' : 'Schedule the auction',
+      body: move ? "Everyone's countdown moves right away. Ready taps stay as they are." : "Pick when bidding opens. The room moves to the lobby, and rooms only move forward. Rules and the pool stay editable until it goes live.",
+      date: move ? 'Sat 2 Nov' : past ? 'Sun 9 Nov' : 'Sat 15 Nov', time: move ? '9:00 PM' : past ? '7:30 AM' : '8:00 PM',
+      timeBorder: past ? 'var(--bad)' : 'transparent', past, refused: k === 'refused',
+      tz: 'Your time · India (GMT+5:30). Every manager sees it in their own time.',
+      when: move ? 'Sat 2 Nov · 9:00 PM your time' : past ? 'Sun 9 Nov · 7:30 AM your time' : 'Sat 15 Nov · 8:00 PM your time',
+      inVal: past ? '—' : move ? 'in 3h 14m' : 'in 5d 22h', inInk: past ? 'var(--ink-3)' : 'var(--ink)',
+      cta: move ? 'Change start time' : 'Schedule auction',
+      back: move ? 'lobbyAdmin' : 'setupReady', done: move ? 'lobbyAdmin' : k === 'new' ? 'lobby' : sc
+    };
+    return { sheetOn: true, shSchedule: true, shConfirm: false, shMember: false, shEdit: false, shPoolEdit: false, sch,
+      sheetAlign: phone ? 'flex-end' : 'center', sheetRadius: phone ? '28px 28px 0 0' : '28px', sheetOuterPad: phone ? '0' : '16px' };
   }
   extra4() {
     // v1 player pool and set order. Overrides header, rail, sheets and banners for these screens only.

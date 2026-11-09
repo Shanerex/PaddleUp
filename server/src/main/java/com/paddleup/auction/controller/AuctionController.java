@@ -6,6 +6,8 @@ import com.paddleup.auction.dto.BidRequest;
 import com.paddleup.auction.dto.EventsDto;
 import com.paddleup.auction.dto.IntentResultDto;
 import com.paddleup.auction.dto.PassRequest;
+import com.paddleup.auction.dto.PresenceDto;
+import com.paddleup.auction.dto.ReadyRequest;
 import com.paddleup.auction.dto.ScheduleRequest;
 import com.paddleup.auction.dto.TicketDto;
 import com.paddleup.auction.service.AuctionService;
@@ -62,6 +64,11 @@ class AuctionController {
   @PostMapping(value = "/passes", consumes = MediaType.APPLICATION_JSON_VALUE)
   IntentResultDto pass(@PathVariable UUID roomId, @RequestBody PassRequest request) {
     return auction.pass(currentUser.require(), roomId, request);
+  }
+
+  @PutMapping(value = "/ready", consumes = MediaType.APPLICATION_JSON_VALUE)
+  PresenceDto ready(@PathVariable UUID roomId, @RequestBody ReadyRequest request) {
+    return auction.ready(currentUser.require(), roomId, request);
   }
 
   @PostMapping("/ticket")

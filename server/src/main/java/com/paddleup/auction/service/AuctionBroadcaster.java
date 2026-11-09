@@ -56,13 +56,14 @@ public class AuctionBroadcaster {
     }
   }
 
-  void presence(UUID roomId, Set<UUID> connected) {
+  void presence(UUID roomId, Set<UUID> connected, Set<UUID> ready) {
     SimpMessageSendingOperations out = messaging.getIfAvailable();
     if (out == null) {
       return;
     }
     try {
-      out.convertAndSend(presenceTopic(roomId), new PresenceDto(List.copyOf(connected)));
+      out.convertAndSend(
+          presenceTopic(roomId), new PresenceDto(List.copyOf(connected), List.copyOf(ready)));
     } catch (RuntimeException ex) {
       log.warn("Presence broadcast for auction {} failed", roomId, ex);
     }

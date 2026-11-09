@@ -1,0 +1,1196 @@
+/*
+ * The auction screens: Auction A Spotlight.dc.html (lot screen, dock, notices) and Room.dc.html
+ * `lobby` with its `lobbyLate`, `lobbyOffline` and `lobbyAdmin` variants. Team world: --team tokens
+ * come from the `.team` element (--h). Colours only from tokens. Every number that changes live is
+ * DM Mono tabular in a box whose size does not depend on its text (FR-112).
+ */
+
+.screen {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  height: 100vh;
+  height: 100dvh;
+  overflow: hidden;
+  background: var(--room-bg);
+  color: var(--ink);
+}
+
+/* Header (Spotlight 22-34). */
+.header {
+  display: flex;
+  flex-shrink: 0;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 16px;
+  background: var(--team);
+  color: var(--on-team);
+}
+
+.back {
+  display: flex;
+  color: inherit;
+}
+
+.headText {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.headLine {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.roomName {
+  font-size: 15px;
+  font-weight: 700;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.pill {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  padding: 3px 8px;
+  border-radius: 999px;
+  background: var(--glass);
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.05em;
+}
+
+.pillDot {
+  width: 6px;
+  height: 6px;
+  border-radius: 3px;
+  background: #fff;
+}
+
+.headSub {
+  font-size: 12px;
+  opacity: 0.85;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.purse {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 1px;
+  flex-shrink: 0;
+}
+
+.purseLabel {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  opacity: 0.85;
+}
+
+/* A fixed box: the purse never moves its neighbours. */
+.purseValue {
+  min-width: 9ch;
+  text-align: right;
+  font-family: var(--font-num);
+  font-variant-numeric: tabular-nums;
+  font-size: 16px;
+  font-weight: 500;
+  white-space: nowrap;
+}
+
+.watching {
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.headTile {
+  display: flex;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  border-radius: 11px;
+  background: var(--on-team);
+  color: var(--team);
+  font-size: 13px;
+  font-weight: 800;
+}
+
+/* Body. */
+.main {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  position: relative;
+}
+
+.scroll {
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+  padding: 12px 16px 16px;
+}
+
+.grid {
+  max-width: 1000px;
+  margin: 0 auto;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+  align-items: stretch;
+}
+
+.col {
+  flex: 1 1 320px;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+/* Lot card (Spotlight 56-78). */
+.lotCard {
+  flex: 1 1 320px;
+  min-width: 0;
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  padding: 16px;
+  border-radius: 28px;
+  background: var(--surface);
+  box-shadow: var(--shadow);
+}
+
+.photo {
+  position: relative;
+  height: 180px;
+  border-radius: 20px;
+  background-color: var(--surface-2);
+  background-size: cover;
+  background-position: center;
+}
+
+.lotTag {
+  position: absolute;
+  right: 12px;
+  bottom: 12px;
+  padding: 4px 8px;
+  border-radius: 8px;
+  background: var(--surface);
+  font-family: var(--font-num);
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.chips {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+}
+
+.roleChip {
+  padding: 4px 8px;
+  border-radius: 7px;
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.tagChip {
+  padding: 3px 9px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  color: var(--ink-2);
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.nameBlock {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.playerName {
+  font-size: 30px;
+  line-height: 1.1;
+  font-weight: 800;
+  letter-spacing: -0.03em;
+  overflow-wrap: anywhere;
+}
+
+.country {
+  font-size: 14px;
+  color: var(--ink-2);
+}
+
+.facts {
+  display: grid;
+  grid-template-columns: repeat(var(--cells, 1), 1fr);
+  gap: 8px;
+}
+
+.fact {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 10px;
+  border-radius: 14px;
+  background: var(--surface-2);
+}
+
+.factLabel {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  color: var(--ink-2);
+}
+
+.factValue {
+  font-family: var(--font-num);
+  font-variant-numeric: tabular-nums;
+  font-size: 15px;
+  font-weight: 500;
+}
+
+/* SOLD and UNSOLD stamps (Spotlight 69-74). */
+.stampLayer {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+  border-radius: 28px;
+  background: oklch(0.995 0.003 75 / 0.8);
+  animation: fade 180ms ease-out;
+}
+
+@media (prefers-color-scheme: dark) {
+  .stampLayer {
+    background: oklch(0.215 0.009 60 / 0.8);
+  }
+}
+
+.stamp {
+  padding: 10px 22px;
+  border: 4px solid var(--ok);
+  border-radius: 16px;
+  background: var(--surface);
+  color: var(--ok);
+  font-size: 40px;
+  font-weight: 800;
+  letter-spacing: 0.05em;
+  transform: rotate(-5deg);
+  animation: hammer 600ms ease-out;
+}
+
+.stampUnsold {
+  padding: 8px 18px;
+  border-color: var(--ink-3);
+  border-radius: 14px;
+  color: var(--ink-2);
+  font-size: 30px;
+  transform: rotate(4deg);
+}
+
+.stampWho {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 16px;
+  font-weight: 700;
+}
+
+.stampNote {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--ink-2);
+}
+
+/* Bid panel (Spotlight 82-90). */
+.bidPanel {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 18px;
+  border-radius: 28px;
+  background: var(--surface);
+  box-shadow: var(--shadow);
+}
+
+.bidHead {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  color: var(--ink-2);
+}
+
+/* The timer note has a fixed slot so a longer word never moves the label. */
+.timerNote {
+  min-width: 14ch;
+  text-align: right;
+  white-space: nowrap;
+}
+
+.bidRow {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 12px;
+  height: 48px;
+}
+
+/* Fixed boxes: the current bid takes what is left, the clock has its own width. */
+.bidNum {
+  flex: 1 1 0;
+  min-width: 0;
+  height: 48px;
+  overflow: hidden;
+  font-family: var(--font-num);
+  font-variant-numeric: tabular-nums;
+  font-size: 48px;
+  line-height: 1;
+  font-weight: 500;
+  letter-spacing: -0.045em;
+  white-space: nowrap;
+}
+
+.roll {
+  display: inline-block;
+  animation: roll 180ms ease-out;
+}
+
+.timeNum {
+  flex: 0 0 auto;
+  width: 4.6ch;
+  height: 34px;
+  text-align: right;
+  font-family: var(--font-num);
+  font-variant-numeric: tabular-nums;
+  font-size: 34px;
+  line-height: 1;
+  font-weight: 500;
+  white-space: nowrap;
+}
+
+.timeFrozen {
+  color: var(--ink-3);
+}
+
+.timeUrgent {
+  color: var(--bad);
+}
+
+.bar {
+  height: 8px;
+  border-radius: 4px;
+  background: var(--team-tint-2);
+  overflow: hidden;
+}
+
+.barUrgent {
+  background: var(--bad-tint);
+}
+
+.barFill {
+  height: 100%;
+  background: var(--team);
+  transition: width 120ms linear;
+}
+
+.barFillUrgent {
+  background: var(--bad);
+}
+
+.leader {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  height: 26px;
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.leaderMono {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 26px;
+  border-radius: 8px;
+  background: oklch(0.56 0.15 var(--mh, 38));
+  color: #fff;
+  font-size: 10px;
+  font-weight: 800;
+}
+
+.leaderNone {
+  background: var(--surface-2);
+}
+
+/* Bid dock (AuctionBidDock 11-48). */
+.dockBar {
+  flex-shrink: 0;
+  padding: 12px 16px 16px;
+  border-top: 1px solid var(--line);
+  background: var(--surface);
+}
+
+.dock {
+  max-width: 560px;
+  margin: 0 auto;
+  display: flex;
+  align-items: stretch;
+  gap: 10px;
+}
+
+/* Reserved for the lifeline entry point; empty and inert until that spec ships (R-9). */
+.slot {
+  width: 72px;
+  height: 72px;
+  flex-shrink: 0;
+  border-radius: 20px;
+}
+
+.bidBtn,
+.dockBox {
+  flex: 1;
+  min-width: 0;
+  height: 72px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 0 20px;
+  border: 0;
+  border-radius: 20px;
+  font: inherit;
+}
+
+.bidBtn {
+  justify-content: space-between;
+  gap: 12px;
+  background: var(--team);
+  color: var(--on-team);
+  box-shadow: var(--shadow);
+  cursor: pointer;
+  transition: transform 80ms ease-out;
+}
+
+.bidBtn:hover {
+  background: var(--team-strong);
+}
+
+.bidBtn:active {
+  transform: scale(0.97);
+}
+
+.bidText {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 2px;
+  min-width: 0;
+}
+
+.bidCaption {
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  opacity: 0.85;
+}
+
+.bidNext {
+  font-family: var(--font-num);
+  font-variant-numeric: tabular-nums;
+  font-size: 26px;
+  font-weight: 500;
+  letter-spacing: -0.03em;
+  line-height: 1.1;
+  white-space: nowrap;
+}
+
+.incr {
+  flex-shrink: 0;
+  padding: 6px 10px;
+  border-radius: 10px;
+  background: var(--glass);
+  font-family: var(--font-num);
+  font-variant-numeric: tabular-nums;
+  font-size: 14px;
+  font-weight: 500;
+  white-space: nowrap;
+}
+
+.dockTop {
+  border: 2px solid var(--team);
+  background: var(--team-tint);
+  color: var(--team-ink);
+}
+
+.dockSending {
+  background: var(--team);
+  color: var(--on-team);
+  opacity: 0.75;
+}
+
+.dockQuiet {
+  background: var(--surface-2);
+  color: var(--ink-2);
+}
+
+.dockTitle {
+  font-size: 15px;
+  font-weight: 800;
+}
+
+.dockStack {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.dockLine {
+  font-size: 12px;
+  line-height: 1.35;
+  text-wrap: pretty;
+}
+
+.dockNum {
+  font-family: var(--font-num);
+  font-variant-numeric: tabular-nums;
+  font-size: 13px;
+}
+
+.dockObserver {
+  height: auto;
+  min-height: 72px;
+  padding: 10px 18px;
+  gap: 12px;
+}
+
+.spin {
+  animation: spin 900ms linear infinite;
+}
+
+/* Notices (AuctionNotices). They float above the content and never move it. */
+.notices {
+  position: absolute;
+  top: 56px;
+  left: 12px;
+  right: 12px;
+  z-index: 30;
+  display: flex;
+  justify-content: center;
+  pointer-events: none;
+}
+
+.noticeStack {
+  width: 100%;
+  max-width: 520px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  pointer-events: auto;
+}
+
+.notice {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 14px;
+  border-radius: 16px;
+  box-shadow: var(--shadow);
+  animation: fade 240ms ease-out;
+}
+
+.noticeText {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.noticeTitle {
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.noticeBody {
+  font-size: 12px;
+  line-height: 1.45;
+  color: var(--ink-2);
+}
+
+.noticeInverse {
+  background: var(--inverse);
+  color: var(--on-inverse);
+}
+
+.noticeInverse .noticeBody {
+  color: var(--on-inverse-2);
+}
+
+.noticeWarn {
+  background: var(--warn-tint);
+  color: var(--ink);
+}
+
+.noticeBad {
+  align-items: flex-start;
+  background: var(--bad-tint);
+  color: var(--ink);
+}
+
+.noticeBad .noticeBody {
+  font-size: 13px;
+}
+
+.noticeOutbid {
+  border: 2px solid var(--bad);
+  background: var(--surface);
+}
+
+.noticeOutbid .noticeTitle {
+  font-weight: 800;
+  color: var(--bad);
+}
+
+.noticeOutbid .noticeBody {
+  font-size: 13px;
+}
+
+.noticeMono {
+  display: flex;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border-radius: 10px;
+  background: oklch(0.56 0.15 var(--mh, 38));
+  color: #fff;
+  font-size: 11px;
+  font-weight: 800;
+}
+
+.noticeClose {
+  border: 0;
+  background: transparent;
+  color: var(--ink-2);
+  cursor: pointer;
+}
+
+.retry {
+  height: 32px;
+  padding: 0 12px;
+  border: 0;
+  border-radius: 10px;
+  background: var(--inverse-2);
+  color: var(--on-inverse);
+  font: inherit;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+/* Whole-screen cards: adjourned, closed, loading, failed (Spotlight 100-122). */
+.panelCard {
+  max-width: 560px;
+  margin: 24px auto;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  padding: 28px;
+  border-radius: 28px;
+  background: var(--surface);
+  text-align: center;
+  box-shadow: var(--shadow);
+}
+
+.panelTile {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 64px;
+  height: 64px;
+  border-radius: 20px;
+  background: var(--surface-2);
+  color: var(--ink-2);
+}
+
+.panelInfo {
+  background: var(--info-tint);
+  color: var(--info);
+}
+
+.panelTitle {
+  font-size: 24px;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+}
+
+.panelBody {
+  max-width: 36ch;
+  font-size: 15px;
+  line-height: 1.5;
+  color: var(--ink-2);
+}
+
+.panelStats {
+  width: 100%;
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+  margin-top: 8px;
+}
+
+.panelStat {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 12px 8px;
+  border-radius: 14px;
+  background: var(--surface-2);
+  min-width: 0;
+}
+
+/* A money value stays on one line: DM Mono tabular, never wrapped (AC-18). */
+.panelStatValue {
+  font-family: var(--font-num);
+  font-variant-numeric: tabular-nums;
+  font-size: 20px;
+  white-space: nowrap;
+}
+
+.panelStatLabel {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--ink-2);
+}
+
+.panelAction {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  height: 44px;
+  margin-top: 6px;
+  padding: 0 18px;
+  border: 0;
+  border-radius: 14px;
+  background: var(--team);
+  color: var(--on-team);
+  font: inherit;
+  font-size: 15px;
+  font-weight: 700;
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.panelActions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 8px;
+  margin-top: 6px;
+}
+
+.panelActions .panelAction {
+  margin-top: 0;
+}
+
+.panelActionSoft {
+  background: var(--team-tint);
+  color: var(--team-ink);
+}
+
+.skeleton {
+  border-radius: 28px;
+  background: var(--surface-2);
+  animation: pulse 1.4s ease-in-out infinite;
+}
+
+/* Lobby (Room `lobby`, `lobbyLate`, `lobbyOffline`, `lobbyAdmin`). */
+.lobby {
+  max-width: 1040px;
+  margin: 0 auto;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+  align-items: flex-start;
+}
+
+.lobbyMain {
+  flex: 3 1 380px;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.lobbySide {
+  flex: 2 1 300px;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  padding: 8px;
+  border-radius: 24px;
+  background: var(--surface);
+  box-shadow: var(--shadow);
+}
+
+.startCard {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  padding: 24px;
+  border-radius: 28px;
+  background: var(--surface);
+  text-align: center;
+  box-shadow: var(--shadow);
+}
+
+.banner {
+  align-self: stretch;
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 12px 14px;
+  border-radius: 16px;
+  text-align: left;
+}
+
+.bannerInfo {
+  background: var(--info-tint);
+}
+
+.bannerInverse {
+  align-items: center;
+  background: var(--inverse);
+  color: var(--on-inverse);
+}
+
+.bannerTeam {
+  margin-top: 8px;
+  padding: 14px 16px;
+  background: var(--team-tint);
+}
+
+.cdLabelRow {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 10px;
+}
+
+.label {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  color: var(--ink-2);
+}
+
+.labelFaint {
+  color: var(--ink-3);
+}
+
+/* The countdown has one height and a width that does not depend on its digits. */
+.cd {
+  min-width: 8ch;
+  height: 56px;
+  font-family: var(--font-num);
+  font-variant-numeric: tabular-nums;
+  font-size: 56px;
+  line-height: 1;
+  font-weight: 500;
+  letter-spacing: -0.04em;
+  white-space: nowrap;
+}
+
+.cdFrozen {
+  color: var(--ink-3);
+}
+
+.cdLate {
+  color: var(--ink-2);
+}
+
+.startLine {
+  font-size: 14px;
+  color: var(--ink-2);
+}
+
+.startLine b {
+  color: var(--ink);
+}
+
+.readyBtn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  width: 100%;
+  max-width: 360px;
+  height: 56px;
+  margin-top: 8px;
+  border: 0;
+  border-radius: 16px;
+  background: var(--team);
+  color: var(--on-team);
+  font: inherit;
+  font-size: 16px;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.readyOn {
+  border: 2px solid var(--team);
+  background: var(--team-tint);
+  color: var(--team-ink);
+}
+
+.readyLocked {
+  background: var(--surface-2);
+  color: var(--ink-2);
+  cursor: not-allowed;
+}
+
+.card {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 18px;
+  border-radius: 24px;
+  background: var(--surface);
+  box-shadow: var(--shadow);
+}
+
+.rules {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: 8px;
+}
+
+.rule {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 10px 12px;
+  border-radius: 14px;
+  background: var(--surface-2);
+}
+
+.ruleLabel {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--ink-2);
+}
+
+.ruleValue {
+  font-family: var(--font-num);
+  font-size: 15px;
+}
+
+.note {
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--ink-2);
+}
+
+.rosterHead {
+  display: flex;
+  justify-content: space-between;
+  padding: 10px;
+}
+
+.rosterCount {
+  min-width: 14ch;
+  text-align: right;
+  font-family: var(--font-num);
+  font-size: 12px;
+  color: var(--ink-2);
+}
+
+.row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px;
+  border-radius: 14px;
+}
+
+.rowMine {
+  background: var(--team-tint);
+}
+
+.rowAway {
+  opacity: 0.4;
+}
+
+.rowText {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.rowName {
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.rowSub {
+  font-size: 12px;
+  color: var(--ink-2);
+}
+
+.status {
+  min-width: 78px;
+  padding: 4px 9px;
+  border-radius: 999px;
+  background: var(--surface-2);
+  color: var(--ink-2);
+  font-size: 11px;
+  font-weight: 800;
+  text-align: center;
+}
+
+.statusReady {
+  background: var(--ok-tint);
+  color: var(--ok);
+}
+
+.statusAway {
+  color: var(--ink-3);
+}
+
+.rosterFoot {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  margin-top: 6px;
+  padding: 10px;
+  border-top: 1px solid var(--line);
+}
+
+.footSpacer {
+  flex: 1;
+}
+
+.changeTime {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  height: 36px;
+  padding: 0 12px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--surface);
+  color: var(--ink);
+  font: inherit;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.commish {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--ink-2);
+}
+
+@keyframes roll {
+  from {
+    opacity: 0;
+    transform: translateY(-8px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@keyframes hammer {
+  from {
+    opacity: 0;
+    transform: rotate(-5deg) scale(1.8);
+  }
+  60% {
+    opacity: 1;
+    transform: rotate(-5deg) scale(0.94);
+  }
+  to {
+    transform: rotate(-5deg) scale(1);
+  }
+}
+
+@keyframes fade {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes pulse {
+  50% {
+    opacity: 0.6;
+  }
+}
+
+/* Reduced motion: fades only. No number roll, no stamp, no press scale (AC-18). */
+@media (prefers-reduced-motion: reduce) {
+  .roll {
+    animation: fade 180ms ease-out;
+  }
+
+  .stamp {
+    animation: fade 180ms ease-out;
+  }
+
+  .bidBtn,
+  .barFill {
+    transition: none;
+  }
+
+  .bidBtn:active {
+    transform: none;
+  }
+
+  .spin,
+  .skeleton {
+    animation: none;
+  }
+}

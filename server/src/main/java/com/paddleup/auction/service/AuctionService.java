@@ -8,6 +8,8 @@ import com.paddleup.auction.dto.BidRequest;
 import com.paddleup.auction.dto.EventsDto;
 import com.paddleup.auction.dto.IntentResultDto;
 import com.paddleup.auction.dto.PassRequest;
+import com.paddleup.auction.dto.PresenceDto;
+import com.paddleup.auction.dto.ReadyRequest;
 import com.paddleup.auction.dto.ScheduleRequest;
 import com.paddleup.auction.dto.TicketDto;
 import com.paddleup.auction.exception.AuctionBusyException;
@@ -42,6 +44,8 @@ public class AuctionService {
   private final AuctionRegistry registry;
   private final AuctionEventRepository events;
   private final Presence presence;
+  private final Readiness readiness;
+  private final AuctionBroadcaster broadcaster;
   private final StompTicketService tickets;
   private final AuctionProperties props;
   private final Clock clock;
@@ -51,6 +55,8 @@ public class AuctionService {
       AuctionRegistry registry,
       AuctionEventRepository events,
       Presence presence,
+      Readiness readiness,
+      AuctionBroadcaster broadcaster,
       StompTicketService tickets,
       AuctionProperties props,
       Clock clock) {
@@ -58,6 +64,8 @@ public class AuctionService {
     this.registry = registry;
     this.events = events;
     this.presence = presence;
+    this.readiness = readiness;
+    this.broadcaster = broadcaster;
     this.tickets = tickets;
     this.props = props;
     this.clock = clock;
@@ -73,7 +81,8 @@ public class AuctionService {
       throw new AuctionRequestException("startsAt", "A start time is required");
     }
     AuctionState state = await(registry.runner(roomId).schedule(caller, request.startsAt()));
-    return AuctionViews.state(state, clock.instant(), presence.connected(roomId));
+    return AuctionViews.state(
+        state, clock.instant(), presence.connected(roomId), readiness.ready(roomId));
   }
 
   /** Full state for a member; 404 until an auction is scheduled. */
@@ -83,7 +92,8 @@ public class AuctionService {
     if (state.phase() == Phase.NONE) {
       throw new AuctionNotFoundException();
     }
-    return AuctionViews.state(state, clock.instant(), presence.connected(roomId));
+    return AuctionViews.state(
+        state, clock.instant(), presence.connected(roomId), readiness.ready(roomId));
   }
 
   /** Events with a seq above {@code after}, at most {@code limit}. */
@@ -136,6 +146,28 @@ public class AuctionService {
     var intent =
         Intent.pass(request.intentId(), caller.value(), access.franchiseId(), request.lot());
     return AuctionViews.result(await(registry.runner(roomId).intent(intent)), clock.instant());
+  }
+
+  /**
+   * Marks the caller's franchise ready or not ready in the lobby. Only a franchise may, and only
+   * while the auction is scheduled. The answer is the presence the lobby now shows, also sent on
+   * the presence topic.
+   */
+  public PresenceDto ready(UserId caller, UUID roomId, ReadyRequest request) {
+    if (request == null || request.ready() == null) {
+      throw new AuctionRequestException("ready", "ready is required");
+    }
+    RoomAccessDto access = port.access(roomId, caller);
+    await(
+        registry
+            .runner(roomId)
+            .ready(
+                access.franchiseId(),
+                request.ready(),
+                room ->
+                    broadcaster.presence(room, presence.connected(room), readiness.ready(room))));
+    return new PresenceDto(
+        List.copyOf(presence.connected(roomId)), List.copyOf(readiness.ready(roomId)));
   }
 
   /** A single-use ticket to open the socket without a session cookie. Members only. */

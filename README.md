@@ -32,6 +32,10 @@ Accounts sign in by emailed link or 6-digit code, or with Google. Sessions are s
 - Sign-in rate limits (`paddleup.auth.throttle.*`, Postgres-backed): 3 emails per address and 10 per client IP per 15 minutes; 5 wrong codes per email (across all its tokens) and 20 failures per client IP per hour; over the limit the server answers 429 with `Retry-After` and sends nothing. The client IP is read from `X-Forwarded-For` behind `PADDLEUP_TRUSTED_PROXY_HOPS` trusted proxies (default 2: Vercel rewrite + Fly proxy; the dev profile uses 0, the socket peer). Check the real header after deploying; a wrong count shares buckets between users but never lets a client choose its own address. A locked email answers 429 with `Retry-After` even for the right code; the emailed link still works because it is not email-throttled.
 - API types: with the server running, `cd web && npm run gen:api` regenerates `web/src/api/generated.ts` from `/v3/api-docs` (set `OPENAPI_URL` if the server is not on port 8080). Commit the result.
 
+## Dev test accounts
+
+On a `dev` boot the server seeds four test accounts and one room, `Seed League` (cricket-t20, standard preset), in `setup` with four franchises. Sign in as `cara@paddleup.test` (Commissioner), `alex@`, `bea@` or `chen@` (managers, `@paddleup.test`). The sign-in code is printed in the server log. Cara can schedule the auction from the room. Seeding runs once: a later boot finds the room and skips. Turn off with `paddleup.dev-seed.enabled=false` in `application-dev.yml` or as a `--paddleup.dev-seed.enabled=false` argument. The room has no player pool, so go-live refuses until season data is loaded (see below).
+
 ## Season data (player pool)
 
 Each Sport Pack has versioned season datasets. An app admin imports one at `/admin/import`; every room copies the latest version when it is created, and its Commissioner can edit that copy, reset it and reorder its sets until the auction goes live.
