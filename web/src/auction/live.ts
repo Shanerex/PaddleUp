@@ -2,8 +2,8 @@ import { Client } from "@stomp/stompjs";
 import { ApiError, type AuctionEvent, type AuctionState } from "../api/client";
 import { ServerClock } from "./clock";
 
-/** Heartbeat each way, in ms; the server sends the same. Two missed beats close the socket. */
-export const HEARTBEAT_MS = 1000;
+/** Heartbeat each way, in ms; the server sends the same. Two missed beats close the socket. Keep equal to the server's. */
+export const HEARTBEAT_MS = 10_000;
 
 export type Connection = "connecting" | "live" | "reconnecting";
 
@@ -88,6 +88,9 @@ export function createLive(deps: LiveDeps) {
   let retryTimer: ReturnType<typeof setTimeout> | undefined;
   let conn: { close(): void } | null = null;
   let generation = 0; // a socket from an older attempt is ignored
+  let socketUp = false; // true only between a socket's CONNECTED and its close; a fetch alone never makes the feed live
+  let presenceStamp = 0; // counts presence messages, so a fetch can tell it raced one
+  let lastPresence: { connected: string[]; ready: string[] } | null = null;
   let buffer: AuctionEvent[] = [];
   let fetching = false;
   let again = false;
@@ -120,13 +123,30 @@ export function createLive(deps: LiveDeps) {
       do {
         again = false;
         const sent = mono();
+        const atGeneration = generation;
+        const atPresence = presenceStamp;
         let state: AuctionState;
         try {
           state = await deps.getAuction(roomId);
         } catch (e) {
           if (stopped) return;
           if (e instanceof ApiError && e.status === 404) {
-            emit({ missing: true, state: null, synced: true, connection: "live" });
+            // An event that arrived while this read was in flight means the auction now exists.
+            // Drop the buffer and read once more; a second 404 with nothing new buffered ends it.
+            const arrived = buffer.length > 0;
+            buffer = [];
+            if (socketUp) attempt = 0;
+            emit({
+              missing: true,
+              state: null,
+              synced: socketUp,
+              connection: socketUp ? "live" : snap.connection,
+              frozenLeft: socketUp ? null : snap.frozenLeft,
+            });
+            if (arrived) {
+              again = true;
+              continue;
+            }
             return;
           }
           fail();
@@ -134,14 +154,20 @@ export function createLive(deps: LiveDeps) {
         }
         if (stopped) return;
         clock.observe(Date.parse(state.serverNow), sent, mono());
-        applyFetched(state);
+        // The socket was replaced or dropped while this was in flight: its answer may predate the
+        // new socket's subscriptions, so ask again on the current one.
+        if (atGeneration !== generation) {
+          again = true;
+          continue;
+        }
+        applyFetched(state, atPresence);
       } while (again && !stopped);
     } finally {
       fetching = false;
     }
   };
 
-  const applyFetched = (state: AuctionState) => {
+  const applyFetched = (state: AuctionState, atPresence: number) => {
     let next = state;
     const pending = buffer.filter((e) => e.seq > next.lastSeq).sort((a, b) => a.seq - b.seq);
     buffer = [];
@@ -158,16 +184,19 @@ export function createLive(deps: LiveDeps) {
       }
       next = patched;
     }
-    attempt = 0;
+    // Presence that arrived while the fetch was in flight is newer than the fetched snapshot.
+    const newer = presenceStamp !== atPresence ? lastPresence : null;
+    // Only an open socket makes the feed live; a fetch during the backoff just refreshes the state.
+    if (socketUp) attempt = 0;
     emit({
       state: next,
       missing: false,
-      connected: next.connected,
-      ready: next.ready,
-      connection: "live",
-      synced: !gap,
-      lastSeen: Date.now(),
-      frozenLeft: null,
+      connected: newer ? newer.connected : next.connected,
+      ready: newer ? (next.phase === "scheduled" ? newer.ready : []) : next.ready,
+      connection: socketUp ? "live" : snap.connection,
+      synced: socketUp && !gap,
+      lastSeen: socketUp ? Date.now() : snap.lastSeen,
+      frozenLeft: socketUp ? null : snap.frozenLeft,
     });
     if (gap) again = true;
   };
@@ -189,7 +218,17 @@ export function createLive(deps: LiveDeps) {
 
   const onEvent = (e: AuctionEvent) => {
     const s = snap.state;
-    if (!snap.synced || !s) {
+    if (!s) {
+      if (snap.missing) {
+        // "No auction yet" and an event arrives: the auction now exists, so read it.
+        emit({ synced: false });
+        void fetchState();
+      } else {
+        buffer.push(e);
+      }
+      return;
+    }
+    if (!snap.synced) {
       buffer.push(e);
       return;
     }
@@ -204,7 +243,9 @@ export function createLive(deps: LiveDeps) {
   };
 
   const onPresence = (body: { connected?: string[]; ready?: string[] }) => {
-    emit({ connected: body.connected ?? [], ready: snap.state?.phase === "scheduled" ? (body.ready ?? []) : [] });
+    lastPresence = { connected: body.connected ?? [], ready: body.ready ?? [] };
+    presenceStamp++;
+    emit({ connected: lastPresence.connected, ready: snap.state?.phase === "scheduled" ? lastPresence.ready : [] });
   };
 
   const parse = (body: string) => {
@@ -218,6 +259,7 @@ export function createLive(deps: LiveDeps) {
   const open = async () => {
     if (stopped) return;
     const mine = ++generation;
+    socketUp = false;
     conn?.close();
     conn = null;
     let ticket: string;
@@ -233,6 +275,7 @@ export function createLive(deps: LiveDeps) {
     conn = deps.connect(ticket, {
       onConnect(socket) {
         if (mine !== generation || stopped) return;
+        socketUp = true;
         buffer = [];
         socket.subscribe(topicOf(roomId), (b) => {
           const e = parse(b);
@@ -254,6 +297,7 @@ export function createLive(deps: LiveDeps) {
   const fail = () => {
     drop();
     generation++;
+    socketUp = false;
     conn?.close();
     conn = null;
     clearTimeout(retryTimer);
@@ -282,6 +326,7 @@ export function createLive(deps: LiveDeps) {
           if (stopped) return;
           clearTimeout(retryTimer);
           generation++;
+          socketUp = false;
           conn?.close();
           conn = null;
           drop();
@@ -315,6 +360,7 @@ export function createLive(deps: LiveDeps) {
     stop() {
       stopped = true;
       generation++;
+      socketUp = false;
       clearTimeout(retryTimer);
       offs.forEach((off) => off());
       offs = [];
@@ -355,7 +401,7 @@ export function socketUrl(): string {
   return "ws://localhost:8080/api/ws";
 }
 
-/** The real STOMP socket: a ticket on CONNECT, 1 s heartbeats, no automatic reconnect (a ticket is single-use). */
+/** The real STOMP socket: a ticket on CONNECT, 10 s heartbeats, no automatic reconnect (a ticket is single-use). */
 export const stompConnect: Connect = (ticket, handlers) => {
   const client = new Client({
     brokerURL: socketUrl(),

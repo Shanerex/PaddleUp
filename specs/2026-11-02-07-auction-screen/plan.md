@@ -17,7 +17,7 @@ One route, `/rooms/[roomId]/auction`, renders the lobby (phase `scheduled`) or t
   - `AuctionController PUT /ready {ready}` returns `PresenceDto{connected, ready}`. Outside SCHEDULED it answers 409 `not_scheduled` (a new `Reason` code); a caller with no franchise gets 409 `not_a_franchise`.
   - `PresenceDto` and `AuctionStateDto` gain `ready: List<UUID>`.
   - `AuctionStateDto.nextBid`, plus `nextBid` in the `lot_opened`/`bid_accepted` payload in `AuctionViews.event`.
-  - `WebSocketConfig`: simple-broker heartbeats 1000/1000 with a `ThreadPoolTaskScheduler` (needed for AC-13 on silent drops).
+  - `WebSocketConfig`: simple-broker heartbeats 10000/10000 with a `ThreadPoolTaskScheduler` (silent drops; a clean network loss is the browser `offline` event, AC-13).
 - API types: regenerate `web/src/api/generated.ts`. `web/src/api/client.ts` gains `getAuction`, `bid`, `setReady` and `getTicket`, and the types `AuctionState`, `AuctionEvent`, `IntentResult`.
 - New `web/src/auction/`:
   - `clock.ts`: offset from the min-RTT `serverNow` sample, on `performance.now`.
@@ -39,7 +39,7 @@ One route, `/rooms/[roomId]/auction`, renders the lobby (phase `scheduled`) or t
 
 ## Architecture changes
 - Auction engine: lobby readiness is in-memory and unlogged like presence. It is sent on `/topic/auctions/{roomId}/presence` and set by `PUT .../auction/ready` only while scheduled. `AuctionStateDto` and `PresenceDto` carry `ready`.
-- Realtime: the STOMP simple broker sends heartbeats every 1 s each way, and a client treats 2.5 s of silence as a drop.
+- Realtime: the STOMP simple broker sends heartbeats every 10 s each way (loosened from 1 s after review: short stalls dropped sessions and locked bidding), and a client treats about 2 missed beats as a silent drop. A clean network loss is caught at once by the browser `offline` event, so AC-13's 3 s holds for that case only.
 - The auction state and the `lot_opened`/`bid_accepted` broadcasts carry `nextBid`, which the web never computes.
 - Web: a new `web/src/auction/` holds client sync. The socket goes straight to the server (`NEXT_PUBLIC_WS_URL`) with a ticket. Bidding is enabled only after a full state fetch on connect, focus, seq gap or lot close. Events patch only bid, leader, deadline and `nextBid`.
 

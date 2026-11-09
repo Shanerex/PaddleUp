@@ -16,6 +16,8 @@ export type LobbyProps = {
   members: Member[];
   /** ISO start time from the server. */
   startsAt: string;
+  /** The lot timer from the auction state; absent until the server sends it, and then no timer rule shows. */
+  timer?: { openSeconds?: number; bidSeconds?: number };
   /** Ms to the start, negative once past it; frozen while offline. Null before the first server sample. */
   untilStartMs: number | null;
   connected: string[];
@@ -155,7 +157,9 @@ export function Lobby(p: LobbyProps) {
               {minimums.length > 0 && (
                 <Rule label="ROLE MINIMUMS" value={minimums.map(([k, n]) => `${n} ${roleLabel(room.packLabels, k)}`).join(" · ")} />
               )}
-              <Rule label="TIMER" value={`${config.openSeconds ?? 20}s open · ${config.bidSeconds ?? 10}s per bid`} />
+              {p.timer?.openSeconds !== undefined && p.timer.bidSeconds !== undefined && (
+                <Rule label="TIMER" value={`${p.timer.openSeconds}s open · ${p.timer.bidSeconds}s per bid`} />
+              )}
             </div>
             <span className={s.note}>Bids are final. The app won&apos;t let you bid past what you need to fill your minimums at base price.</span>
           </section>

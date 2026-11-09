@@ -242,6 +242,14 @@ function lobby(over: Partial<React.ComponentProps<typeof Lobby>> = {}) {
 }
 
 describe("Lobby", () => {
+  it("shows the timer rule from the server's auction config, and no invented numbers without it (review 7)", () => {
+    const { unmount } = lobby({ timer: { openSeconds: 45, bidSeconds: 12 } });
+    expect(screen.getByText("45s open · 12s per bid")).toBeTruthy();
+    unmount();
+    lobby();
+    expect(screen.queryByText("TIMER")).toBeNull();
+  });
+
   it("shows the countdown, a status per franchise and an I'm ready button that only asks", async () => {
     const onToggleReady = vi.fn();
     lobby({ onToggleReady, ready: ["fb"] });

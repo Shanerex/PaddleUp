@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties } from "react";
 import { ApiError, getMembers, getRoom, setReady, type Member, type Room } from "../../../../api/client";
-import { formatLotTime } from "../../../../auction/clock";
+import { formatLotTime, pageClock } from "../../../../auction/clock";
 import { useBid } from "../../../../auction/useBid";
 import { useLive, useTicker } from "../../../../auction/useLive";
 import { buildView } from "../../../../auction/view";
@@ -216,7 +216,8 @@ function Auction({ roomId, data, reloadRoom }: { roomId: string; data: Data; rel
         roomId={roomId}
         mode={sheet}
         startsAt={state?.startsAt}
-        serverNow={() => (clock.ready ? clock.now() : null)}
+        // With no auction there is no state to sample; the page clock is fed by every request's Date header.
+        serverNow={() => (clock.ready ? clock.now() : pageClock.ready ? pageClock.now() : null)}
         poolHref={`/rooms/${roomId}/pool`}
         onClose={() => setSheet(null)}
         onDone={() => {
@@ -263,6 +264,7 @@ function Auction({ roomId, data, reloadRoom }: { roomId: string; data: Data; rel
           room={room}
           members={members}
           startsAt={state.startsAt}
+          timer={state.config}
           untilStartMs={offline ? snapshot.frozenLeft : serverNow === null ? null : Date.parse(state.startsAt) - serverNow}
           connected={snapshot.connected}
           ready={snapshot.ready}

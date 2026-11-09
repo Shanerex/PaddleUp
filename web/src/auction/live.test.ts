@@ -320,4 +320,105 @@ describe("createLive", () => {
     t.fire("offline");
     expect(t.live.snapshot().frozenLeft).toBeLessThan(0);
   });
+
+  it("a fetch with no open socket never marks the feed live (review 1)", async () => {
+    const t = setup();
+    t.live.start();
+    const { socket, handlers } = await t.connectLatest();
+    socket.close();
+    handlers.onClose(); // dropped: backing off
+    expect(t.live.snapshot()).toMatchObject({ connection: "reconnecting", synced: false });
+
+    t.fire("visible"); // a fetch during the backoff
+    await vi.advanceTimersByTimeAsync(0);
+    expect(t.live.snapshot()).toMatchObject({ connection: "reconnecting", synced: false });
+    t.live.resync();
+    await vi.advanceTimersByTimeAsync(0);
+    expect(t.live.snapshot()).toMatchObject({ connection: "reconnecting", synced: false });
+  });
+
+  it("a fetch that finishes after the socket dropped does not unlock bidding (review 1)", async () => {
+    const t = setup();
+    t.live.start();
+    const first = await t.connectLatest();
+    let release: (s: AuctionState) => void = () => {};
+    t.getAuction.mockImplementationOnce(() => new Promise<AuctionState>((r) => (release = r)));
+    t.live.resync();
+    first.handlers.onClose();
+    release(state({ lastSeq: 9 }));
+    await vi.advanceTimersByTimeAsync(0);
+
+    expect(t.live.snapshot()).toMatchObject({ connection: "reconnecting", synced: false });
+  });
+
+  it("refetches when an event arrives while the room has no auction (review 2)", async () => {
+    const t = setup();
+    t.getAuction.mockRejectedValueOnce(new ApiError(404, { error: "no_auction" }));
+    t.live.start();
+    const { socket } = await t.connectLatest();
+    expect(t.live.snapshot()).toMatchObject({ missing: true, state: null });
+
+    socket.send(topicOf(ROOM), { seq: 1, at: "x", kind: "auction_scheduled", franchiseId: null, lot: null, payload: {} });
+    await vi.advanceTimersByTimeAsync(0);
+
+    expect(t.live.snapshot()).toMatchObject({ missing: false, synced: true });
+    expect(t.live.snapshot().state?.phase).toBe("live");
+  });
+
+  it("reads again when an event arrived during a fetch that answered 404 (review 2)", async () => {
+    const t = setup();
+    let reject: (e: unknown) => void = () => {};
+    t.getAuction.mockImplementationOnce(() => new Promise<AuctionState>((_, r) => (reject = r)));
+    t.live.start();
+    const { socket } = await t.connectLatest(); // first fetch is in flight
+    socket.send(topicOf(ROOM), { seq: 1, at: "x", kind: "auction_scheduled", franchiseId: null, lot: null, payload: {} });
+    reject(new ApiError(404, { error: "no_auction" }));
+    await vi.advanceTimersByTimeAsync(0);
+
+    expect(t.getAuction).toHaveBeenCalledTimes(2);
+    expect(t.live.snapshot()).toMatchObject({ missing: false, synced: true });
+  });
+
+  it("does not loop when the second read is a 404 with nothing new buffered (review 2)", async () => {
+    const t = setup();
+    t.getAuction.mockRejectedValue(new ApiError(404, { error: "no_auction" }));
+    t.live.start();
+    const { socket } = await t.connectLatest();
+    socket.send(topicOf(ROOM), { seq: 1, at: "x", kind: "auction_scheduled", franchiseId: null, lot: null, payload: {} });
+    await vi.advanceTimersByTimeAsync(0);
+
+    expect(t.getAuction).toHaveBeenCalledTimes(2); // first read, then the one the event asked for
+    expect(t.live.snapshot()).toMatchObject({ missing: true });
+  });
+
+  it("keeps presence that arrived while a fetch was in flight (review 3)", async () => {
+    const t = setup(state({ phase: "scheduled", lotOpen: false, lot: undefined, nextBid: undefined, lastSeq: 1 }));
+    t.live.start();
+    const { socket } = await t.connectLatest();
+    let release: (s: AuctionState) => void = () => {};
+    t.getAuction.mockImplementationOnce(() => new Promise<AuctionState>((r) => (release = r)));
+    t.live.resync();
+
+    socket.send(`${topicOf(ROOM)}/presence`, { connected: [A, B], ready: [A] });
+    release(state({ phase: "scheduled", lotOpen: false, lot: undefined, nextBid: undefined, lastSeq: 1, connected: [A], ready: [] }));
+    await vi.advanceTimersByTimeAsync(0);
+
+    expect(t.live.snapshot()).toMatchObject({ connected: [A, B], ready: [A] });
+  });
+
+  it("a REST fetch does not reset the backoff while the socket never connected (review 4)", async () => {
+    const t = setup();
+    t.live.start();
+    await vi.advanceTimersByTimeAsync(0);
+    t.sockets[0].handlers.onClose(); // never connected: attempt 1 waits 500 ms
+    t.live.resync();
+    await vi.advanceTimersByTimeAsync(0);
+    await vi.advanceTimersByTimeAsync(500); // retry 2 opens
+    t.sockets[1].handlers.onClose(); // closes again: must wait 1000 ms, not 500
+    const tickets = t.getTicket.mock.calls.length;
+    await vi.advanceTimersByTimeAsync(600);
+    expect(t.getTicket.mock.calls.length).toBe(tickets);
+    await vi.advanceTimersByTimeAsync(500);
+    expect(t.getTicket.mock.calls.length).toBe(tickets + 1);
+  });
 });

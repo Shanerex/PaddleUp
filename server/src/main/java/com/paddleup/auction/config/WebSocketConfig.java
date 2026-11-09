@@ -40,8 +40,13 @@ class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
   /** Longest STOMP frame a client may send; it only ever sends CONNECT and SUBSCRIBE. */
   private static final int MAX_FRAME_BYTES = 16 * 1024;
 
-  /** Heartbeat each way, so a client sees a silent drop within a few seconds (AC-13). */
-  private static final long HEARTBEAT_MS = 1000;
+  /**
+   * Heartbeat each way. Loose on purpose: a backgrounded tab or a 2-3 s mobile stall must not end
+   * the session, flip presence to "not here" and lock bidding. A clean network loss is caught by the
+   * browser's offline event (AC-13), a silent drop by missed beats within about 2 intervals.
+   * Keep equal to {@code HEARTBEAT_MS} in web/src/auction/live.ts.
+   */
+  private static final long HEARTBEAT_MS = 10_000;
 
   private final ThreadPoolTaskScheduler heartbeats = new ThreadPoolTaskScheduler();
   private final StompAuth auth;

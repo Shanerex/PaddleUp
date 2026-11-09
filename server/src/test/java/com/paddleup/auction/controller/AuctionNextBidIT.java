@@ -77,18 +77,14 @@ class AuctionNextBidIT extends AbstractAuctionIT {
   }
 
   @Test
-  void anIdleConnectionGetsServerHeartbeatsEverySecond() throws Exception {
+  void theBrokerAgreesTenSecondHeartbeatsEachWay() throws Exception {
     Room room = room(2, 6);
     goLive(room);
     try (StompProbe probe =
         StompProbe.connect(json, port, room.manager(0).cookie(), null, ORIGIN, true)) {
       assertThat(probe.connected()).isTrue();
       probe.subscribe("/topic/auctions/" + room.id());
-      assertThat(probe.heartbeat()).containsExactly(1000, 1000);
-
-      // The client closes a session whose server goes silent for two intervals.
-      Thread.sleep(3500);
-
+      assertThat(probe.heartbeat()).containsExactly(10_000, 10_000);
       assertThat(probe.connected()).isTrue();
       assertThat(probe.nextError(100)).isNull();
     }
