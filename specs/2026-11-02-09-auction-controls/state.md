@@ -18,3 +18,4 @@ next: when deps are merged: git switch -c feature/2026-11-02-09-auction-controls
 - 2026-11-02 intake: why: real auctions need a moderator and a dispute trail.
 - 2026-11-02 intake: who: Commissioner (controls); all Managers (read the audit log).
 - 2026-11-02 intake: done-when: pause/resume, skip lot, re-open a closed lot (audited), adjourn and resume across days; unsold pool plus accelerated round with nominations; the audit log is viewable by every manager.
+- 2026-11-10 intake: deferred from 2026-11-09-home-redesign (R-12), drawn in docs/design/source but not built there: auction screen adjourned button, and the lobby Start now button.

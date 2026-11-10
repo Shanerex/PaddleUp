@@ -18,3 +18,4 @@ next: when deps are merged: git switch -c feature/2026-11-02-14-leaderboard main
 - 2026-11-02 intake: why: the leaderboard is what friends check the morning after a match.
 - 2026-11-02 intake: who: all room members.
 - 2026-11-02 intake: done-when: standings show rank, total, trend and movement; a match view shows points per franchise; every total drills down leaderboard > franchise > player > match > stat-by-stat breakdown.
+- 2026-11-10 intake: deferred from 2026-11-09-home-redesign (R-12), drawn in docs/design/source but not built there: final place on each Past seasons item on the home hub (shown once standings exist).

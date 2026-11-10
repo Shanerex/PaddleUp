@@ -18,3 +18,4 @@ next: when deps are merged: git switch -c feature/2026-11-02-23-player-intel mai
 - 2026-11-02 intake: why: advice and grades need projections built from history.
 - 2026-11-02 intake: who: Fit Engine and Report Card.
 - 2026-11-02 intake: done-when: 1-3 past seasons are backfilled through the pack adapter and scored with the room rules into per-player projected points per match, expected matches, appearance probability and recent form, refreshed per season.
+- 2026-11-10 intake: deferred from 2026-11-09-home-redesign (R-12), drawn in docs/design/source but not built there: lot-card placeholder and facts grid (shared with 10-squads).
