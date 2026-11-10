@@ -46,23 +46,6 @@ main:where(:not([data-shell])) p {
   color: var(--ink-2);
 }
 
-.panel {
-  display: grid;
-  gap: 16px;
-  width: min(100%, 420px);
-  padding: 24px;
-  border: 1px solid var(--line);
-  border-radius: 24px;
-  background: var(--surface);
-  text-align: left;
-}
-
-.panel h1 {
-  font-size: 28px;
-  line-height: 34px;
-  font-weight: 800;
-}
-
 .stack {
   display: grid;
   gap: 12px;
@@ -89,8 +72,7 @@ main:where(:not([data-shell])) p {
 }
 
 .field input:focus-visible,
-.btn:focus-visible,
-.avatar-option:focus-visible {
+.btn:focus-visible {
   outline: 2px solid var(--brand);
   outline-offset: 2px;
 }
@@ -148,70 +130,14 @@ main:where(:not([data-shell])) p {
   font-weight: 600;
 }
 
-.alert:empty,
-.notice:empty {
+.alert:empty {
   display: none;
-}
-
-.avatar-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(56px, 1fr));
-  gap: 12px;
-}
-
-.avatar-option {
-  width: 56px;
-  height: 56px;
-  padding: 0;
-  border: 2px solid var(--line);
-  border-radius: 30%;
-  background: var(--surface-2);
-  overflow: hidden;
-  cursor: pointer;
-}
-
-.avatar-option[aria-pressed="true"] {
-  border-color: var(--brand);
-}
-
-.avatar-option img {
-  display: block;
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
 }
 
 @media (prefers-reduced-motion: reduce) {
   .btn:active {
     transform: none;
   }
-}
-
-.identity {
-  display: flex;
-  align-items: center;
-  gap: 16px;
-}
-
-.identity h1 {
-  margin: 0;
-}
-
-.avatar-large {
-  width: 72px;
-  height: 72px;
-  border-radius: 30%;
-  object-fit: cover;
-}
-
-.notice {
-  padding: 12px;
-  border-radius: 14px;
-  background: var(--brand-tint);
-  color: var(--brand-ink);
-  font-size: 13px;
-  line-height: 18px;
-  font-weight: 600;
 }
 
 /* Sign-in: split layout from docs/design/source/Home.dc.html (screen "signin"). */
@@ -231,7 +157,7 @@ main:where(:not([data-shell])) p {
   justify-content: space-between;
   gap: 24px;
   min-height: 280px;
-  padding: 32px 24px;
+  padding: 32px;
   overflow: hidden;
   background: var(--brand);
   color: var(--on-brand);
@@ -250,9 +176,15 @@ main:where(:not([data-shell])) p {
   letter-spacing: -0.03em;
 }
 
+.auth-brand .brand-copy {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  max-width: 440px;
+}
+
 .auth-brand h2 {
-  margin: 0 0 12px;
-  max-width: 11em;
+  margin: 0;
   font-size: 40px;
   line-height: 1.05;
   font-weight: 800;
@@ -261,34 +193,25 @@ main:where(:not([data-shell])) p {
 }
 
 .auth-brand p {
-  max-width: 28em;
+  margin: 0;
   color: inherit;
   font-size: 16px;
   line-height: 1.5;
+  opacity: 0.9;
   text-wrap: pretty;
 }
 
 .auth-brand .fine {
-  font-size: 13px;
-  line-height: 18px;
-  font-weight: 600;
-}
-
-.auth-brand .watermark {
-  position: absolute;
-  right: -96px;
-  bottom: -150px;
-  width: 340px;
-  height: 340px;
-  opacity: 0.13;
-  pointer-events: none;
+  font-size: 12px;
+  line-height: normal;
+  opacity: 0.8;
 }
 
 .auth-form {
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 32px 24px 48px;
+  padding: 32px 24px;
 }
 
 .auth-form .auth-card {
@@ -359,7 +282,7 @@ main:where(:not([data-shell])) p {
   align-items: center;
   gap: 10px;
   color: var(--ink-2);
-  font-size: 13px;
+  font-size: 12px;
 }
 
 .auth-form .divider::before,
@@ -371,8 +294,8 @@ main:where(:not([data-shell])) p {
 }
 
 .auth-form .helper {
-  font-size: 13px;
-  line-height: 20px;
+  font-size: 12px;
+  line-height: 1.5;
 }
 
 .auth-form .helper strong {
@@ -386,22 +309,6 @@ main:where(:not([data-shell])) p {
 
   .auth-brand {
     min-height: 100vh;
-    padding: 48px;
-  }
-
-  .auth-brand h2 {
-    font-size: 56px;
-  }
-
-  .auth-brand .watermark {
-    right: -96px;
-    bottom: -112px;
-    width: 520px;
-    height: 520px;
-  }
-
-  .auth-form {
-    padding: 48px;
   }
 }
 

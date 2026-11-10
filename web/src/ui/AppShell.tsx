@@ -72,7 +72,7 @@ export function AppShell({
 }) {
   const cls = [s.main, centered && s.centered, bleed && s.bleed].filter(Boolean).join(" ");
   return (
-    <div className={s.app}>
+    <div className={[s.app, bleed && s.appBleed].filter(Boolean).join(" ")}>
       <AppTopBar badge={badge} />
       <main data-shell className={cls}>
         {children}

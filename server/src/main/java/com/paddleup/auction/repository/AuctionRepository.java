@@ -4,7 +4,10 @@ import com.paddleup.auction.model.AuctionHeader;
 import com.paddleup.auction.model.Phase;
 import com.paddleup.auction.util.Sql;
 import java.time.Instant;
+import java.util.Collection;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 import org.springframework.jdbc.core.RowMapper;
@@ -36,6 +39,21 @@ public class AuctionRepository {
         .param(roomId)
         .query(MAPPER)
         .optional();
+  }
+
+  /** The start time of each given room that has an auction row; other rooms are absent. */
+  public Map<UUID, Instant> startsAt(Collection<UUID> roomIds) {
+    Map<UUID, Instant> starts = new HashMap<>();
+    if (roomIds.isEmpty()) {
+      return starts;
+    }
+    jdbc.sql("SELECT room_id, starts_at FROM auctions WHERE room_id = ANY(?)")
+        .param(roomIds.toArray(UUID[]::new))
+        .query(
+            rs -> {
+              starts.put(rs.getObject("room_id", UUID.class), Sql.instant(rs, "starts_at"));
+            });
+    return starts;
   }
 
   /** Rooms whose auction has not ended, for boot recovery. */

@@ -32,30 +32,31 @@ export function failureOf(error: unknown): JoinFailure | null {
   return null;
 }
 
-const FAILURES: Record<JoinFailure, { icon: string; bad: boolean; title: (room: string) => string; body: string }> = {
+const FAILURES: Record<JoinFailure, { icon: string; bad: boolean; title: (room: string) => string; body: (seats?: number) => string }> = {
   invalid: {
     icon: "key_off",
     bad: true,
     title: () => "This code doesn't work",
-    body: "It may have expired or been replaced by a new one. Ask your Commissioner for a fresh code.",
+    body: () => "It may have expired or been replaced by a new one. Ask your Commissioner for a fresh code.",
   },
   full: {
     icon: "group_off",
     bad: true,
     title: (room) => `${room || "This room"} is full`,
-    body: "Every seat is taken. If the Commissioner frees one up, this code will work again.",
+    body: (seats) =>
+      `${seats ? `All ${seats} seats are` : "Every seat is"} taken. If the Commissioner frees one up, this code will work again.`,
   },
   locked: {
     icon: "gavel",
     bad: true,
     title: () => "The auction has started",
-    body: "New managers can't join once bidding is live. Catch them next season.",
+    body: () => "New managers can't join once bidding is live. Catch them next season.",
   },
   limited: {
     icon: "hourglass_top",
     bad: false,
     title: () => "Too many tries",
-    body: "Take a breather. You can try a code again in a minute.",
+    body: () => "Take a breather. You can try a code again in a minute.",
   },
 };
 
@@ -68,12 +69,14 @@ export function JoinError({
   kind,
   code,
   roomName = "",
+  seats,
   retryAfter = 60,
   onRetry,
 }: {
   kind: JoinFailure;
   code: string;
   roomName?: string;
+  seats?: number;
   retryAfter?: number;
   onRetry?: () => void;
 }) {
@@ -98,7 +101,7 @@ export function JoinError({
           INVITE · {formatCode(code)}
         </span>
         <h1 className={s.errTitle}>{f.title(roomName)}</h1>
-        <p className={s.errBody}>{f.body}</p>
+        <p className={s.errBody}>{f.body(seats)}</p>
       </div>
       <div className={shell.row}>
         {kind === "limited" ? (
@@ -203,6 +206,7 @@ export function JoinForm({ code: rawCode }: { code: string }) {
         kind={failure.kind}
         code={code}
         roomName={preview?.roomName}
+        seats={preview?.maxManagers}
         retryAfter={failure.retryAfter}
         onRetry={load}
       />

@@ -55,6 +55,17 @@ describe("ProfileView", () => {
     expect(options[0].querySelector("img")?.getAttribute("src")).toBe("/avatars/preset-01.svg");
   });
 
+  it("is built to the mock: page title, back link, name counter, sign-out card apart", async () => {
+    vi.mocked(getMe).mockResolvedValue({ ...profile, googlePictureUrl: "https://example.test/ann.png" });
+    render(<ProfileView />);
+
+    expect(await screen.findByRole("heading", { name: "Your profile", level: 1 })).toBeTruthy();
+    expect(screen.getByRole("link", { name: /Rooms/ }).getAttribute("href")).toBe("/");
+    expect(screen.getByText("3 / 30")).toBeTruthy();
+    expect(screen.getByText("The last one is your Google picture.")).toBeTruthy();
+    expect(screen.getByRole("region", { name: "Sign out" })).toBeTruthy();
+  });
+
   it("edits the name and avatar, saves, and shows the updated values", async () => {
     vi.mocked(updateProfile).mockResolvedValue({
       ...profile,

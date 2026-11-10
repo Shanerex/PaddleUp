@@ -293,6 +293,29 @@ class RoomConfigValidatorTest {
   }
 
   @Test
+  void displayUnitShortAndMinorAreCheckedLikeThePackChecksThem() {
+    var minor = new PresetDto.DisplayUnit.Minor("Lakh", "L", 1);
+    assertThat(fields(e -> e.displayUnit = new PresetDto.DisplayUnit("Crore", 100, "Cr", minor)))
+        .isEmpty();
+    assertThat(fields(e -> e.displayUnit = new PresetDto.DisplayUnit("Crore", 100, "<b>", null)))
+        .containsExactly("displayUnit");
+    assertThat(
+            fields(e -> e.displayUnit = new PresetDto.DisplayUnit("Crore", 100, "TOOLONG7", null)))
+        .containsExactly("displayUnit");
+    var bad = new String[] {"<b>", "x".repeat(21)};
+    for (String label : bad) {
+      var m = new PresetDto.DisplayUnit.Minor(label, "L", 1);
+      assertThat(fields(e -> e.displayUnit = new PresetDto.DisplayUnit("Crore", 100, "Cr", m)))
+          .containsExactly("displayUnit");
+    }
+    for (long divisor : new long[] {0, -1, 100, 101}) {
+      var m = new PresetDto.DisplayUnit.Minor("Lakh", "L", divisor);
+      assertThat(fields(e -> e.displayUnit = new PresetDto.DisplayUnit("Crore", 100, "Cr", m)))
+          .containsExactly("displayUnit");
+    }
+  }
+
+  @Test
   void aScoringRuleIdWithMarkupOrTooLongIsNamed() {
     var markup = new RuleSetDto(List.of(new RuleDto.PerUnit("<script>", "runs", BigDecimal.ONE)));
     var tooLong =

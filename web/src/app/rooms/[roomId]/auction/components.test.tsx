@@ -295,7 +295,17 @@ describe("Lobby", () => {
   it("gives a Commissioner without a franchise no ready button and a note (lobbyAdmin)", () => {
     lobby({ room: room({ myRole: "commissioner", myFranchiseId: null }) });
     expect(screen.queryByTestId("ready-button")).toBeNull();
-    expect(screen.getByTestId("lobby-admin").textContent).toContain("You lead this one, you don't play it");
+    expect(screen.getByTestId("lobby-admin").textContent).toContain("You run this one, you don't play it");
     expect(screen.getAllByTestId("lobby-row")).toHaveLength(2);
+  });
+
+  it("words the header chip with the start (AUCTION SAT 8 PM) and names the Commissioner without a franchise (Room `lobby`)", () => {
+    const { unmount } = lobby({ startsAt: "2030-03-02T20:00:00" });
+    expect(screen.getByTestId("room-state").textContent).toBe("AUCTION SAT 8 PM");
+    expect(screen.getByText("Auction lobby")).toBeTruthy();
+    unmount();
+    lobby({ startsAt: "2030-03-02T20:05:00", room: room({ myRole: "commissioner", myFranchiseId: null }) });
+    expect(screen.getByTestId("room-state").textContent).toBe("AUCTION SAT 8:05 PM");
+    expect(screen.getByText("Auction lobby · Commissioner, no franchise")).toBeTruthy();
   });
 });

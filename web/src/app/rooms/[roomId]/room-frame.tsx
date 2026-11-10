@@ -20,6 +20,7 @@ export function RoomFrame({
   hue,
   roomName,
   state,
+  chip,
   sub,
   mine,
   loaded,
@@ -34,6 +35,8 @@ export function RoomFrame({
   hue: number;
   roomName: string;
   state?: RoomState;
+  /** Replaces the state chip's words (the lobby shows when the auction starts). */
+  chip?: string;
   sub: string;
   mine?: Franchise | null;
   /** The room has loaded: the header chip, monogram and rail card appear. */
@@ -60,7 +63,7 @@ export function RoomFrame({
         <div className={s.headerText}>
           <div className={s.headerLine}>
             <h1 className={s.roomName}>{roomName}</h1>
-            {loaded && state && <StateChip state={state} onTeam />}
+            {loaded && state && <StateChip state={state} onTeam label={chip} />}
           </div>
           <span className={s.headerSub}>{active === "pool" ? "Player pool" : active === "sets" ? "Set order" : sub}</span>
         </div>
@@ -92,7 +95,7 @@ export function RoomFrame({
           {loaded && item("pool", `/rooms/${roomId}/pool`, "groups", "Player pool")}
           {loaded && item("sets", `/rooms/${roomId}/sets`, "format_list_numbered", "Set order")}
           {commish && pre && (
-            <Link href={`/rooms/${roomId}/setup?step=2`} className={s.navItem}>
+            <Link href={`/rooms/${roomId}/setup?section=basics`} className={s.navItem}>
               <Icon name="tune" size={22} />
               Room settings
             </Link>

@@ -4,10 +4,10 @@
   "version": "1.0.0",
   "display": {"name": "Stub Football", "summary": "Test pack for a second sport.", "icon": "sports_soccer"},
   "roles": [
-    {"id": "gk", "label": "Goalkeeper"},
-    {"id": "def", "label": "Defender"},
-    {"id": "mid", "label": "Midfielder"},
-    {"id": "fwd", "label": "Forward"}
+    {"id": "gk", "label": "Goalkeeper", "short": "GK"},
+    {"id": "def", "label": "Defender", "short": "DEF"},
+    {"id": "mid", "label": "Midfielder", "short": "MID"},
+    {"id": "fwd", "label": "Forward", "short": "FWD"}
   ],
   "tags": [
     {"id": "local", "label": "Local"},
@@ -22,7 +22,10 @@
       "label": "Standard league",
       "purse": 100000000,
       "currencyCode": "EUR",
-      "displayUnit": {"label": "M", "divisor": 1000000},
+      "displayUnit": {
+        "label": "M", "divisor": 1000000, "short": "M",
+        "minor": {"label": "K", "short": "K", "divisor": 1000}
+      },
       "incrementLadder": [
         {"from": 0, "step": 100000},
         {"from": 5000000, "step": 250000}
@@ -34,12 +37,12 @@
     }
   ],
   "statSchema": [
-    {"id": "goals", "label": "Goals", "kind": "count", "eventTypes": ["open-play", "penalty"]},
-    {"id": "assists", "label": "Assists", "kind": "count"},
-    {"id": "saves", "label": "Saves", "kind": "count"},
-    {"id": "passes-completed", "label": "Passes completed", "kind": "count"},
-    {"id": "passes-attempted", "label": "Passes attempted", "kind": "count"},
-    {"id": "minutes", "label": "Minutes played", "kind": "count"}
+    {"id": "goals", "label": "Goals", "kind": "count", "group": "Attack", "eventTypes": ["open-play", "penalty"]},
+    {"id": "assists", "label": "Assists", "kind": "count", "group": "Attack"},
+    {"id": "saves", "label": "Saves", "kind": "count", "group": "Defence"},
+    {"id": "passes-completed", "label": "Passes completed", "kind": "count", "group": "Passing"},
+    {"id": "passes-attempted", "label": "Passes attempted", "kind": "count", "group": "Passing"},
+    {"id": "minutes", "label": "Minutes played", "kind": "count", "group": "Match"}
   ],
   "defaultRuleSet": {
     "rules": [

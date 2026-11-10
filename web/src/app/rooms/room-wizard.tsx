@@ -24,10 +24,13 @@ import {
 import { HOME } from "../../auth/redirect";
 import { formatCode } from "../../rooms/codes";
 import { explainRoomError } from "../../rooms/errors";
-import { humanise, labelFor } from "../../rooms/format";
+import { humanise, labelFor, orderedQuotas, roleShort } from "../../rooms/format";
 import { checkFranchise, firstFreeColour, FranchiseFields, type FranchiseDraft } from "../../rooms/franchise-fields";
-import { formatMoney, ladderRows } from "../../rooms/money";
+import { orderedLifelines } from "../../rooms/lifelines";
+import { formatMoneyShort, ladderRows } from "../../rooms/money";
 import { scoringGroups } from "../../rooms/scoring";
+import { SECTIONS, sectionKey } from "../../rooms/sections";
+import { isPreAuction } from "../../rooms/state";
 import { Button } from "../../ui/Button";
 import { Icon } from "../../ui/Icon";
 import { CompactStepper, Field, Monogram, Note, Segmented, Stepper, Toggle } from "../../ui/kit";
@@ -45,6 +48,7 @@ export const STEPS = [
 
 export type Step = 1 | 2 | 3 | 4 | 5 | 6;
 
+
 const NAME_MAX = 40;
 const MANAGERS = { min: 2, max: 12 };
 const LIFELINES: Record<string, { label: string; icon: string; desc: string }> = {
@@ -59,7 +63,9 @@ function dateTime(iso: string): string {
 }
 
 /**
- * The 6-step create flow (docs/design Home `wizard:1-6`). The room exists from step 2 ("Create
+ * The 6-step create flow (docs/design Home `wizard:1-6`) and, with `mode="settings"`, Room settings
+ * (Home `settings:*`): five sections of an existing room, saved per section, sport locked, read-only
+ * once the auction is live. Create mode: The room exists from step 2 ("Create
  * room"); from then on its id lives in the URL (/rooms/{id}/setup?step=N), so a reload resumes
  * the same room instead of creating another. `unsavedLimits` are manager limits chosen before the
  * room existed whose save failed; they are put back into the draft so Continue retries them.
@@ -68,11 +74,14 @@ export function RoomWizard({
   roomId,
   initialStep = 1,
   unsavedLimits,
+  mode = "create",
 }: {
   roomId?: string;
   initialStep?: Step;
   unsavedLimits?: { min: number; max: number };
+  mode?: "create" | "settings";
 }) {
+  const settings = mode === "settings";
   const router = useRouter();
   const [step, setStepState] = useState<Step>(roomId ? (Math.max(2, initialStep) as Step) : 1);
   const [packs, setPacks] = useState<PackChoice[] | null>(null);
@@ -85,13 +94,15 @@ export function RoomWizard({
   const [draft, setDraft] = useState<RoomConfig | null>(null);
   const [invite, setInvite] = useState<Invite | null>(null);
   const [members, setMembers] = useState<Member[]>([]);
-  const [error, setError] = useState<{ message: string; locked?: boolean } | null>(null);
+  const [error, setError] = useState<{ message: string; locked?: boolean; conflict?: boolean } | null>(null);
   const pendingLimits = useRef(unsavedLimits ?? null);
   const [limitsUnsaved, setLimitsUnsaved] = useState(!!unsavedLimits);
   const [nameError, setNameError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [toast, setToast] = useState<string | null>(null);
-  const [sheet, setSheet] = useState<null | { kind: "own" } | { kind: "remove"; member: Member } | { kind: "revoke" }>(null);
+  const [sheet, setSheet] = useState<
+    null | { kind: "own" } | { kind: "remove"; member: Member } | { kind: "revoke" } | { kind: "discard"; then: () => void }
+  >(null);
   const [sheetError, setSheetError] = useState<string | null>(null);
   const [own, setOwn] = useState<FranchiseDraft>({ name: "", monogram: "", colour: "", monogramTouched: false });
 
@@ -123,6 +134,11 @@ export function RoomWizard({
     if (roomId) {
       loadRoom(roomId)
         .then((next) => {
+          // Only the Commissioner changes settings; the server refuses anyone else's save as well.
+          if (next.myRole !== "commissioner") {
+            router.replace(`/rooms/${roomId}?note=settings`);
+            return;
+          }
           // Kept until the step changes: a repeated load (Strict Mode calls this effect twice) must
           // not replace the offered limits with the saved ones.
           const limits = pendingLimits.current;
@@ -131,7 +147,7 @@ export function RoomWizard({
         .catch((e) => setError({ message: explainRoomError(e).message }));
       getInvite(roomId).then(setInvite).catch(() => undefined);
     }
-  }, [roomId, loadPacks, loadRoom]);
+  }, [roomId, loadPacks, loadRoom, router]);
 
   const setStep = useCallback(
     (next: Step) => {
@@ -139,18 +155,23 @@ export function RoomWizard({
       setError(null);
       setLimitsUnsaved(false);
       pendingLimits.current = null;
-      if (room) router.replace(`/rooms/${room.id}/setup?step=${next}`, { scroll: false });
+      if (room) {
+        const query = settings ? `section=${sectionKey(next)}` : `step=${next}`;
+        router.replace(`/rooms/${room.id}/setup?${query}`, { scroll: false });
+      }
     },
-    [room, router],
+    [room, router, settings],
   );
 
   const pack = packs?.find((p) => p.id === packId);
-  const shownError: { message: string; locked?: boolean } | null =
+  const shownError: { message: string; locked?: boolean; conflict?: boolean } | null =
     error ??
     (limitsUnsaved && step === 2
       ? { message: "Room created, but the manager limits were not saved. Check them and continue to try again." }
       : null);
   const labels = room?.packLabels;
+  const readOnly = settings && !!room && !isPreAuction(room.state);
+  const dirty = !!room && !!draft && JSON.stringify(draft) !== JSON.stringify(room.config);
 
   function update(patch: Partial<RoomConfig>) {
     setDraft((d) => (d ? { ...d, ...patch } : d));
@@ -168,7 +189,7 @@ export function RoomWizard({
       const saved = await saveConfig(room.id, room.configVersion, draft);
       setRoom(saved);
       setDraft(saved.config);
-      if (next === 6 && !invite) setInvite(await issueInvite(room.id));
+      if (next === 6 && !invite && !settings) setInvite(await issueInvite(room.id));
       setStep(next);
     } catch (e) {
       const explained = explainRoomError(e);
@@ -183,8 +204,17 @@ export function RoomWizard({
           message: fresh
             ? "Someone else saved changes while you were editing. We loaded their version; check it and make your edits again."
             : "Someone else saved changes while you were editing. Reload the page to see them.",
+          conflict: true,
         });
       } else {
+        if (code === "room_locked") {
+          // The auction went live under this tab: show the room as the server has it (read-only).
+          const fresh = await getRoom(room.id).catch(() => null);
+          if (fresh) {
+            setRoom(fresh);
+            setDraft(fresh.config);
+          }
+        }
         setError({ message: explained.message, locked: code === "room_locked" });
       }
     } finally {
@@ -229,9 +259,27 @@ export function RoomWizard({
     }
   }
 
+  /** Calls `go`, after asking first when this section has edits that were not saved. */
+  function leave(go: () => void) {
+    if (settings && dirty && !readOnly) setSheet({ kind: "discard", then: go });
+    else go();
+  }
+
+  /**
+   * Settings "Next": saves the section, then moves on. Scoring and Invite have nothing to save, a
+   * locked room cannot save, and the last section's button ("Done") returns to the room.
+   */
+  function nextSection() {
+    if (!room) return;
+    if (step === 6) router.push(`/rooms/${room.id}`);
+    else if (readOnly || step === 4 || !dirty) setStep((step + 1) as Step);
+    else void saveAndGo((step + 1) as Step);
+  }
+
   function next(event?: FormEvent) {
     event?.preventDefault();
-    if (step === 1) setStep(2);
+    if (settings) nextSection();
+    else if (step === 1) setStep(2);
     else if (step === 2 && !room) void create();
     else if (step === 6 && room) router.push(`/rooms/${room.id}`);
     else void saveAndGo((step + 1) as Step);
@@ -281,15 +329,98 @@ export function RoomWizard({
 
   const roleSum = draft ? Object.values(draft.roleMinimums).reduce((a, b) => a + (b || 0), 0) : 0;
   const roleOver = !!draft && roleSum > draft.squadMin;
-  const blocked = busy || (step === 1 && (!pack || !presetId)) || (step === 3 && roleOver) || (step >= 3 && !draft);
+  const blocked =
+    busy || (step === 1 && (!pack || !presetId)) || (step === 3 && roleOver && !readOnly) || (step >= 3 && !draft) || (settings && !room);
   const nextLabel = step === 6 ? "Open room" : step === 2 && !room ? "Create room" : "Continue";
   const reachable = (n: number) => (room ? n >= 1 : n <= 2);
   const me = members.find((m) => m.role === "commissioner");
   const adminOnly = !!room && !room.myFranchiseId;
   const taken = members.map((m) => m.franchise?.colour).filter((c): c is string => !!c);
 
+  // A manager who lands here is sent to the room (with the Note) before any setting is drawn.
+  if (roomId && room && room.myRole !== "commissioner") return null;
+  if (settings && !room) {
+    return (
+      <div className={s.frame} aria-busy={!error}>
+        <div className={s.column}>
+          <div className={s.body}>
+            <div className={s.content}>
+              {error && (
+                <Note
+                  tone="bad"
+                  icon="error"
+                  role="alert"
+                  title={error.message}
+                  action={
+                    <Button size="S" variant="outline" onClick={() => roomId && void loadRoom(roomId).catch((e) => setError({ message: explainRoomError(e).message }))}>
+                      Retry
+                    </Button>
+                  }
+                />
+              )}
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  const sectionName = STEPS[step - 1].name;
+  const sportName = room?.packLabels.packName || (room ? humanise(room.packLabels.packId) : "");
+  const mine = members.find((m) => m.franchise?.id === room?.myFranchiseId)?.franchise;
+  const settingsNote = readOnly
+    ? { tone: "warn", icon: "lock_clock", title: "Settings are locked.", body: "The auction is live, so the rules can't change now. You can still read them here." }
+    : error?.conflict
+      ? { tone: "bad", icon: "sync_problem", title: "Someone saved changes while you were editing.", body: "You're seeing the saved values. Your edit wasn't saved, so make it again if you still want it." }
+      : { tone: "neutral", icon: "info", title: "Changes save per section.", body: "Rules stay editable until the auction goes live. The sport is fixed." };
+  const caption = step === 4 ? "Points come from the Sport Pack, so there is nothing to save here." : step === 6 ? "The invite code and managers update as soon as you tap them." : "Next saves this section.";
+
   return (
     <div className={s.frame}>
+      {settings && room ? (
+        <nav className={s.rail} aria-label="Room settings">
+          <div className={s.railHead}>
+            {mine ? <Monogram text={mine.monogram} colour={mine.colour} size={40} /> : <Monogram tone="admin" size={40} />}
+            <div className={s.railTitle}>
+              <span className={s.railName}>{room.config.name}</span>
+              <span className={s.stepSub}>Room settings</span>
+            </div>
+          </div>
+          <ol aria-label="Sections" className={s.list} style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+            {SECTIONS.map((sec) => {
+              const st = STEPS[sec.step - 1];
+              return (
+                <li key={sec.key} style={{ listStyle: "none" }}>
+                  <button
+                    type="button"
+                    className={s.railStep}
+                    aria-current={sec.step === step ? "step" : undefined}
+                    disabled={busy}
+                    onClick={() => leave(() => setStep(sec.step))}
+                    style={{ width: "100%" }}
+                  >
+                    <span className={`${s.dot} ${s.dotIcon} ${sec.step === step ? s.dotOn : ""}`}>
+                      <Icon name={sec.icon} size={18} />
+                    </span>
+                    <span className={s.stepText}>
+                      <span className={s.stepName}>{st.name}</span>
+                      <span className={s.stepSub}>{sec.key === "basics" ? "Name, season, managers" : sec.key === "invite" ? "Code and managers" : st.sub}</span>
+                    </span>
+                  </button>
+                </li>
+              );
+            })}
+          </ol>
+          <div className={s.sport}>
+            <Icon name="lock" size={20} style={{ color: "var(--ink-2)" }} />
+            <div className={s.sportText}>
+              <span className={s.sportLabel}>SPORT</span>
+              <span className={s.sportName}>{sportName}</span>
+              <span className={s.stepSub}>Fixed once a room exists</span>
+            </div>
+          </div>
+        </nav>
+      ) : (
       <nav className={s.rail} aria-label="Room setup">
         <span className={s.railLabel}>NEW ROOM</span>
         <ol aria-label="Steps" className={s.list} style={{ display: "flex", flexDirection: "column", gap: 4 }}>
@@ -320,23 +451,69 @@ export function RoomWizard({
           })}
         </ol>
       </nav>
+      )}
 
       <form className={s.column} onSubmit={next} noValidate>
-        <div className={s.top}>
-          <ol className={s.bars} aria-hidden="true">
-            {STEPS.map((st, i) => (
-              <li key={st.name} className={`${s.barSeg} ${i + 1 <= step ? s.barOn : ""}`} />
-            ))}
-          </ol>
-          <div className={s.titleRow}>
-            <h1 className={s.title}>{STEPS[step - 1].title}</h1>
-            <span className={s.count}>{step} of 6</span>
+        {settings && room ? (
+          <div className={`${s.top} ${s.topSettings}`}>
+            <div className={s.topInner}>
+              <button type="button" className={s.backLink} onClick={() => leave(() => router.push(`/rooms/${room.id}`))}>
+                <Icon name="arrow_back" />
+                {room.config.name}
+              </button>
+              <div className={s.titleRow}>
+                <div className={s.titleStack}>
+                  <span className={s.eyebrow}>ROOM SETTINGS</span>
+                  <h1 className={s.title}>{sectionName}</h1>
+                </div>
+                <span className={s.lockChip}>
+                  <Icon name="lock" size={16} />
+                  {sportName}
+                </span>
+              </div>
+              <nav className={s.chips} aria-label="Sections">
+                {SECTIONS.map((sec) => (
+                  <button
+                    key={sec.key}
+                    type="button"
+                    className={s.sectionChip}
+                    aria-current={sec.step === step ? "step" : undefined}
+                    disabled={busy}
+                    onClick={() => leave(() => setStep(sec.step))}
+                  >
+                    {STEPS[sec.step - 1].name}
+                  </button>
+                ))}
+              </nav>
+            </div>
           </div>
-        </div>
+        ) : (
+          <div className={s.top}>
+            <div className={s.topInner}>
+              <ol className={s.bars} aria-hidden="true">
+                {STEPS.map((st, i) => (
+                  <li key={st.name} className={`${s.barSeg} ${i + 1 <= step ? s.barOn : ""}`} />
+                ))}
+              </ol>
+              <div className={s.titleRow}>
+                <h1 className={s.title}>{STEPS[step - 1].title}</h1>
+                <span className={s.count}>{step} of 6</span>
+              </div>
+            </div>
+          </div>
+        )}
 
         <div className={s.body}>
           <div className={s.content}>
-            {shownError && (
+            {settings && (
+              <div className={`${s.settingsNote} ${s[settingsNote.tone as "warn" | "bad" | "neutral"]}`} role="status">
+                <Icon name={settingsNote.icon} size={20} />
+                <span>
+                  <b>{settingsNote.title}</b> <span className={s.noteBody}>{settingsNote.body}</span>
+                </span>
+              </div>
+            )}
+            {shownError && !(settings && (shownError.conflict || shownError.locked)) && (
               <Note tone="bad" icon="error" role="alert" title={shownError.message}>
                 {shownError.locked && room && <Link href={`/rooms/${room.id}`}>Go to the room</Link>}
               </Note>
@@ -349,6 +526,7 @@ export function RoomWizard({
               </div>
             )}
 
+            <fieldset className={s.fields} disabled={readOnly}>
             {step === 1 && (
               <>
                 <p className={s.intro}>
@@ -439,7 +617,7 @@ export function RoomWizard({
                   helper="Optional. Shown under the room name."
                   onChange={(e) => (room ? update({ competition: e.target.value }) : setCompetition(e.target.value))}
                 />
-                <div className={s.group}>
+                <div className={s.groupTight}>
                   <span className={s.label}>Managers</span>
                   <div className={s.pair}>
                     <Stepper
@@ -466,18 +644,18 @@ export function RoomWizard({
 
             {step === 3 && draft && labels && (
               <>
-                <div className={s.group}>
+                <div className={s.groupTight}>
                   <span className={s.label}>Purse</span>
                   <Stepper
                     label="Purse"
                     value={draft.purse}
                     min={draft.displayUnit.divisor ?? 1}
                     step={5 * (draft.displayUnit.divisor ?? 1)}
-                    format={(v) => formatMoney(v, draft)}
+                    format={(v) => formatMoneyShort(v, draft)}
                     onChange={(v) => update({ purse: v })}
                   />
                 </div>
-                <div className={s.group}>
+                <div className={s.groupTight}>
                   <span className={s.label}>Squad size</span>
                   <div className={s.pair}>
                     <Stepper label="Squad minimum" prefix="Min" min={1} max={draft.squadMax} value={draft.squadMin} onChange={(v) => update({ squadMin: v })} />
@@ -497,7 +675,7 @@ export function RoomWizard({
                       return (
                         <div key={id} className={s.roleCard}>
                           <span className={s.roleChip} style={{ background: `var(--role${ROLE_SLOT(i)}-bg)`, color: `var(--role${ROLE_SLOT(i)}-ink)` }}>
-                            {role.label ?? id}
+                            {roleShort(labels.roles, id)}
                           </span>
                           <CompactStepper
                             label={`${role.label ?? id} minimum`}
@@ -514,7 +692,7 @@ export function RoomWizard({
                     </Note>
                   )}
                 </div>
-                {Object.entries(draft.categoryQuotas).map(([id, count]) => (
+                {orderedQuotas(draft.categoryQuotas, labels.restrictedCategories).map(([id, count]) => (
                   <div key={id} className={s.quota}>
                     <div className={s.quotaText}>
                       <span className={s.quotaName}>{labelFor(labels.restrictedCategories, id)}</span>
@@ -589,7 +767,7 @@ export function RoomWizard({
                   <>
                     <div className={s.group}>
                       <span className={s.label}>Lifelines per manager</span>
-                      {Object.entries(draft.ai.lifelines).map(([type, count]) => {
+                      {orderedLifelines(draft.ai.lifelines).map(([type, count]) => {
                         const l = LIFELINES[type] ?? { label: humanise(type), icon: "help", desc: "" };
                         return (
                           <div key={type} className={s.lifeline}>
@@ -736,17 +914,44 @@ export function RoomWizard({
                 </Note>
               </>
             )}
+            </fieldset>
           </div>
         </div>
 
-        <div className={s.footer}>
-          <Button variant="outline" size="L" onClick={back} disabled={busy}>
-            {step === 1 ? "Cancel" : "Back"}
-          </Button>
-          <Button type="submit" variant="brand" size="L" className={s.next} disabled={blocked} busy={busy && !sheet}>
-            {nextLabel}
-          </Button>
-        </div>
+        {settings && room ? (
+          <div className={s.footer}>
+            <div className={`${s.footerInner} ${s.footerSettings}`}>
+              <div className={s.footerRow}>
+                <Button variant="outline" size="L" icon="arrow_back" className={s.backRoom} onClick={() => leave(() => router.push(`/rooms/${room.id}`))}>
+                  Back to room
+                </Button>
+                <span className={s.spacer} />
+                {step > 2 && (
+                  <Button variant="outline" size="L" disabled={busy} onClick={() => leave(() => setStep((step - 1) as Step))}>
+                    Prev
+                  </Button>
+                )}
+                <Button type="submit" variant="brand" size="L" className={s.next} disabled={blocked} busy={busy && !sheet}>
+                  {step === 6 ? "Done" : "Next"}
+                </Button>
+              </div>
+              {!readOnly && <span className={s.caption}>{caption}</span>}
+            </div>
+          </div>
+        ) : (
+          <div className={s.footer}>
+            <div className={s.footerInner}>
+              <div className={s.footerRow}>
+                <Button variant="outline" size="L" onClick={back} disabled={busy}>
+                  {step === 1 ? "Cancel" : "Back"}
+                </Button>
+                <Button type="submit" variant="brand" size="L" className={s.next} disabled={blocked} busy={busy && !sheet}>
+                  {nextLabel}
+                </Button>
+              </div>
+            </div>
+          </div>
+        )}
       </form>
 
       {sheet?.kind === "own" && room && (
@@ -819,6 +1024,24 @@ export function RoomWizard({
               setInvite(null);
             })
           }
+        />
+      )}
+
+      {sheet?.kind === "discard" && (
+        <ConfirmSheet
+          icon="edit_off"
+          tone="bad"
+          title="Discard your changes?"
+          body="You changed this section but didn't save it. Leave now and the edits are lost."
+          action="Discard"
+          actionVariant="danger"
+          onClose={() => setSheet(null)}
+          onConfirm={() => {
+            const go = sheet.then;
+            setDraft(room?.config ?? null);
+            setSheet(null);
+            go();
+          }}
         />
       )}
 

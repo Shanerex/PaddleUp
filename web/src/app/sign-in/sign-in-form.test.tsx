@@ -37,12 +37,19 @@ describe("SignInForm", () => {
     expect(google.getAttribute("href")).toBe("/api/oauth2/authorization/google");
   });
 
+  it("offers Google or a magic link and no Apple button (FR-1)", () => {
+    render(<SignInForm />);
+
+    expect(screen.queryByText(/apple/i)).toBeNull();
+    expect(screen.getAllByRole("link").length + screen.getAllByRole("button").length).toBe(2);
+  });
+
   it("requests a link and code, then signs in with the code", async () => {
     const user = userEvent.setup();
     render(<SignInForm />);
 
     await user.type(screen.getByLabelText(/email/i), "ann@example.test");
-    await user.click(screen.getByRole("button", { name: /email me/i }));
+    await user.click(screen.getByRole("button", { name: /send me a magic link/i }));
 
     expect(startEmail).toHaveBeenCalledWith("ann@example.test");
     await user.type(await screen.findByLabelText(/code/i), "123456");
@@ -57,7 +64,7 @@ describe("SignInForm", () => {
     const user = userEvent.setup();
     render(<SignInForm />);
     await user.type(screen.getByLabelText(/email/i), "ann@example.test");
-    await user.click(screen.getByRole("button", { name: /email me/i }));
+    await user.click(screen.getByRole("button", { name: /send me a magic link/i }));
 
     await user.type(await screen.findByLabelText(/code/i), "000000");
     await user.click(screen.getByRole("button", { name: /sign in/i }));
@@ -70,7 +77,7 @@ describe("SignInForm", () => {
     const user = userEvent.setup();
     render(<SignInForm />);
     await user.type(screen.getByLabelText(/email/i), "ann@example.test");
-    await user.click(screen.getByRole("button", { name: /email me/i }));
+    await user.click(screen.getByRole("button", { name: /send me a magic link/i }));
 
     await user.click(await screen.findByRole("button", { name: /different email/i }));
 
@@ -95,7 +102,7 @@ describe("SignInForm", () => {
     render(<SignInForm />);
 
     await user.type(screen.getByLabelText(/email/i), "ann@example.test");
-    await user.click(screen.getByRole("button", { name: /email me/i }));
+    await user.click(screen.getByRole("button", { name: /send me a magic link/i }));
 
     expect(await screen.findByText(/could not send/i)).toBeTruthy();
   });
@@ -106,7 +113,7 @@ describe("SignInForm", () => {
 
     expect(JSON.parse(localStorage.getItem(NEXT_KEY) ?? "{}").next).toBe("/join/ABCDEFGHJKMN");
     await user.type(screen.getByLabelText(/email/i), "ann@example.test");
-    await user.click(screen.getByRole("button", { name: /email me/i }));
+    await user.click(screen.getByRole("button", { name: /send me a magic link/i }));
     await user.type(await screen.findByLabelText(/code/i), "123456");
     await user.click(screen.getByRole("button", { name: /sign in/i }));
 
@@ -119,7 +126,7 @@ describe("SignInForm", () => {
 
     expect(localStorage.getItem(NEXT_KEY)).toBeNull();
     await user.type(screen.getByLabelText(/email/i), "ann@example.test");
-    await user.click(screen.getByRole("button", { name: /email me/i }));
+    await user.click(screen.getByRole("button", { name: /send me a magic link/i }));
     await user.type(await screen.findByLabelText(/code/i), "123456");
     await user.click(screen.getByRole("button", { name: /sign in/i }));
 

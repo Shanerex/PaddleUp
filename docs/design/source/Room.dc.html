@@ -357,7 +357,11 @@
           </sc-if>
           <sc-if value="{{ sx.showHeadline }}" hint-placeholder-val="{{ false }}"><span style="font-size:26px;line-height:1.15;font-weight:800;letter-spacing:-0.025em">{{ sx.headline }}</span></sc-if>
           <span style="font-size:15px;line-height:1.45;opacity:0.92">{{ sx.heroLine }}</span>
-          <sc-if value="{{ sx.isCommish }}" hint-placeholder-val="{{ true }}">
+          <!-- Home-redesign P-1 (pending approval): scheduled rooms open the lobby from here. The CTA shows only once a start time exists; without one the line says who sets it. -->
+          <sc-if value="{{ sx.lobbyCta }}" hint-placeholder-val="{{ false }}">
+            <div style="display:flex;gap:8px;flex-wrap:wrap"><span style="height:48px;padding:0 18px;border-radius:14px;background:var(--on-team);color:var(--team-ink);font-weight:700;font-size:15px;display:flex;align-items:center;gap:6px;cursor:pointer"><span style="font-family:'Material Symbols Rounded';font-size:20px;line-height:1">front_hand</span>Open the lobby</span></div>
+          </sc-if>
+          <sc-if value="{{ sx.showAdv }}" hint-placeholder-val="{{ true }}">
             <div style="display:flex;gap:8px;flex-wrap:wrap"><button onClick="{{ goAdvance }}" style="height:48px;padding:0 18px;border:0;border-radius:14px;background:{{ sx.advBg }};color:{{ sx.advInk }};font:inherit;font-weight:700;font-size:15px;cursor:pointer;display:flex;align-items:center;gap:6px"><span style="font-family:'Material Symbols Rounded';font-size:20px;line-height:1">bookmark</span>Open retention</button><button onClick="{{ goSchedule }}" style="height:48px;padding:0 18px;border:0;border-radius:14px;background:oklch(1 0 0 / 0.18);color:var(--on-team);opacity:{{ sx.advOp }};font:inherit;font-weight:700;font-size:15px;cursor:pointer;display:flex;align-items:center;gap:6px"><span style="font-family:'Material Symbols Rounded';font-size:20px;line-height:1">gavel</span>Schedule auction</button></div>
             <sc-if value="{{ sx.blocked }}" hint-placeholder-val="{{ true }}"><span style="font-size:13px;opacity:0.85">Needs {{ sx.min }} managers to move on. Only franchises count.</span></sc-if>
           </sc-if>
@@ -596,7 +600,7 @@
   </sc-if>
 </div>
 </x-dc>
-<script type="text/x-dc" data-dc-script data-props="{&quot;screen&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;overview&quot;,&quot;lobby&quot;,&quot;lobbyLate&quot;,&quot;lobbyOffline&quot;,&quot;lobbyAdmin&quot;,&quot;lobbyReschedule&quot;,&quot;retention&quot;,&quot;squad&quot;,&quot;standings&quot;,&quot;offline&quot;,&quot;players&quot;,&quot;matches&quot;,&quot;matchesEmpty&quot;,&quot;match&quot;,&quot;breakdown&quot;,&quot;summary&quot;,&quot;report&quot;,&quot;audit&quot;,&quot;commish&quot;,&quot;setup&quot;,&quot;setupReady&quot;,&quot;setupAdmin&quot;,&quot;setupManager&quot;,&quot;sheetMember&quot;,&quot;sheetRemove&quot;,&quot;sheetHandover&quot;,&quot;sheetAdvance&quot;,&quot;sheetSchedule&quot;,&quot;sheetScheduleError&quot;,&quot;sheetScheduleRefused&quot;,&quot;editFranchise&quot;,&quot;copied&quot;,&quot;loading&quot;,&quot;loadError&quot;,&quot;staleAction&quot;,&quot;pool&quot;,&quot;poolMember&quot;,&quot;poolLive&quot;,&quot;poolEmpty&quot;,&quot;poolEmptyUnfit&quot;,&quot;poolEmptyUnfitPack&quot;,&quot;poolUnfit&quot;,&quot;poolUnfitPack&quot;,&quot;poolStale&quot;,&quot;poolEdit&quot;,&quot;poolAdd&quot;,&quot;poolRemove&quot;,&quot;poolReset&quot;,&quot;sets&quot;,&quot;setsMember&quot;],&quot;default&quot;:&quot;overview&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;Prototype&quot;},&quot;mode&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;light&quot;,&quot;dark&quot;],&quot;default&quot;:&quot;light&quot;,&quot;tsType&quot;:&quot;'light'|'dark'&quot;,&quot;section&quot;:&quot;Theme&quot;},&quot;hue&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;15&quot;,&quot;45&quot;,&quot;75&quot;,&quot;105&quot;,&quot;135&quot;,&quot;165&quot;,&quot;195&quot;,&quot;225&quot;,&quot;255&quot;,&quot;285&quot;,&quot;315&quot;,&quot;345&quot;],&quot;default&quot;:&quot;195&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;Theme&quot;},&quot;height&quot;:{&quot;editor&quot;:null,&quot;tsType&quot;:&quot;string&quot;}}">
+<script type="text/x-dc" data-dc-script data-props="{&quot;screen&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;overview&quot;,&quot;lobby&quot;,&quot;lobbyLate&quot;,&quot;lobbyOffline&quot;,&quot;lobbyAdmin&quot;,&quot;lobbyReschedule&quot;,&quot;retention&quot;,&quot;squad&quot;,&quot;standings&quot;,&quot;offline&quot;,&quot;players&quot;,&quot;matches&quot;,&quot;matchesEmpty&quot;,&quot;match&quot;,&quot;breakdown&quot;,&quot;summary&quot;,&quot;report&quot;,&quot;audit&quot;,&quot;commish&quot;,&quot;setup&quot;,&quot;setupReady&quot;,&quot;setupAdmin&quot;,&quot;setupManager&quot;,&quot;setupScheduled&quot;,&quot;setupManagerNoStart&quot;,&quot;settingsNote&quot;,&quot;sheetMember&quot;,&quot;sheetRemove&quot;,&quot;sheetHandover&quot;,&quot;sheetAdvance&quot;,&quot;sheetSchedule&quot;,&quot;sheetScheduleError&quot;,&quot;sheetScheduleRefused&quot;,&quot;editFranchise&quot;,&quot;copied&quot;,&quot;loading&quot;,&quot;loadError&quot;,&quot;staleAction&quot;,&quot;pool&quot;,&quot;poolMember&quot;,&quot;poolLive&quot;,&quot;poolEmpty&quot;,&quot;poolEmptyUnfit&quot;,&quot;poolEmptyUnfitPack&quot;,&quot;poolUnfit&quot;,&quot;poolUnfitPack&quot;,&quot;poolStale&quot;,&quot;poolEdit&quot;,&quot;poolAdd&quot;,&quot;poolRemove&quot;,&quot;poolReset&quot;,&quot;sets&quot;,&quot;setsMember&quot;],&quot;default&quot;:&quot;overview&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;Prototype&quot;},&quot;mode&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;light&quot;,&quot;dark&quot;],&quot;default&quot;:&quot;light&quot;,&quot;tsType&quot;:&quot;'light'|'dark'&quot;,&quot;section&quot;:&quot;Theme&quot;},&quot;hue&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;15&quot;,&quot;45&quot;,&quot;75&quot;,&quot;105&quot;,&quot;135&quot;,&quot;165&quot;,&quot;195&quot;,&quot;225&quot;,&quot;255&quot;,&quot;285&quot;,&quot;315&quot;,&quot;345&quot;],&quot;default&quot;:&quot;195&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;Theme&quot;},&quot;height&quot;:{&quot;editor&quot;:null,&quot;tsType&quot;:&quot;string&quot;}}">
 class Component extends DCLogic {
   state = { screen: null, bp: 'phone', ready: false, retained: [0, 1, 2, 5], tbl: 'franchises', sqTeam: 'MR', auditF: 'all' };
   rootRef = React.createRef();
@@ -677,12 +681,14 @@ class Component extends DCLogic {
   extra3() {
     // v1 pre-auction room. Overrides header, rail and tabs for these screens only.
     const sc = this.state.screen ?? this.props.screen ?? 'overview';
-    const BASE = { setup: 'setup', setupReady: 'setupReady', setupAdmin: 'setupAdmin', setupManager: 'setupManager', sheetMember: 'setupReady', sheetRemove: 'setupReady', sheetHandover: 'setupReady', sheetAdvance: 'setupReady', sheetSchedule: 'setupReady', sheetScheduleError: 'setupReady', sheetScheduleRefused: 'setupReady', editFranchise: 'setupReady', loadError: 'setupReady', copied: 'setupReady', staleAction: 'setupManager', loading: 'loading' };
+    const BASE = { setup: 'setup', setupReady: 'setupReady', setupAdmin: 'setupAdmin', setupManager: 'setupManager', sheetMember: 'setupReady', sheetRemove: 'setupReady', sheetHandover: 'setupReady', sheetAdvance: 'setupReady', sheetSchedule: 'setupReady', sheetScheduleError: 'setupReady', sheetScheduleRefused: 'setupReady', editFranchise: 'setupReady', loadError: 'setupReady', copied: 'setupReady', staleAction: 'setupManager', setupScheduled: 'setupReady', setupManagerNoStart: 'setupManager', settingsNote: 'setupManager', loading: 'loading' };
     const base = BASE[sc];
     if (!base) return { sSetup: false, sLoading: false, sheetOn: false, toastOn: false, bannerOn: false };
     const bp = this.state.bp; const phone = bp === 'phone';
     const mgr = base === 'setupManager', admin = base === 'setupAdmin', commish = !mgr;
     const ready = base !== 'setup';
+    // Home-redesign P-1: setupScheduled (Commissioner, auction scheduled), setupManagerNoStart (scheduled, no start time yet), settingsNote (a manager sent back from /setup).
+    const sched = sc === 'setupScheduled', noStart = sc === 'setupManagerNoStart', next = mgr || sched;
     const mono = (id, hue, name, sub, extra) => ({ mono: id, bg: `oklch(0.56 0.15 ${hue})`, ink: '#fff', fs: '13px', font: 'inherit', name, sub, rowBg: 'transparent', act: false, icon: '', target: '', actLabel: '', ...extra });
     const other = (m) => commish ? { ...m, act: true, icon: 'more_horiz', target: 'sheetMember', actLabel: 'Manage' } : m;
     const you = { rowBg: 'var(--team-tint)', act: true, icon: 'edit', target: 'editFranchise', actLabel: 'Edit franchise' };
@@ -694,16 +700,16 @@ class Component extends DCLogic {
     const joined = members.filter((m) => m.font === 'inherit').length; const min = 4, max = 10;
     const rules = [['PURSE', '₹120 Cr'], ['SQUAD', '18–25'], ['ROLE MINIMUMS', '2 WK · 5 BAT · 5 BOWL · 3 AR'], ['OVERSEAS', '≤ 8'], ['LIFELINES', '1 Fit · 1 Ceiling · 1 Scan'], ['REPORT CARD', 'Whole room']].map(([k, v]) => ({ k, v }));
     const sx = {
-      isCommish: commish, adminOnly: admin, showCount: commish, showHeadline: mgr, joined, min, max,
+      isCommish: commish, adminOnly: admin, showCount: commish && !sched, showHeadline: next, showAdv: commish && !sched, lobbyCta: next && !noStart, joined, min, max,
       pct: Math.min(100, Math.round(100 * joined / min)) + '%', blocked: commish && joined < min,
-      heroLabel: mgr ? 'NEXT UP' : 'MANAGERS JOINED', headline: 'The auction is next',
-      heroLine: mgr ? 'The rules are set. Shane starts the auction when everyone is ready.' : joined < min ? `${min - joined} more to go. Share the invite code.` : `That's enough to start. Room for ${max - joined} more.`,
+      heroLabel: next ? 'NEXT UP' : 'MANAGERS JOINED', headline: 'The auction is next',
+      heroLine: noStart ? "Shane sets the start time. The lobby opens once it's set." : sched ? 'The rules are set. You start the auction when everyone is ready.' : mgr ? 'The rules are set. Shane starts the auction when everyone is ready.' : joined < min ? `${min - joined} more to go. Share the invite code.` : `That's enough to start. Room for ${max - joined} more.`,
       advBg: joined < min ? 'oklch(1 0 0 / 0.18)' : 'var(--on-team)', advInk: joined < min ? 'var(--on-team)' : 'var(--team-ink)', advOp: joined < min ? '0.6' : '1',
       rules, rulesNote: mgr ? 'Rules can still change until the auction goes live. Bids are final.' : 'You can change these until the auction goes live.',
       members, poolTo: mgr ? 'poolMember' : 'pool', setsTo: mgr ? 'setsMember' : 'sets', poolCta: mgr ? 'View pool' : 'Edit pool', logEmpty: !mgr, log: mgr ? [{ t: 'Nov 3 21:02', text: 'Shane scheduled the auction' }] : []
     };
     const titles = { setup: "Shane's Raiders · Commissioner", setupReady: "Shane's Raiders · Commissioner", setupAdmin: 'Commissioner · no franchise', setupManager: 'Library Legends', loading: '' };
-    const phaseIdx = mgr ? 2 : 0;
+    const phaseIdx = next ? 2 : 0;
     const phases = ['Setup', 'Retention', 'Auction', 'Season', 'Completed'].map((l, i) => ({ label: l.toUpperCase(), bg: i === phaseIdx ? 'var(--team)' : i < phaseIdx ? 'var(--team-tint)' : 'var(--surface-2)', ink: i === phaseIdx ? 'var(--on-team)' : i < phaseIdx ? 'var(--team-ink)' : 'var(--ink-3)', sep: i < 4 ? '14px' : '0px' }));
     const mk = (key, label, icon, active) => ({ key, label, icon, fill: active ? 1 : 0, ink: active ? 'var(--team-ink)' : 'var(--ink-2)', pill: active ? 'var(--team-tint)' : 'transparent', bg: active ? 'var(--team-tint)' : 'transparent', weight: active ? '800' : '600' });
     const loading = base === 'loading';
@@ -718,14 +724,16 @@ class Component extends DCLogic {
     const editSwatches = Object.keys(NAMES).map(Number).map((h) => ({ name: NAMES[h], bg: `oklch(0.56 0.15 ${h})`, opacity: TAKEN[h] ? '0.3' : '1', icon: TAKEN[h] ? 'close' : h === 15 ? 'check' : '', ring: h === 15 ? '0 0 0 3px var(--surface), 0 0 0 5px var(--ink)' : 'none' }));
     const BN = {
       loadError: { bg: 'var(--bad-tint)', ink: 'var(--bad)', icon: 'error', title: "Couldn't refresh the room.", body: 'Showing what we had at 9:41 PM.', retry: true },
-      staleAction: { bg: 'var(--bad-tint)', ink: 'var(--bad)', icon: 'block', title: 'Too late for that.', body: "The auction has started, so franchises are locked. Your change wasn't saved.", retry: false }
+      staleAction: { bg: 'var(--bad-tint)', ink: 'var(--bad)', icon: 'block', title: 'Too late for that.', body: "The auction has started, so franchises are locked. Your change wasn't saved.", retry: false },
+      // A manager who opens /rooms/{id}/setup lands here: settings are the Commissioner's, and the server refuses their saves.
+      settingsNote: { bg: 'var(--info-tint)', ink: 'var(--info)', icon: 'lock', title: 'Only the Commissioner changes settings.', body: 'Shane can change the rules until the auction goes live.', retry: false }
     };
     const sheet = { sheetMember: 1, sheetRemove: 1, sheetHandover: 1, sheetAdvance: 1, editFranchise: 1 }[sc];
     return {
       sSetup: base !== 'loading', sLoading: base === 'loading', sx, phases, railNav, showTabs: false,
       sOverview: false, sLobby: false, sRetention: false, sSquad: false, sStandings: false, sPlayers: false, sMatches: false, sMatch: false, sBreakdown: false, sSummary: false, sReport: false, sAudit: false, sCommish: false,
       roomName: base === 'loading' ? '' : admin ? 'Office League' : mgr ? 'Monsoon League' : 'College Gang',
-      phasePill: base === 'loading' ? '' : sc === 'staleAction' ? 'AUCTION LIVE' : mgr ? 'AUCTION NEXT' : 'SETUP', screenTitle: titles[base],
+      phasePill: base === 'loading' ? '' : sc === 'staleAction' ? 'AUCTION LIVE' : next ? 'AUCTION NEXT' : 'SETUP', screenTitle: titles[base],
       myMono: admin ? 'shield_person' : mgr ? 'LL' : base === 'loading' ? '' : 'SR', myMonoFont: admin ? "'Material Symbols Rounded'" : 'inherit', myMonoSize: admin ? '20px' : '13px', railMonoSize: admin ? '18px' : '12px',
       myName: loading ? '' : admin ? 'Admin-only' : mgr ? 'Library Legends' : "Shane's Raiders", mySub: loading ? '' : admin ? 'You lead the room' : mgr ? 'Manager' : 'Commissioner',
       goAdvance: () => sx.blocked ? null : this.setState({ screen: 'sheetAdvance' }), goSchedule: () => sx.blocked ? null : this.setState({ screen: 'sheetSchedule' }), goEdit: () => this.setState({ screen: 'editFranchise' }), copyCode: () => this.setState({ screen: 'copied' }),

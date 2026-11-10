@@ -92,7 +92,7 @@ export function SignInForm({ error, next }: { error?: string; next?: string }) {
                 />
               </label>
               <button type="submit" className="btn btn-primary" disabled={busy}>
-                Email me a link
+                Send me a magic link
               </button>
             </form>
             <p className="helper">

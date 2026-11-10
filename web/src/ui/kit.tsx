@@ -3,6 +3,7 @@
 import { useId, type CSSProperties, type InputHTMLAttributes, type ReactNode } from "react";
 import type { RoomState } from "../api/client";
 import { HUES, hueOf } from "../rooms/hues";
+import { STATE_CHIP_LABELS } from "../rooms/state";
 import { Icon } from "./Icon";
 import s from "./kit.module.css";
 
@@ -33,7 +34,7 @@ export function Monogram({
   const admin = tone === "admin" || tone === "adminTeam";
   return (
     <span
-      className={cx(s.mono, s[tone], className)}
+      className={cx(s.mono, tone === "admin" ? s.adminTile : s[tone], className)}
       style={{
         width: size,
         height: size,
@@ -49,24 +50,17 @@ export function Monogram({
 
 /* ---------- Room state chip (Design System 08) ---------- */
 
-const STATE_CHIP: Record<RoomState, string> = {
-  setup: "SETUP",
-  retention: "RETENTION",
-  auction_scheduled: "AUCTION NEXT",
-  auction_live: "AUCTION LIVE",
-  season_live: "SEASON LIVE",
-  completed: "COMPLETED",
-};
+const STATE_CHIP = STATE_CHIP_LABELS;
 
 export function stateChipLabel(state: RoomState): string {
   return STATE_CHIP[state];
 }
 
-export function StateChip({ state, onTeam = false }: { state: RoomState; onTeam?: boolean }) {
+export function StateChip({ state, onTeam = false, label }: { state: RoomState; onTeam?: boolean; label?: string }) {
   return (
     <span className={cx(s.chip, onTeam ? s.onTeamChip : s[state])} data-testid="room-state">
       {state === "auction_live" && !onTeam && <span className={s.liveDot} />}
-      {STATE_CHIP[state]}
+      {label ?? STATE_CHIP[state]}
     </span>
   );
 }

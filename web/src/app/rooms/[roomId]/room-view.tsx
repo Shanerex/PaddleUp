@@ -31,7 +31,8 @@ import { formatCode } from "../../../rooms/codes";
 import { explainRoomError } from "../../../rooms/errors";
 import { checkFranchise, firstFreeColour, FranchiseFields, type FranchiseDraft } from "../../../rooms/franchise-fields";
 import { hueOf } from "../../../rooms/hues";
-import { formatMoney } from "../../../rooms/money";
+import { orderedLifelines } from "../../../rooms/lifelines";
+import { formatMoneyShort } from "../../../rooms/money";
 import { ScheduleSheet } from "../../../rooms/schedule-sheet";
 import { isPreAuction } from "../../../rooms/state";
 import { AppShell, shell } from "../../../ui/AppShell";
@@ -102,11 +103,12 @@ interface Data {
  * `setupManager`, the sheets, `loading`, `loadError`, `staleAction`). The manager's franchise hue
  * drives the room; a Commissioner without a franchise gets the brand hue.
  */
-export function RoomView({ roomId }: { roomId: string }) {
+export function RoomView({ roomId, note }: { roomId: string; note?: string }) {
   const router = useRouter();
   const [data, setData] = useState<Data | null>(null);
   const [missing, setMissing] = useState(false);
   const [loadFailed, setLoadFailed] = useState<string | null>(null);
+  const [loadedAt, setLoadedAt] = useState<Date | null>(null);
   const [actionError, setActionError] = useState<{ title: string; body: string } | null>(null);
   const [sheet, setSheet] = useState<SheetState>(null);
   const [sheetError, setSheetError] = useState<string | null>(null);
@@ -135,6 +137,7 @@ export function RoomView({ roomId }: { roomId: string }) {
       })
       .then((next) => {
         setData(next);
+        setLoadedAt(new Date());
         setLoadFailed(null);
         setMissing(false);
       })
@@ -176,7 +179,7 @@ export function RoomView({ roomId }: { roomId: string }) {
         const locked = (e.body as { error?: string } | null)?.error === "room_locked";
         setActionError({
           title: locked ? "Too late for that." : "The room moved on.",
-          body: locked ? "The auction has started, so that change wasn't saved." : explained.message,
+          body: locked ? "The auction has started, so franchises are locked. Your change wasn't saved." : explained.message,
         });
         await load();
       } else if (e instanceof ApiError && e.status === 404) {
@@ -294,11 +297,22 @@ export function RoomView({ roomId }: { roomId: string }) {
             <div className={s.banner} role="alert" style={{ background: "var(--bad-tint)" }}>
               <Icon name="error" style={{ color: "var(--bad)" }} />
               <span className={s.bannerText}>
-                <b>Couldn&apos;t refresh the room.</b> <span className={s.bannerSub}>Showing what we had. {loadFailed}</span>
+                <b>Couldn&apos;t refresh the room.</b> <span className={s.bannerSub}>
+                  Showing what we had{loadedAt ? ` at ${loadedAt.toLocaleTimeString(undefined, { hour: "numeric", minute: "2-digit" })}` : ""}.
+                </span>
               </span>
               <Button size="S" variant="outline" onClick={() => void load()}>
                 Retry
               </Button>
+            </div>
+          )}
+          {note === "settings" && room && (
+            <div className={s.banner} role="status" style={{ background: "var(--info-tint)" }}>
+              <Icon name="lock" style={{ color: "var(--info)" }} />
+              <span className={s.bannerText}>
+                <b>Only the Commissioner changes settings.</b>{" "}
+                <span className={s.bannerSub}>{room.commissioner.displayName} can change the rules until the auction goes live.</span>
+              </span>
             </div>
           )}
           {actionError && (
@@ -581,6 +595,7 @@ export function RoomView({ roomId }: { roomId: string }) {
                           variant={i === 0 && short === 0 ? "onTeam" : "glass"}
                           icon={step.icon}
                           disabled={short > 0 || busy}
+                          style={i === 0 ? { opacity: 1 } : undefined}
                           onClick={step.onClick}
                         >
                           {step.label}
@@ -661,20 +676,20 @@ export function RoomView({ roomId }: { roomId: string }) {
                 <div className={s.cardHead}>
                   <span className={s.label}>HOUSE RULES</span>
                   {commish && pre && (
-                    <Link className={s.editLink} href={`/rooms/${room.id}/setup?step=2`}>
+                    <Link className={s.editLink} href={`/rooms/${room.id}/setup?section=squad`}>
                       Edit rules
                     </Link>
                   )}
                 </div>
                 <div className={s.rules}>
                   {[
-                    ["PURSE", formatMoney(room.config.purse, room.config)],
+                    ["PURSE", formatMoneyShort(room.config.purse, room.config)],
                     ["SQUAD", `${room.config.squadMin}–${room.config.squadMax}`],
                     [
                       "ROLE MINIMUMS",
                       Object.entries(room.config.roleMinimums)
                         .map(([id, n]) => `${n} ${id}`)
-                        .join(" · "),
+                        .join(" · ") || "None",
                     ],
                     ...Object.entries(room.config.categoryQuotas).map(([id, n]) => [
                       (room.packLabels.restrictedCategories.find((c) => c.id === id)?.label ?? id).toUpperCase(),
@@ -683,7 +698,7 @@ export function RoomView({ roomId }: { roomId: string }) {
                     [
                       "LIFELINES",
                       room.config.ai.enabled
-                        ? Object.entries(room.config.ai.lifelines)
+                        ? orderedLifelines(room.config.ai.lifelines)
                             .map(([t, n]) => `${n} ${LIFELINE_SHORT[t] ?? t}`)
                             .join(" · ")
                         : "Off",

@@ -72,7 +72,41 @@ class PackValidator {
         flatten(pack.defaultRuleSet().rules()).stream().map(RuleDto::id).toList(),
         out);
 
+    for (RoleDto role : pack.roles()) {
+      if (role.abbr() != null
+          && !PackDisplayRules.plainText(role.abbr(), PackDisplayRules.ROLE_SHORT_MAX)) {
+        out.add(
+            violation(
+                file,
+                pack,
+                "role-short",
+                "role '%s' short must be plain text of at most %d characters"
+                    .formatted(role.id(), PackDisplayRules.ROLE_SHORT_MAX)));
+      }
+    }
+    for (StatDto stat : pack.statSchema()) {
+      if (stat.group() != null
+          && !PackDisplayRules.plainText(stat.group(), PackDisplayRules.STAT_GROUP_MAX)) {
+        out.add(
+            violation(
+                file,
+                pack,
+                "stat-group",
+                "stat '%s' group must be plain text of at most %d characters"
+                    .formatted(stat.id(), PackDisplayRules.STAT_GROUP_MAX)));
+      }
+    }
+
     for (PresetDto preset : pack.presets()) {
+      var unitProblem = PackDisplayRules.unitProblem(preset.displayUnit());
+      if (unitProblem != null) {
+        out.add(
+            violation(
+                file,
+                pack,
+                "display-unit",
+                "preset '%s' display unit: %s".formatted(preset.id(), unitProblem)));
+      }
       if (preset.squadMin() < 0) {
         out.add(
             violation(

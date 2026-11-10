@@ -42,8 +42,8 @@ class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
 
   /**
    * Heartbeat each way. Loose on purpose: a backgrounded tab or a 2-3 s mobile stall must not end
-   * the session, flip presence to "not here" and lock bidding. A clean network loss is caught by the
-   * browser's offline event (AC-13), a silent drop by missed beats within about 2 intervals.
+   * the session, flip presence to "not here" and lock bidding. A clean network loss is caught by
+   * the browser's offline event (AC-13), a silent drop by missed beats within about 2 intervals.
    * Keep equal to {@code HEARTBEAT_MS} in web/src/auction/live.ts.
    */
   private static final long HEARTBEAT_MS = 10_000;

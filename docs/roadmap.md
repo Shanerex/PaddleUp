@@ -52,6 +52,15 @@ The spec folder already exists, so do not run `/rx:feature` (it refuses existing
 
 Ids are `2026-11-02-<#>-<feature>`, for example `2026-11-02-06-auction-engine`.
 
+## Out-of-band UI specs
+
+Specs that restyle shipped screens rather than add a numbered feature. They depend on no build-order
+row and are not on the graph; they run when the owner asks.
+
+| Id | Feature | Scope | Touches |
+|---|---|---|---|
+| 2026-11-09-home-redesign | Franchise wall hub, Room settings mode, outside-room restyle | FR-2, FR-10..13, FR-15 | web, rooms, packs (display fields), auction (start times for the hub list) |
+
 ## Dependency graph
 
 ```mermaid

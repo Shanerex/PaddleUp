@@ -669,6 +669,8 @@ export interface components {
             label?: string;
             /** Format: int64 */
             divisor?: number;
+            short?: string;
+            minor?: components["schemas"]["Minor"];
         };
         EventTypeBonus: {
             type: "EventTypeBonus";
@@ -687,6 +689,12 @@ export interface components {
         MinVolume: {
             stat?: string;
             atLeast?: number;
+        };
+        Minor: {
+            label?: string;
+            short?: string;
+            /** Format: int64 */
+            divisor?: number;
         };
         PerUnit: {
             type: "PerUnit";
@@ -804,6 +812,7 @@ export interface components {
         RoleDto: {
             id?: string;
             label?: string;
+            short?: string;
         };
         RoomDto: {
             /** Format: uuid */
@@ -830,6 +839,7 @@ export interface components {
             kind?: string;
             eventTypes?: string[];
             unit?: string;
+            group?: string;
         };
         TagDto: {
             id?: string;
@@ -1011,6 +1021,10 @@ export interface components {
             myFranchise?: components["schemas"]["FranchiseDto"];
             /** Format: date-time */
             updatedAt: string;
+            /** Format: date-time */
+            auctionStartsAt?: string | null;
+            /** Format: date-time */
+            serverNow: string;
         };
         AuctionEventDto: {
             /** Format: int64 */
