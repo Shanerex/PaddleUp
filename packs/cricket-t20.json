@@ -4,10 +4,10 @@
   "version": "1.0.0",
   "display": {"name": "Cricket T20", "summary": "IPL-style franchise league. Four roles, an overseas cap and a crore purse.", "icon": "sports_cricket"},
   "roles": [
-    {"id": "BAT", "label": "Batter"},
-    {"id": "BOWL", "label": "Bowler"},
-    {"id": "AR", "label": "All-rounder"},
-    {"id": "WK", "label": "Wicket-keeper"}
+    {"id": "BAT", "label": "Batter", "short": "BAT"},
+    {"id": "BOWL", "label": "Bowler", "short": "BWL"},
+    {"id": "AR", "label": "All-rounder", "short": "AR"},
+    {"id": "WK", "label": "Wicket-keeper", "short": "WK"}
   ],
   "tags": [
     {"id": "capped", "label": "Capped"},
@@ -23,7 +23,10 @@
       "label": "Standard auction",
       "purse": 12000,
       "currencyCode": "INR",
-      "displayUnit": {"label": "Crore", "divisor": 100},
+      "displayUnit": {
+        "label": "Crore", "divisor": 100, "short": "Cr",
+        "minor": {"label": "Lakh", "short": "L", "divisor": 1}
+      },
       "incrementLadder": [
         {"from": 0, "step": 5},
         {"from": 100, "step": 10},
@@ -50,7 +53,10 @@
       "label": "Short pool (80 players)",
       "purse": 12000,
       "currencyCode": "INR",
-      "displayUnit": {"label": "Crore", "divisor": 100},
+      "displayUnit": {
+        "label": "Crore", "divisor": 100, "short": "Cr",
+        "minor": {"label": "Lakh", "short": "L", "divisor": 1}
+      },
       "incrementLadder": [
         {"from": 0, "step": 5},
         {"from": 100, "step": 10},
@@ -75,28 +81,28 @@
     }
   ],
   "statSchema": [
-    {"id": "in-playing-xi", "label": "In playing XI", "kind": "integer", "unit": "flag"},
-    {"id": "runs", "label": "Runs", "kind": "integer", "unit": "runs"},
-    {"id": "balls-faced", "label": "Balls faced", "kind": "integer", "unit": "balls"},
-    {"id": "fours", "label": "Fours", "kind": "integer", "unit": "boundaries"},
-    {"id": "sixes", "label": "Sixes", "kind": "integer", "unit": "sixes"},
-    {"id": "duck", "label": "Dismissed for a duck", "kind": "integer", "unit": "flag"},
-    {"id": "strike-rate", "label": "Strike rate", "kind": "decimal", "unit": "runs per 100 balls"},
+    {"id": "in-playing-xi", "label": "In playing XI", "kind": "integer", "unit": "flag", "group": "Fielding & other"},
+    {"id": "runs", "label": "Runs", "kind": "integer", "unit": "runs", "group": "Batting"},
+    {"id": "balls-faced", "label": "Balls faced", "kind": "integer", "unit": "balls", "group": "Batting"},
+    {"id": "fours", "label": "Fours", "kind": "integer", "unit": "boundaries", "group": "Batting"},
+    {"id": "sixes", "label": "Sixes", "kind": "integer", "unit": "sixes", "group": "Batting"},
+    {"id": "duck", "label": "Dismissed for a duck", "kind": "integer", "unit": "flag", "group": "Batting"},
+    {"id": "strike-rate", "label": "Strike rate", "kind": "decimal", "unit": "runs per 100 balls", "group": "Batting"},
     {
-      "id": "wickets", "label": "Wickets", "kind": "integer", "unit": "wickets",
+      "id": "wickets", "label": "Wickets", "kind": "integer", "unit": "wickets", "group": "Bowling",
       "eventTypes": ["bowled", "lbw", "caught", "stumped", "hit-wicket"]
     },
-    {"id": "balls-bowled", "label": "Balls bowled", "kind": "integer", "unit": "balls"},
-    {"id": "runs-conceded", "label": "Runs conceded", "kind": "integer", "unit": "runs"},
-    {"id": "maidens", "label": "Maidens", "kind": "integer", "unit": "overs"},
-    {"id": "economy", "label": "Economy rate", "kind": "decimal", "unit": "runs per over"},
-    {"id": "catches", "label": "Catches", "kind": "integer", "unit": "catches"},
-    {"id": "stumpings", "label": "Stumpings", "kind": "integer", "unit": "stumpings"},
+    {"id": "balls-bowled", "label": "Balls bowled", "kind": "integer", "unit": "balls", "group": "Bowling"},
+    {"id": "runs-conceded", "label": "Runs conceded", "kind": "integer", "unit": "runs", "group": "Bowling"},
+    {"id": "maidens", "label": "Maidens", "kind": "integer", "unit": "overs", "group": "Bowling"},
+    {"id": "economy", "label": "Economy rate", "kind": "decimal", "unit": "runs per over", "group": "Bowling"},
+    {"id": "catches", "label": "Catches", "kind": "integer", "unit": "catches", "group": "Fielding & other"},
+    {"id": "stumpings", "label": "Stumpings", "kind": "integer", "unit": "stumpings", "group": "Fielding & other"},
     {
-      "id": "run-outs", "label": "Run-outs", "kind": "integer", "unit": "run-outs",
+      "id": "run-outs", "label": "Run-outs", "kind": "integer", "unit": "run-outs", "group": "Fielding & other",
       "eventTypes": ["direct", "assisted"]
     },
-    {"id": "player-of-match", "label": "Player of the Match", "kind": "integer", "unit": "flag"}
+    {"id": "player-of-match", "label": "Player of the Match", "kind": "integer", "unit": "flag", "group": "Fielding & other"}
   ],
   "defaultRuleSet": {
     "rules": [

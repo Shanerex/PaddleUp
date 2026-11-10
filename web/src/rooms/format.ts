@@ -30,3 +30,21 @@ export function suggestMonogram(name: string): string {
   const letters = words.length > 1 ? words.slice(0, 2).map((w) => w[0]).join("") : (words[0] ?? "").slice(0, 2);
   return letters.toUpperCase();
 }
+
+/** The pack's short key for a role (tight spaces), else its label, else the humanised id. */
+export function roleShort(roles: { id?: string; label?: string; short?: string }[], id: string): string {
+  const role = roles.find((r) => r.id === id);
+  return role?.short || role?.label || humanise(id);
+}
+
+/** Quota entries in the pack's restricted-category order; ids the pack does not list come last. */
+export function orderedQuotas(quotas: Record<string, number>, categories: { id?: string }[]): [string, number][] {
+  const rank = (id: string) => {
+    const i = categories.findIndex((c) => c.id === id);
+    return i < 0 ? categories.length : i;
+  };
+  return Object.entries(quotas)
+    .map((entry, i) => ({ entry, i }))
+    .sort((a, b) => rank(a.entry[0]) - rank(b.entry[0]) || a.i - b.i)
+    .map(({ entry }) => entry);
+}

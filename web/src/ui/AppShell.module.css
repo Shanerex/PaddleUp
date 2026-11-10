@@ -1,4 +1,4 @@
-/* Home.dc.html top bar (lines 41-48) and page column. Outside a room: --brand world. */
+/* Home.dc.html top bar (the `notSignin` strip) and page column. Outside a room: --brand world. */
 .app {
   min-height: 100vh;
   min-height: 100dvh;
@@ -82,8 +82,18 @@
   width: 100%;
 }
 
+/* Full-bleed screens (the wizard, Room settings) fill exactly the viewport under the top bar and
+   scroll inside, so their header and footer never move: the frame is 100dvh minus the bar. */
+.appBleed {
+  height: 100vh;
+  height: 100dvh;
+  min-height: 0;
+}
+
 .bleed {
+  min-height: 0;
   padding: 0;
+  overflow: hidden;
 }
 
 /* Hub column: max 1040. Narrow column (join, errors): max 420. Join: max 960. */
@@ -95,16 +105,23 @@
   gap: 20px;
 }
 
+/* joinCode, joinError and the join skeleton sit on a surface card (radius 28, shadow), like the wall tiles. */
 .narrow {
-  max-width: 420px;
+  max-width: 460px;
   margin: 0 auto;
   display: flex;
   flex-direction: column;
   gap: 18px;
+  padding: 24px;
+  box-sizing: border-box;
+  border-radius: 28px;
+  background: var(--surface);
+  box-shadow: var(--shadow);
 }
 
 .centered {
   flex: 1;
+  margin-bottom: -16px; /* the mock centres in a 24 / 24 padded body; .main pads 40 at the bottom */
   display: flex;
   align-items: center;
   justify-content: center;
@@ -128,11 +145,16 @@
 
 /* Empty / missing states (Home `empty`, `roomMissing`). */
 .empty {
-  max-width: 420px;
+  max-width: 460px;
   display: flex;
   flex-direction: column;
   align-items: center;
   gap: 14px;
+  padding: 32px 24px;
+  box-sizing: border-box;
+  border-radius: 28px;
+  background: var(--surface);
+  box-shadow: var(--shadow);
   text-align: center;
 }
 

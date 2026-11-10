@@ -1,4 +1,4 @@
-/* Home `join` (Home.dc.html 98-126), `joinCode`, `joinError`. */
+/* Home `join`, `joinCode`, `joinError`. */
 .wrap {
   max-width: 960px;
   margin: 0 auto;
@@ -8,12 +8,18 @@
   align-items: flex-start;
 }
 
+/* Home `join`: the form sits on a surface card (radius 28, shadow), like the wall tiles. */
 .left {
   flex: 1 1 340px;
   min-width: 0;
   display: flex;
   flex-direction: column;
   gap: 18px;
+  padding: 24px;
+  box-sizing: border-box;
+  border-radius: 28px;
+  background: var(--surface);
+  box-shadow: var(--shadow);
 }
 
 .right {

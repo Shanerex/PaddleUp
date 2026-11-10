@@ -1,5 +1,6 @@
 package com.paddleup.packs.dto;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import java.util.List;
 import java.util.Map;
 
@@ -71,8 +72,21 @@ public record PresetDto(
     return Map.copyOf(map);
   }
 
-  /** Amounts are shown as the value divided by {@code divisor}, followed by {@code label}. */
-  public record DisplayUnit(String label, long divisor) {}
+  /**
+   * Amounts are shown as the value divided by {@code divisor}, followed by {@code label}. {@code
+   * abbr} (JSON {@code short}) is the short form of the label and {@code minor} the unit used below
+   * one major unit; both are optional and null falls back to the label.
+   */
+  public record DisplayUnit(
+      String label, long divisor, @JsonProperty("short") String abbr, Minor minor) {
+
+    public DisplayUnit(String label, long divisor) {
+      this(label, divisor, null, null);
+    }
+
+    /** The smaller unit: an amount below one major unit is shown as amount / {@code divisor}. */
+    public record Minor(String label, @JsonProperty("short") String abbr, long divisor) {}
+  }
 
   /** From bid {@code from} upward, a bid rises in steps of {@code step}. */
   public record IncrementStep(long from, long step) {}

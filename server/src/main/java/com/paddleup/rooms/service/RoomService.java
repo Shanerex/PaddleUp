@@ -27,6 +27,7 @@ import java.time.Instant;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -44,6 +45,7 @@ public class RoomService {
   private final RoomViews views;
   private final PoolService pool;
   private final Clock clock;
+  private final ObjectProvider<AuctionStartSource> starts;
 
   RoomService(
       PackService packs,
@@ -55,7 +57,8 @@ public class RoomService {
       MembershipGuard guard,
       RoomViews views,
       PoolService pool,
-      Clock clock) {
+      Clock clock,
+      ObjectProvider<AuctionStartSource> starts) {
     this.packs = packs;
     this.factory = factory;
     this.validator = validator;
@@ -66,17 +69,25 @@ public class RoomService {
     this.views = views;
     this.pool = pool;
     this.clock = clock;
+    this.starts = starts;
   }
 
   /** Rooms on the caller's home hub; only rooms they are a member of (R-12). */
   @Transactional(readOnly = true)
   public List<RoomSummaryDto> listMine(UserId caller) {
     UUID me = caller.value();
-    return rooms.findForMember(me, MY_ROOMS_LIMIT).stream()
+    var mine = rooms.findForMember(me, MY_ROOMS_LIMIT);
+    Instant serverNow = clock.instant();
+    AuctionStartSource source = starts.getIfAvailable();
+    var scheduled =
+        mine.stream().filter(r -> r.state() == RoomState.AUCTION_SCHEDULED).map(Room::id).toList();
+    Map<UUID, Instant> startsAt =
+        source == null || scheduled.isEmpty() ? Map.of() : source.startsAt(scheduled);
+    return mine.stream()
         .map(
             room -> {
               var all = franchises.findByRoom(room.id());
-              var mine =
+              var myFranchise =
                   all.stream()
                       .filter(f -> f.ownerUserId().equals(me))
                       .findFirst()
@@ -93,8 +104,10 @@ public class RoomService {
                   all.size(),
                   room.config().minManagers(),
                   room.config().maxManagers(),
-                  mine,
-                  room.updatedAt());
+                  myFranchise,
+                  room.updatedAt(),
+                  room.state() == RoomState.AUCTION_SCHEDULED ? startsAt.get(room.id()) : null,
+                  serverNow);
             })
         .toList();
   }

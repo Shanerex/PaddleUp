@@ -40,10 +40,10 @@ class PackParserPackTest {
     assertThat(pack.version()).isEqualTo("1.0.0");
     assertThat(pack.roles())
         .containsExactly(
-            new RoleDto("gk", "Goalkeeper"),
-            new RoleDto("def", "Defender"),
-            new RoleDto("mid", "Midfielder"),
-            new RoleDto("fwd", "Forward"));
+            new RoleDto("gk", "Goalkeeper", "GK"),
+            new RoleDto("def", "Defender", "DEF"),
+            new RoleDto("mid", "Midfielder", "MID"),
+            new RoleDto("fwd", "Forward", "FWD"));
     assertThat(pack.tags())
         .containsExactly(new TagDto("local", "Local"), new TagDto("foreign", "Foreign"));
     assertThat(pack.restrictedCategories())
@@ -55,7 +55,8 @@ class PackParserPackTest {
                 "Standard league",
                 100_000_000L,
                 "EUR",
-                new PresetDto.DisplayUnit("M", 1_000_000L),
+                new PresetDto.DisplayUnit(
+                    "M", 1_000_000L, "M", new PresetDto.DisplayUnit.Minor("K", "K", 1_000L)),
                 List.of(
                     new PresetDto.IncrementStep(0, 100_000),
                     new PresetDto.IncrementStep(5_000_000, 250_000)),
@@ -66,8 +67,8 @@ class PackParserPackTest {
     assertThat(pack.statSchema())
         .hasSize(6)
         .startsWith(
-            new StatDto("goals", "Goals", "count", List.of("open-play", "penalty")),
-            new StatDto("assists", "Assists", "count", List.of()));
+            new StatDto("goals", "Goals", "count", List.of("open-play", "penalty"), null, "Attack"),
+            new StatDto("assists", "Assists", "count", List.of(), null, "Attack"));
     assertThat(pack.defaultRuleSet().rules())
         .extracting(RuleDto::id)
         .containsExactly(

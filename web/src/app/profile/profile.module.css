@@ -1,0 +1,224 @@
+/* Profile (Home.dc.html `profile`): identity card and form card side by side, Sign out apart below. */
+.page {
+  width: 100%;
+  max-width: 880px;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.title {
+  font-size: 28px;
+  font-weight: 800;
+  letter-spacing: -0.025em;
+}
+
+.cols {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+  align-items: flex-start;
+}
+
+.card {
+  min-width: 0;
+  box-sizing: border-box;
+  padding: 24px;
+  border-radius: 28px;
+  background: var(--surface);
+  box-shadow: var(--shadow);
+}
+
+.identity {
+  flex: 1 1 260px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  text-align: center;
+}
+
+.avatarLarge {
+  width: 96px;
+  height: 96px;
+  border-radius: 48px;
+  object-fit: cover;
+  background: var(--surface-2);
+}
+
+.who {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.name {
+  font-size: 20px;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  overflow-wrap: anywhere;
+}
+
+.email {
+  font-size: 14px;
+  color: var(--ink-2);
+  overflow-wrap: anywhere;
+}
+
+.note {
+  font-size: 12px;
+  line-height: 1.45;
+  color: var(--ink-2);
+}
+
+.form {
+  flex: 2 1 300px;
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+.label {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.input {
+  height: 48px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 0 14px;
+  border: 1.5px solid transparent;
+  border-radius: 14px;
+  background: var(--surface-2);
+  font-size: 15px;
+  font-weight: 500;
+}
+
+.input:focus-within {
+  border-color: var(--brand);
+}
+
+.input input {
+  flex: 1;
+  min-width: 0;
+  height: 100%;
+  padding: 0;
+  border: 0;
+  outline: 0;
+  background: transparent;
+  color: var(--ink);
+  font: inherit;
+}
+
+.count {
+  font-family: var(--font-num);
+  font-size: 12px;
+  font-weight: 400;
+  color: var(--ink-2);
+}
+
+.helper {
+  font-size: 12px;
+  font-weight: 400;
+  color: var(--ink-2);
+}
+
+.avatars {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(52px, 1fr));
+  gap: 10px;
+  max-width: 420px;
+}
+
+.avatar {
+  width: 52px;
+  height: 52px;
+  padding: 0;
+  border: 0;
+  border-radius: 26px;
+  background: var(--surface-2);
+  overflow: hidden;
+  cursor: pointer;
+}
+
+.avatar[aria-pressed="true"] {
+  box-shadow:
+    0 0 0 3px var(--surface),
+    0 0 0 5px var(--ink);
+}
+
+.avatar img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+}
+
+.saved {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--ok);
+}
+
+.saved:empty {
+  display: none;
+}
+
+.signOut {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 16px 20px;
+  border: 1px solid var(--line);
+  border-radius: 20px;
+  background: var(--surface);
+}
+
+.signOutText {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.signOutTitle {
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.error {
+  padding: 12px;
+  border-radius: 14px;
+  background: var(--bad-tint);
+  color: var(--bad);
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.error:empty {
+  display: none;
+}

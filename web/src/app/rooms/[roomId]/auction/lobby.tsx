@@ -3,8 +3,8 @@
 import type { Member, Room } from "../../../../api/client";
 import { formatCountdown } from "../../../../auction/clock";
 import { hueOf } from "../../../../rooms/hues";
-import { formatMoney } from "../../../../rooms/money";
-import { roleLabel } from "../../../../rooms/pool";
+import { formatMoneyShort } from "../../../../rooms/money";
+import { roleShort } from "../../../../rooms/format";
 import { Icon } from "../../../../ui/Icon";
 import { Monogram } from "../../../../ui/kit";
 import { RoomFrame } from "../room-frame";
@@ -44,6 +44,16 @@ function localStart(iso: string) {
   };
 }
 
+/** The header chip in the lobby (Room `lobby`): "AUCTION SAT 8 PM", the start in the viewer's zone. */
+function startChip(iso: string) {
+  const d = new Date(iso);
+  const day = d.toLocaleDateString("en-US", { weekday: "short" }).toUpperCase();
+  const time = d
+    .toLocaleTimeString("en-US", { hour: "numeric", minute: d.getMinutes() === 0 ? undefined : "2-digit" })
+    .toUpperCase();
+  return `AUCTION ${day} ${time}`;
+}
+
 /**
  * The lobby (Room `lobby`, with `lobbyLate`, `lobbyOffline` and `lobbyAdmin`): the start time in the
  * viewer's zone, a server-timed countdown, one readiness row per franchise and a ready toggle. What
@@ -71,7 +81,8 @@ export function Lobby(p: LobbyProps) {
       hue={hue}
       roomName={config.name}
       state={room.state}
-      sub="Auction lobby"
+      chip={startChip(p.startsAt)}
+      sub={!mine && youLead ? "Auction lobby · Commissioner, no franchise" : "Auction lobby"}
       mine={mine}
       loaded
       commish={youLead}
@@ -125,7 +136,7 @@ export function Lobby(p: LobbyProps) {
                 <Icon name="visibility" size={22} style={{ color: "var(--team-ink)" }} />
                 <div className={s.noticeText}>
                   <span className={s.noticeTitle} style={{ color: "var(--team-ink)" }}>
-                    You lead this one, you don&apos;t play it
+                    You run this one, you don&apos;t play it
                   </span>
                   <span className={s.noticeBody} style={{ fontSize: 13 }}>
                     You lead this room without a team, so there&apos;s no ready tap. Franchises ready up and you start the auction. You&apos;ll
@@ -152,10 +163,10 @@ export function Lobby(p: LobbyProps) {
           <section className={s.card} aria-label="House rules">
             <span className={s.label}>HOUSE RULES</span>
             <div className={s.rules}>
-              <Rule label="PURSE" value={formatMoney(config.purse, config)} />
+              <Rule label="PURSE" value={formatMoneyShort(config.purse, config)} />
               <Rule label="SQUAD" value={`${config.squadMin}–${config.squadMax}`} />
               {minimums.length > 0 && (
-                <Rule label="ROLE MINIMUMS" value={minimums.map(([k, n]) => `${n} ${roleLabel(room.packLabels, k)}`).join(" · ")} />
+                <Rule label="ROLE MINIMUMS" value={minimums.map(([k, n]) => `${n} ${roleShort(room.packLabels.roles, k)}`).join(" · ")} />
               )}
               {p.timer?.openSeconds !== undefined && p.timer.bidSeconds !== undefined && (
                 <Rule label="TIMER" value={`${p.timer.openSeconds}s open · ${p.timer.bidSeconds}s per bid`} />

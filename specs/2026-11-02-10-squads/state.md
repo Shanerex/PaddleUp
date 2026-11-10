@@ -18,3 +18,4 @@ next: when deps are merged: git switch -c feature/2026-11-02-10-squads main, the
 - 2026-11-02 intake: why: managers need to see what they own and what they still need.
 - 2026-11-02 intake: who: Managers.
 - 2026-11-02 intake: done-when: each franchise has a squad view with players, prices paid, roles, role-minimum progress, restricted-category counts and purse left, updated live after each hammer.
+- 2026-11-10 intake: deferred from 2026-11-09-home-redesign (R-12), drawn in docs/design/source but not built there: auction screen Rivals, Bids and Squad chips (Auction A Spotlight), and the lot-card placeholder and facts grid (shared with 23-player-intel).

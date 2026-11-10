@@ -18,3 +18,4 @@ next: when deps are merged: git switch -c feature/2026-11-02-26-advisor-lifeline
 - 2026-11-02 intake: why: the rationed Team Table advisor is the headline AI feature.
 - 2026-11-02 intake: who: Managers during a live auction.
 - 2026-11-02 intake: done-when: typed lifelines with room counts; spend and refund are auction events; a session lasts until the lot fully resolves (incl. RTM); the Fit card is instant and two voices stream as JSON; the leak filter regenerates once then falls back; content is private, audit holds type/lot/time only; the timer never pauses; any failure refunds.
+- 2026-11-10 intake: deferred from 2026-11-09-home-redesign (R-12), drawn in docs/design/source but not built there: auction screen Table tile, and the lobby OVERSEAS and LIFELINES house-rule tiles (shared with 08-eligibility-guard).

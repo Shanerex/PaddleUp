@@ -163,6 +163,7 @@ describe("JoinForm errors (Home `joinError`)", () => {
     render(<JoinForm code="ABC" />);
 
     expect(await screen.findByRole("heading", { name: "Friends is full" })).toBeTruthy();
+    expect(screen.getByText(/^All 8 seats are taken\./)).toBeTruthy();
     expect(screen.queryByLabelText("Franchise name")).toBeNull();
   });
 

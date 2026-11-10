@@ -18,3 +18,4 @@ next: when deps are merged: git switch -c feature/2026-11-02-24-fit-engine main,
 - 2026-11-02 intake: why: deterministic numbers the LLM only explains (CLAUDE.md invariant).
 - 2026-11-02 intake: who: advisor lifelines and Report Card.
 - 2026-11-02 intake: done-when: plain Java, no LLM, under 100 ms: max safe bid, value per purse unit, squad-points delta, concentration risk, price ceiling and slot scarcity, never using remaining-pool counts.
+- 2026-11-10 intake: deferred from 2026-11-09-home-redesign (R-12), drawn in docs/design/source but not built there: auction screen Bids feed and the needs / max-bid cards (shared with 10-squads).

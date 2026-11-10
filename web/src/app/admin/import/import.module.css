@@ -1,4 +1,4 @@
-/* AdminImport.dc.html (lines 40-110): season data import. Outside a room: --brand world. */
+/* AdminImport.dc.html `import`, `importReport`, `importFailed`, `importDenied`: season data import. Outside a room: --brand world. */
 .page {
   display: flex;
   flex-direction: column;
@@ -139,7 +139,7 @@
   color: var(--ink-2);
 }
 
-@media (min-width: 600px) {
+@media (min-width: 640px) {
   .thead {
     display: flex;
   }
@@ -478,6 +478,10 @@
   line-height: 28px;
   font-weight: 800;
   letter-spacing: -0.02em;
+}
+
+.deniedBody a {
+  margin-top: 8px;
 }
 
 .deniedText {

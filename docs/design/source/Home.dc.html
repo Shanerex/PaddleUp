@@ -28,7 +28,7 @@
       <div style="width:100%;max-width:380px;display:flex;flex-direction:column;gap:16px">
         <div style="font-size:26px;font-weight:800;letter-spacing:-0.025em">Sign in</div>
         <button onClick="{{ goHub }}" style="height:52px;border:1px solid var(--line);border-radius:14px;background:var(--surface);color:var(--ink);font:inherit;font-weight:700;font-size:15px;display:flex;align-items:center;justify-content:center;gap:10px;cursor:pointer"><span style="width:20px;height:20px;border-radius:10px;background:var(--surface-2);font-size:12px;font-weight:800;display:flex;align-items:center;justify-content:center">G</span>Continue with Google</button>
-        <button onClick="{{ goHub }}" style="height:52px;border:1px solid var(--line);border-radius:14px;background:var(--surface);color:var(--ink);font:inherit;font-weight:700;font-size:15px;display:flex;align-items:center;justify-content:center;gap:10px;cursor:pointer"><span style="font-family:'Material Symbols Rounded';font-size:20px;line-height:1">phone_iphone</span>Continue with Apple</button>
+        <!-- Home-redesign P-1: no Apple button. Sign-in is Google or an emailed magic link (FR-1). -->
         <div style="display:flex;align-items:center;gap:10px;color:var(--ink-2);font-size:12px"><span style="flex:1;height:1px;background:var(--line)"></span>or email<span style="flex:1;height:1px;background:var(--line)"></span></div>
         <label style="display:flex;flex-direction:column;gap:6px"><span style="font-size:13px;font-weight:700">Email</span><div style="height:48px;border-radius:14px;background:var(--surface-2);border:1.5px solid var(--brand);display:flex;align-items:center;padding:0 14px;font-size:15px;font-weight:500">shane@gmail.com</div></label>
         <button onClick="{{ goHub }}" style="height:52px;border:0;border-radius:14px;background:var(--brand);color:#fffaf6;font:inherit;font-weight:700;font-size:16px;cursor:pointer">Send me a magic link</button>
@@ -43,7 +43,7 @@
     <button onClick="{{ goHub }}" style="display:flex;align-items:center;gap:8px;border:0;background:transparent;padding:0;cursor:pointer;color:var(--ink);font:inherit"><svg width="28" height="28" viewBox="0 0 64 64"><g transform="rotate(-16 32 32)" fill="var(--brand)"><rect x="28" y="35" width="8" height="24" rx="4"></rect><circle cx="32" cy="23" r="18"></circle></g></svg><span style="font-size:20px;font-weight:800;letter-spacing:-0.03em">Paddle<span style="color:var(--brand)">Up</span></span></button>
     <span style="flex:1"></span>
     <!-- v1: no bell until push notifications ship. The avatar opens the profile page. -->
-    <span title="Profile" style="width:40px;height:40px;border-radius:20px;background:var(--brand-tint);color:var(--brand-ink);display:flex;align-items:center;justify-content:center;font-weight:800;font-size:14px;cursor:pointer">SR</span>
+    <span title="Profile" onClick="{{ goProfile }}" style="width:40px;height:40px;border-radius:20px;background:var(--brand-tint);color:var(--brand-ink);display:flex;align-items:center;justify-content:center;font-weight:800;font-size:14px;cursor:pointer">SR</span>
   </div>
 </sc-if>
 
@@ -84,21 +84,11 @@
   </div>
 </sc-if>
 
-<sc-if value="{{ isHubEmpty }}" hint-placeholder-val="{{ false }}">
-  <div style="flex:1;min-height:0;overflow:auto;padding:24px 20px;display:flex;align-items:center;justify-content:center">
-    <div style="max-width:420px;display:flex;flex-direction:column;align-items:center;gap:14px;text-align:center">
-      <span style="width:72px;height:72px;border-radius:22px;background:var(--brand-tint);display:flex;align-items:center;justify-content:center"><svg width="40" height="40" viewBox="0 0 64 64"><g transform="rotate(-16 32 32)" fill="var(--brand)"><rect x="28" y="35" width="8" height="24" rx="4"></rect><circle cx="32" cy="23" r="18"></circle></g></svg></span>
-      <span style="font-size:24px;font-weight:800;letter-spacing:-0.02em">No rooms yet</span>
-      <span style="font-size:15px;color:var(--ink-2);line-height:1.5">Start one and become the commissioner, or paste the invite code a friend sent you.</span>
-      <div style="display:flex;gap:8px;flex-wrap:wrap;justify-content:center"><button onClick="{{ goWizard }}" style="height:48px;padding:0 18px;border:0;border-radius:14px;background:var(--brand);color:#fffaf6;font:inherit;font-weight:700;font-size:15px;cursor:pointer">Create a room</button><button onClick="{{ goJoin }}" style="height:48px;padding:0 18px;border:1px solid var(--line);border-radius:14px;background:var(--surface);color:var(--ink);font:inherit;font-weight:700;font-size:15px;cursor:pointer">Join with code</button></div>
-    </div>
-  </div>
-</sc-if>
 
 <sc-if value="{{ isJoin }}" hint-placeholder-val="{{ false }}">
   <div style="flex:1;min-height:0;overflow:auto;padding:24px 20px 40px">
     <div style="max-width:960px;margin:0 auto;display:flex;flex-wrap:wrap;gap:24px;align-items:flex-start">
-      <div style="flex:1 1 340px;display:flex;flex-direction:column;gap:18px">
+      <div style="flex:1 1 340px;display:flex;flex-direction:column;gap:18px;background:var(--surface);border-radius:28px;box-shadow:var(--shadow);padding:24px;box-sizing:border-box">
         <button onClick="{{ goHub }}" style="align-self:flex-start;border:0;background:transparent;color:var(--ink-2);font:inherit;font-size:14px;font-weight:700;display:flex;align-items:center;gap:4px;cursor:pointer;padding:0"><span style="font-family:'Material Symbols Rounded';font-size:20px;line-height:1">arrow_back</span>Rooms</button>
         <div style="display:flex;flex-direction:column;gap:4px"><span style="font-size:13px;font-weight:700;color:var(--brand-ink)">INVITE · 7K2M-9QXD-4HPA</span><span style="font-size:28px;font-weight:800;letter-spacing:-0.025em">Join Monsoon League</span><span style="font-size:14px;color:var(--ink-2)">Cricket T20 · IPL 2027 · 7 of 10 managers</span></div>
         <label style="display:flex;flex-direction:column;gap:6px"><span style="font-size:13px;font-weight:700">Franchise name</span><div style="height:48px;border-radius:14px;background:var(--surface-2);border:1.5px solid var(--brand);display:flex;align-items:center;padding:0 14px;font-size:15px;font-weight:500">Monsoon Riders</div><span style="font-size:12px;color:var(--ink-2)">2–30 characters. Make it chantable.</span></label>
@@ -125,32 +115,119 @@
   </div>
 </sc-if>
 
-<!-- v1 hub: only pre-season rooms exist, so cards show what the room knows today (state, managers, your franchise). Same shell as `hub`. -->
-<sc-if value="{{ isHubNow }}" hint-placeholder-val="{{ false }}">
+<!-- Home-redesign P-1 (pending approval): the Franchise wall. One hero band (the room that needs you most, by a fixed priority), then a wall of tiles painted in each room's own franchise colour. A room without a franchise uses the inverse surface and the admin tile. Completed rooms collapse into Past seasons. One 56px DM Mono figure per hero, facts first. Variants: wall:many (also `hubNow`), live, scheduled, scheduledNoTime, retention, setupAdmin, setupAdminOnly, setupSeat, setupWait, season, one, past, lonePast, error, loading. `empty` is the blank wall. -->
+<sc-if value="{{ isWall }}" hint-placeholder-val="{{ false }}">
   <div style="flex:1;min-height:0;overflow:auto;padding:24px 20px 40px">
-    <div style="max-width:1040px;margin:0 auto;display:flex;flex-direction:column;gap:20px">
+    <div style="max-width:1280px;margin:0 auto;display:flex;flex-direction:column;gap:20px">
       <div style="display:flex;flex-wrap:wrap;align-items:flex-end;justify-content:space-between;gap:16px">
         <div style="display:flex;flex-direction:column;gap:4px"><span style="font-size:14px;color:var(--ink-2)">Evening, Shane.</span><span style="font-size:28px;font-weight:800;letter-spacing:-0.025em">Your rooms</span></div>
         <div style="display:flex;gap:8px"><button onClick="{{ goJoinCode }}" style="height:44px;padding:0 16px;border:1px solid var(--line);border-radius:14px;background:var(--surface);color:var(--ink);font:inherit;font-weight:700;font-size:14px;display:flex;align-items:center;gap:6px;cursor:pointer"><span style="font-family:'Material Symbols Rounded';font-size:20px;line-height:1">key</span>Join with code</button><button onClick="{{ goWizard }}" style="height:44px;padding:0 16px;border:0;border-radius:14px;background:var(--brand);color:#fffaf6;font:inherit;font-weight:700;font-size:14px;display:flex;align-items:center;gap:6px;cursor:pointer"><span style="font-family:'Material Symbols Rounded';font-size:20px;line-height:1">add</span>Create a room</button></div>
       </div>
-      <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,300px),1fr));gap:14px">
-        <sc-for list="{{ nowCards }}" as="c" hint-placeholder-count="4">
-          <a href="Room.dc.html" style="text-decoration:none;color:inherit"><div style="background:var(--surface);border-radius:24px;padding:18px;display:flex;flex-direction:column;gap:14px;box-shadow:var(--shadow);height:100%;box-sizing:border-box">
-            <div style="display:flex;align-items:center;gap:12px"><span style="width:44px;height:44px;border-radius:13px;background:{{ c.monoBg }};color:{{ c.monoInk }};display:flex;align-items:center;justify-content:center;font-family:{{ c.monoFont }};font-weight:800;font-size:{{ c.monoSize }};flex-shrink:0">{{ c.mono }}</span><div style="flex:1;display:flex;flex-direction:column;gap:2px;min-width:0"><span style="font-weight:800;font-size:16px">{{ c.name }}</span><span style="font-size:12px;color:var(--ink-2)">{{ c.sub }}</span></div><span style="font-size:10px;font-weight:800;letter-spacing:0.05em;padding:4px 9px;border-radius:999px;background:{{ c.chipBg }};color:{{ c.chipInk }};white-space:nowrap">{{ c.chip }}</span></div>
-            <div style="display:flex;flex-direction:column;gap:6px"><div style="display:flex;justify-content:space-between;font-size:13px"><span style="color:var(--ink-2)">Managers joined</span><span style="font-family:'DM Mono',monospace">{{ c.count }}</span></div><div style="height:8px;border-radius:4px;background:var(--surface-2);overflow:hidden"><div style="width:{{ c.pct }};height:100%;background:{{ c.barBg }}"></div></div></div>
-            <span style="font-size:13px;color:var(--ink-2)">{{ c.foot }}</span>
-          </div></a>
-        </sc-for>
-      </div>
+
+      <sc-if value="{{ wl.error }}" hint-placeholder-val="{{ false }}">
+        <!-- Load error: a Note with Retry, and no rooms shown as if they were current. -->
+        <div role="alert" style="display:flex;align-items:center;gap:12px;padding:14px 16px;border-radius:18px;background:var(--bad-tint);font-size:14px;flex-wrap:wrap"><span style="font-family:'Material Symbols Rounded';font-size:22px;line-height:1;color:var(--bad)">error</span><span style="flex:1 1 200px"><b>Couldn't load your rooms.</b> <span style="color:var(--ink-2)">Check your connection and try again.</span></span><span style="height:36px;padding:0 14px;border-radius:12px;background:var(--surface);color:var(--ink);font-size:13px;font-weight:700;display:flex;align-items:center">Retry</span></div>
+      </sc-if>
+
+      <sc-if value="{{ wl.loading }}" hint-placeholder-val="{{ false }}">
+        <div aria-busy="true" style="display:flex;flex-direction:column;gap:14px">
+          <div style="height:{{ wl.skelHero }};border-radius:28px;background:var(--surface-2)"></div>
+          <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,260px),1fr));gap:14px"><div style="height:176px;border-radius:24px;background:var(--surface-2)"></div><div style="height:176px;border-radius:24px;background:var(--surface-2)"></div><div style="height:176px;border-radius:24px;background:var(--surface-2)"></div></div>
+        </div>
+      </sc-if>
+
+      <sc-if value="{{ wl.hasHero }}" hint-placeholder-val="{{ true }}">
+        <a href="Room.dc.html" style="text-decoration:none;color:inherit;display:block"><div style="border-radius:28px;background:{{ h.bg }};color:{{ h.ink }};padding:{{ h.pad }};display:flex;flex-wrap:wrap;gap:24px;box-shadow:var(--shadow)">
+          <div style="flex:1 1 320px;min-width:0;display:flex;flex-direction:column;gap:22px;justify-content:space-between">
+            <div style="display:flex;align-items:center;gap:14px">
+              <span style="width:56px;height:56px;border-radius:17px;background:{{ h.tileBg }};color:{{ h.tileInk }};display:flex;align-items:center;justify-content:center;font-family:{{ h.monoFont }};font-weight:800;font-size:{{ h.monoSize }};flex-shrink:0">{{ h.mono }}</span>
+              <div style="flex:1;min-width:0;display:flex;flex-direction:column;gap:3px"><div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap"><span style="font-size:24px;font-weight:800;letter-spacing:-0.025em">{{ h.name }}</span><span style="font-size:10px;font-weight:800;letter-spacing:0.05em;padding:4px 9px;border-radius:999px;background:oklch(1 0 0 / 0.2);white-space:nowrap">{{ h.chip }}</span></div><span style="font-size:14px;opacity:0.9">{{ h.sub }}</span></div>
+            </div>
+            <div style="display:flex;gap:6px"><sc-for list="{{ h.phases }}" as="p" hint-placeholder-count="4"><span style="flex:1;display:flex;flex-direction:column;gap:6px;opacity:{{ p.op }}"><span style="height:4px;border-radius:2px;background:{{ p.bar }}"></span><span style="font-size:11px;font-weight:800;letter-spacing:0.05em">{{ p.label }}</span></span></sc-for></div>
+          </div>
+          <div style="flex:1 1 300px;min-width:0;display:flex;flex-direction:column;gap:16px;justify-content:space-between">
+            <div style="display:flex;flex-direction:column;gap:8px"><span style="font-family:'DM Mono',monospace;font-size:{{ h.figSize }};line-height:1;font-weight:500;letter-spacing:-0.04em;font-variant-numeric:tabular-nums">{{ h.fig }}</span><span style="font-size:12px;font-weight:700;letter-spacing:0.05em;opacity:0.85">{{ h.figLabel }}</span></div>
+            <span style="font-size:15px;line-height:1.45;opacity:0.95;text-wrap:pretty">{{ h.status }}</span>
+            <span style="align-self:flex-start;height:48px;padding:0 20px;border-radius:14px;background:{{ h.ctaBg }};color:{{ h.ctaInk }};font-weight:800;font-size:15px;display:flex;align-items:center;gap:6px">{{ h.cta }}<span style="font-family:'Material Symbols Rounded';font-size:20px;line-height:1">arrow_forward</span></span>
+          </div>
+        </div></a>
+      </sc-if>
+
+      <sc-if value="{{ wl.hasWall }}" hint-placeholder-val="{{ true }}">
+        <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,260px),1fr));gap:14px">
+          <sc-for list="{{ wl.tiles }}" as="t" hint-placeholder-count="4">
+            <a href="Room.dc.html" style="text-decoration:none;color:inherit"><div style="background:{{ t.bg }};color:{{ t.ink }};border-radius:24px;padding:18px;display:flex;flex-direction:column;gap:16px;box-shadow:var(--shadow);height:100%;min-height:176px;box-sizing:border-box;justify-content:space-between">
+              <div style="display:flex;align-items:center;gap:12px"><span style="width:40px;height:40px;border-radius:12px;background:{{ t.tileBg }};color:{{ t.tileInk }};display:flex;align-items:center;justify-content:center;font-family:{{ t.monoFont }};font-weight:800;font-size:{{ t.monoSize }};flex-shrink:0">{{ t.mono }}</span><div style="flex:1;display:flex;flex-direction:column;gap:2px;min-width:0"><span style="font-weight:800;font-size:16px">{{ t.name }}</span><span style="font-size:12px;opacity:0.85">{{ t.sub }}</span></div></div>
+              <div style="display:flex;flex-direction:column;gap:6px"><span style="align-self:flex-start;font-size:10px;font-weight:800;letter-spacing:0.05em;padding:4px 9px;border-radius:999px;background:oklch(1 0 0 / 0.2);white-space:nowrap">{{ t.chip }}</span><div style="display:flex;align-items:baseline;gap:8px;flex-wrap:wrap"><span style="font-family:'DM Mono',monospace;font-size:{{ t.figSize }};line-height:1.1;font-weight:500;letter-spacing:-0.03em;font-variant-numeric:tabular-nums">{{ t.fig }}</span><span style="font-size:11px;font-weight:700;letter-spacing:0.05em;opacity:0.85">{{ t.figLabel }}</span></div></div>
+              <span style="font-size:13px;line-height:1.4;opacity:0.92">{{ t.foot }}</span>
+            </div></a>
+          </sc-for>
+          <div onClick="{{ goWizard }}" style="border:2px dashed var(--line);border-radius:24px;min-height:176px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;color:var(--ink-2);cursor:pointer;box-sizing:border-box"><span style="font-family:'Material Symbols Rounded';font-size:28px;line-height:1">add</span><span style="font-size:14px;font-weight:700">Create a room</span></div>
+        </div>
+      </sc-if>
+
+      <sc-if value="{{ wl.hasPast }}" hint-placeholder-val="{{ false }}">
+        <!-- Past seasons: completed rooms never take the hero. Room name, your franchise monogram, "Completed". Final place arrives with standings (spec 14). -->
+        <div style="display:flex;flex-direction:column;gap:10px">
+          <span style="font-size:11px;font-weight:700;letter-spacing:0.06em;color:var(--ink-2)">PAST SEASONS</span>
+          <div style="display:flex;flex-wrap:wrap;gap:10px">
+            <sc-for list="{{ wl.past }}" as="q" hint-placeholder-count="3"><a href="Room.dc.html" style="text-decoration:none;color:inherit"><div style="display:flex;align-items:center;gap:10px;padding:10px 14px 10px 10px;border-radius:16px;background:var(--surface);border:1px solid var(--line)"><span style="width:32px;height:32px;border-radius:10px;background:{{ q.bg }};color:{{ q.ink }};display:flex;align-items:center;justify-content:center;font-family:{{ q.monoFont }};font-weight:800;font-size:{{ q.monoSize }};flex-shrink:0">{{ q.mono }}</span><div style="display:flex;flex-direction:column;gap:1px"><span style="font-size:14px;font-weight:700">{{ q.name }}</span><span style="font-size:11px;font-weight:700;letter-spacing:0.05em;color:var(--ink-2)">COMPLETED</span></div></div></a></sc-for>
+          </div>
+        </div>
+      </sc-if>
+
+      <sc-if value="{{ wl.ghost }}" hint-placeholder-val="{{ false }}">
+        <div style="position:relative;min-height:520px;display:flex;border-radius:28px;overflow:hidden">
+          <div style="flex:1;display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,150px),1fr));grid-auto-rows:1fr;gap:14px"><sc-for list="{{ ghosts }}" as="g" hint-placeholder-count="12"><div style="border-radius:24px;background:{{ g.bg }};border:1.5px dashed {{ g.line }}"></div></sc-for></div>
+          <div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;padding:20px"><div style="max-width:420px;background:var(--surface);border-radius:28px;box-shadow:var(--shadow);padding:28px 24px;display:flex;flex-direction:column;align-items:center;gap:14px;text-align:center"><span style="width:72px;height:72px;border-radius:22px;background:var(--brand-tint);display:flex;align-items:center;justify-content:center"><svg width="40" height="40" viewBox="0 0 64 64"><g transform="rotate(-16 32 32)" fill="var(--brand)"><rect x="28" y="35" width="8" height="24" rx="4"></rect><circle cx="32" cy="23" r="18"></circle></g></svg></span><span style="font-size:24px;font-weight:800;letter-spacing:-0.02em">No rooms yet</span><span style="font-size:15px;color:var(--ink-2);line-height:1.5">Start one and become the commissioner, or paste the invite code a friend sent you.</span><div style="display:flex;gap:8px;flex-wrap:wrap;justify-content:center"><button onClick="{{ goWizard }}" style="height:48px;padding:0 18px;border:0;border-radius:14px;background:var(--brand);color:#fffaf6;font:inherit;font-weight:700;font-size:15px;cursor:pointer">Create a room</button><button onClick="{{ goJoinCode }}" style="height:48px;padding:0 18px;border:1px solid var(--line);border-radius:14px;background:var(--surface);color:var(--ink);font:inherit;font-weight:700;font-size:15px;cursor:pointer">Join with code</button></div></div></div>
+        </div>
+      </sc-if>
     </div>
   </div>
 </sc-if>
 
-<!-- Join by typed code. Reached from "Join with code". A pasted link skips straight to `join`. -->
+<!-- `empty` (0 rooms): the blank wall. Ghost tiles in the 12 franchise hues; the copy is unchanged from the v0 empty state. -->
+<sc-if value="{{ isHubEmpty }}" hint-placeholder-val="{{ false }}">
+  <div style="flex:1;min-height:0;overflow:auto;padding:24px 20px 40px">
+    <div style="max-width:1280px;margin:0 auto;position:relative;min-height:560px;display:flex;border-radius:28px;overflow:hidden">
+      <div style="flex:1;display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,150px),1fr));grid-auto-rows:1fr;gap:14px"><sc-for list="{{ ghosts }}" as="g" hint-placeholder-count="12"><div style="border-radius:24px;background:{{ g.bg }};border:1.5px dashed {{ g.line }}"></div></sc-for></div>
+      <div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;padding:20px"><div style="max-width:420px;background:var(--surface);border-radius:28px;box-shadow:var(--shadow);padding:28px 24px;display:flex;flex-direction:column;align-items:center;gap:14px;text-align:center"><span style="width:72px;height:72px;border-radius:22px;background:var(--brand-tint);display:flex;align-items:center;justify-content:center"><svg width="40" height="40" viewBox="0 0 64 64"><g transform="rotate(-16 32 32)" fill="var(--brand)"><rect x="28" y="35" width="8" height="24" rx="4"></rect><circle cx="32" cy="23" r="18"></circle></g></svg></span><span style="font-size:24px;font-weight:800;letter-spacing:-0.02em">No rooms yet</span><span style="font-size:15px;color:var(--ink-2);line-height:1.5">Start one and become the commissioner, or paste the invite code a friend sent you.</span><div style="display:flex;gap:8px;flex-wrap:wrap;justify-content:center"><button onClick="{{ goWizard }}" style="height:48px;padding:0 18px;border:0;border-radius:14px;background:var(--brand);color:#fffaf6;font:inherit;font-weight:700;font-size:15px;cursor:pointer">Create a room</button><button onClick="{{ goJoin }}" style="height:48px;padding:0 18px;border:1px solid var(--line);border-radius:14px;background:var(--surface);color:var(--ink);font:inherit;font-weight:700;font-size:15px;cursor:pointer">Join with code</button></div></div></div>
+    </div>
+  </div>
+</sc-if>
+
+<!-- Profile (new mock, home-redesign P-1, pending approval). Reached from the avatar in the top bar. Name 2-30 characters; avatar from the presets or the Google picture; Sign out sits apart at the bottom. -->
+<sc-if value="{{ isProfile }}" hint-placeholder-val="{{ false }}">
+  <div style="flex:1;min-height:0;overflow:auto;padding:24px 20px 40px">
+    <div style="max-width:880px;margin:0 auto;display:flex;flex-direction:column;gap:20px">
+      <button onClick="{{ goHubNow }}" style="align-self:flex-start;border:0;background:transparent;color:var(--ink-2);font:inherit;font-size:14px;font-weight:700;display:flex;align-items:center;gap:4px;cursor:pointer;padding:0"><span style="font-family:'Material Symbols Rounded';font-size:20px;line-height:1">arrow_back</span>Rooms</button>
+      <span style="font-size:28px;font-weight:800;letter-spacing:-0.025em">Your profile</span>
+      <div style="display:flex;flex-wrap:wrap;gap:16px;align-items:flex-start">
+        <div style="flex:1 1 260px;min-width:0;background:var(--surface);border-radius:28px;box-shadow:var(--shadow);padding:24px;display:flex;flex-direction:column;align-items:center;gap:12px;text-align:center;box-sizing:border-box">
+          <span style="width:96px;height:96px;border-radius:48px;background:oklch(0.56 0.15 15);color:#fff;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:32px">SR</span>
+          <div style="display:flex;flex-direction:column;gap:2px"><span style="font-size:20px;font-weight:800;letter-spacing:-0.02em">Shane Rex</span><span style="font-size:14px;color:var(--ink-2)">shane@gmail.com</span></div>
+          <span style="font-size:12px;color:var(--ink-2);line-height:1.45">Your name shows next to your franchise in every room you're in.</span>
+        </div>
+        <div style="flex:2 1 300px;min-width:0;background:var(--surface);border-radius:28px;box-shadow:var(--shadow);padding:24px;display:flex;flex-direction:column;gap:18px;box-sizing:border-box">
+          <label style="display:flex;flex-direction:column;gap:6px"><span style="font-size:13px;font-weight:700">Display name</span><div style="height:48px;border-radius:14px;background:var(--surface-2);border:1.5px solid var(--brand);display:flex;align-items:center;justify-content:space-between;padding:0 14px;font-size:15px;font-weight:500"><span>Shane Rex</span><span style="font-family:'DM Mono',monospace;font-size:12px;color:var(--ink-2)">9 / 30</span></div><span style="font-size:12px;color:var(--ink-2)">2–30 characters.</span></label>
+          <div style="display:flex;flex-direction:column;gap:8px"><span style="font-size:13px;font-weight:700">Avatar</span>
+            <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(52px,1fr));gap:10px;max-width:420px"><sc-for list="{{ avatars }}" as="a" hint-placeholder-count="12"><span style="width:52px;height:52px;border-radius:26px;background:{{ a.bg }};color:#fff;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:15px;box-shadow:{{ a.ring }};font-family:{{ a.font }}">{{ a.text }}</span></sc-for></div>
+            <span style="font-size:12px;color:var(--ink-2)">The last one is your Google picture.</span>
+          </div>
+          <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center"><button onClick="{{ goHubNow }}" style="height:48px;padding:0 24px;border:0;border-radius:14px;background:var(--brand);color:#fffaf6;font:inherit;font-weight:700;font-size:15px;cursor:pointer">Save</button><span style="display:flex;align-items:center;gap:6px;font-size:13px;color:var(--ok);font-weight:700"><span style="font-family:'Material Symbols Rounded';font-size:18px;line-height:1">check_circle</span>Saved.</span></div>
+        </div>
+      </div>
+      <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;padding:16px 20px;border-radius:20px;background:var(--surface);border:1px solid var(--line)"><div style="display:flex;flex-direction:column;gap:2px"><span style="font-size:14px;font-weight:700">Sign out</span><span style="font-size:12px;color:var(--ink-2)">You stay in your rooms. Sign back in with Google or a magic link.</span></div><span style="height:44px;padding:0 18px;border:1px solid var(--line);border-radius:14px;color:var(--bad);font-weight:700;font-size:14px;display:flex;align-items:center;gap:6px"><span style="font-family:'Material Symbols Rounded';font-size:20px;line-height:1">logout</span>Sign out</span></div>
+    </div>
+  </div>
+</sc-if>
+
+<!-- Join by typed code. Reached from "Join with code". A pasted link skips straight to `join`. Home-redesign P-1 (pending approval): join, joinCode, joinError and roomMissing sit on a surface card (radius 28, shadow) on the page background, like the wall tiles. -->
 <sc-if value="{{ isJoinCode }}" hint-placeholder-val="{{ false }}">
   <div style="flex:1;min-height:0;overflow:auto;padding:24px 20px 40px">
-    <div style="max-width:420px;margin:0 auto;display:flex;flex-direction:column;gap:18px">
+    <div style="max-width:460px;margin:0 auto;display:flex;flex-direction:column;gap:18px;background:var(--surface);border-radius:28px;box-shadow:var(--shadow);padding:24px;box-sizing:border-box">
       <button onClick="{{ goHubNow }}" style="align-self:flex-start;border:0;background:transparent;color:var(--ink-2);font:inherit;font-size:14px;font-weight:700;display:flex;align-items:center;gap:4px;cursor:pointer;padding:0"><span style="font-family:'Material Symbols Rounded';font-size:20px;line-height:1">arrow_back</span>Rooms</button>
+      <span style="width:56px;height:56px;border-radius:17px;background:var(--brand-tint);color:var(--brand-ink);display:flex;align-items:center;justify-content:center;font-family:'Material Symbols Rounded';font-size:28px">key</span>
       <div style="display:flex;flex-direction:column;gap:4px"><span style="font-size:28px;font-weight:800;letter-spacing:-0.025em">Join a room</span><span style="font-size:14px;color:var(--ink-2);line-height:1.5">Paste the invite code a friend sent you. Codes work for 7 days.</span></div>
       <label style="display:flex;flex-direction:column;gap:6px"><span style="font-size:13px;font-weight:700">Invite code</span><div style="height:48px;border-radius:14px;background:var(--surface-2);border:1.5px solid var(--brand);display:flex;align-items:center;padding:0 14px;font-family:'DM Mono',monospace;font-size:16px;font-weight:500;letter-spacing:0.06em">7K2M-9QXD-4HPA</div><span style="font-size:12px;color:var(--ink-2)">12 letters and numbers. Dashes and spaces don't matter.</span></label>
       <button onClick="{{ goJoin }}" style="height:52px;border:0;border-radius:14px;background:var(--brand);color:#fffaf6;font:inherit;font-weight:700;font-size:16px;cursor:pointer">Continue</button>
@@ -161,7 +238,7 @@
 <!-- Join errors: one layout, four causes. Unknown, revoked and expired codes share one message (the server can't tell them apart for you). -->
 <sc-if value="{{ isJoinError }}" hint-placeholder-val="{{ false }}">
   <div style="flex:1;min-height:0;overflow:auto;padding:24px 20px 40px">
-    <div style="max-width:420px;margin:0 auto;display:flex;flex-direction:column;gap:18px">
+    <div style="max-width:460px;margin:0 auto;display:flex;flex-direction:column;gap:18px;background:var(--surface);border-radius:28px;box-shadow:var(--shadow);padding:24px;box-sizing:border-box">
       <button onClick="{{ goHubNow }}" style="align-self:flex-start;border:0;background:transparent;color:var(--ink-2);font:inherit;font-size:14px;font-weight:700;display:flex;align-items:center;gap:4px;cursor:pointer;padding:0"><span style="font-family:'Material Symbols Rounded';font-size:20px;line-height:1">arrow_back</span>Rooms</button>
       <span style="width:56px;height:56px;border-radius:17px;background:{{ je.tileBg }};color:{{ je.tileInk }};display:flex;align-items:center;justify-content:center;font-family:'Material Symbols Rounded';font-size:28px">{{ je.icon }}</span>
       <div style="display:flex;flex-direction:column;gap:6px"><span style="font-size:13px;font-weight:700;color:var(--ink-2)">INVITE · 7K2M-9QXD-4HPA</span><span style="font-size:24px;font-weight:800;letter-spacing:-0.02em">{{ je.title }}</span><span style="font-size:15px;color:var(--ink-2);line-height:1.5">{{ je.body }}</span></div>
@@ -173,7 +250,7 @@
 <!-- A room link the viewer can't open: it doesn't exist or they aren't a member (the server answers both the same way). -->
 <sc-if value="{{ isRoomMissing }}" hint-placeholder-val="{{ false }}">
   <div style="flex:1;min-height:0;overflow:auto;padding:24px 20px;display:flex;align-items:center;justify-content:center">
-    <div style="max-width:420px;display:flex;flex-direction:column;align-items:center;gap:14px;text-align:center">
+    <div style="max-width:460px;display:flex;flex-direction:column;align-items:center;gap:14px;text-align:center;background:var(--surface);border-radius:28px;box-shadow:var(--shadow);padding:32px 24px;box-sizing:border-box">
       <span style="width:72px;height:72px;border-radius:22px;background:var(--surface-2);color:var(--ink-2);display:flex;align-items:center;justify-content:center;font-family:'Material Symbols Rounded';font-size:36px">door_front</span>
       <span style="font-size:24px;font-weight:800;letter-spacing:-0.02em">Can't find that room</span>
       <span style="font-size:15px;color:var(--ink-2);line-height:1.5">It doesn't exist, or you're not in it. Ask the Commissioner for an invite code.</span>
@@ -182,21 +259,39 @@
   </div>
 </sc-if>
 
+<!-- `wizard:1-6` is the create flow. `settings:basics|squad|scoring|ai|invite|locked|conflict` (home-redesign P-1, pending approval) is Room settings: the same step bodies, but a rail titled with the room name, five sections, the sport as a locked fact, no step counter, Prev and Next at the bottom right (Next saves the section and moves on, Prev is hidden on Basics, the last section says Done), Back to room at the bottom left on desktop and in the header on phone. The form column is centred. `locked` = auction live (read-only with the reason); `conflict` = the server's newer version won. A non-Commissioner never sees it: they land in the room with a Note (Room `settingsNote`). The header and footer stay pinned; only the body scrolls. -->
 <sc-if value="{{ isWizard }}" hint-placeholder-val="{{ false }}">
   <div style="flex:1;min-height:0;display:flex">
-    <sc-if value="{{ wide }}" hint-placeholder-val="{{ false }}">
+    <sc-if value="{{ railSettings }}" hint-placeholder-val="{{ false }}">
+      <div style="width:280px;flex-shrink:0;background:var(--surface);border-right:1px solid var(--line);padding:24px 16px;box-sizing:border-box;display:flex;flex-direction:column;gap:4px">
+        <div style="display:flex;align-items:center;gap:12px;padding:0 10px 14px"><span style="width:40px;height:40px;border-radius:12px;background:oklch(0.56 0.15 15);color:#fff;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:14px;flex-shrink:0">SR</span><div style="display:flex;flex-direction:column;gap:1px;min-width:0"><span style="font-size:15px;font-weight:800">College Gang</span><span style="font-size:12px;color:var(--ink-2)">Room settings</span></div></div>
+        <sc-for list="{{ secs }}" as="st" hint-placeholder-count="5"><button data-step="{{ st.n }}" onClick="{{ goSection }}" style="display:flex;align-items:center;gap:12px;padding:10px;border:0;border-radius:14px;background:{{ st.bg }};color:var(--ink);font:inherit;text-align:left;cursor:pointer"><span style="width:28px;height:28px;border-radius:9px;background:{{ st.dotBg }};color:{{ st.dotInk }};display:flex;align-items:center;justify-content:center;font-family:'Material Symbols Rounded';font-size:18px">{{ st.icon }}</span><span style="display:flex;flex-direction:column"><span style="font-size:14px;font-weight:{{ st.weight }}">{{ st.label }}</span><span style="font-size:12px;color:var(--ink-2)">{{ st.sub }}</span></span></button></sc-for>
+        <div style="margin:12px 10px 0;padding:12px;border-radius:14px;background:var(--surface-2);display:flex;gap:10px;align-items:center"><span style="font-family:'Material Symbols Rounded';font-size:20px;line-height:1;color:var(--ink-2)">lock</span><div style="display:flex;flex-direction:column;gap:1px"><span style="font-size:11px;font-weight:700;letter-spacing:0.06em;color:var(--ink-2)">SPORT</span><span style="font-size:14px;font-weight:700">Cricket T20</span><span style="font-size:12px;color:var(--ink-2)">Fixed once a room exists</span></div></div>
+      </div>
+    </sc-if>
+    <sc-if value="{{ railCreate }}" hint-placeholder-val="{{ false }}">
       <div style="width:280px;flex-shrink:0;background:var(--surface);border-right:1px solid var(--line);padding:24px 16px;box-sizing:border-box;display:flex;flex-direction:column;gap:4px">
         <span style="font-size:11px;font-weight:700;letter-spacing:0.06em;color:var(--ink-2);padding:0 10px 10px">NEW ROOM</span>
         <sc-for list="{{ steps }}" as="st" hint-placeholder-count="6"><button data-step="{{ st.n }}" onClick="{{ goStep }}" style="display:flex;align-items:center;gap:12px;padding:10px;border:0;border-radius:14px;background:{{ st.bg }};color:var(--ink);font:inherit;text-align:left;cursor:pointer"><span style="width:28px;height:28px;border-radius:9px;background:{{ st.dotBg }};color:{{ st.dotInk }};display:flex;align-items:center;justify-content:center;font-family:'DM Mono',monospace;font-size:13px;font-weight:500">{{ st.mark }}</span><span style="display:flex;flex-direction:column"><span style="font-size:14px;font-weight:{{ st.weight }}">{{ st.label }}</span><span style="font-size:12px;color:var(--ink-2)">{{ st.sub }}</span></span></button></sc-for>
       </div>
     </sc-if>
     <div style="flex:1;min-width:0;display:flex;flex-direction:column">
-      <div style="flex-shrink:0;padding:16px 20px 0;display:flex;flex-direction:column;gap:12px">
+      <sc-if value="{{ createMode }}" hint-placeholder-val="{{ true }}">
+      <div style="flex-shrink:0;padding:16px 20px 0"><div style="max-width:640px;margin:0 auto;display:flex;flex-direction:column;gap:12px">
         <div style="display:flex;gap:6px"><sc-for list="{{ steps }}" as="st" hint-placeholder-count="6"><span style="flex:1;height:6px;border-radius:3px;background:{{ st.barBg }}"></span></sc-for></div>
         <div style="display:flex;justify-content:space-between;align-items:baseline"><span style="font-size:24px;font-weight:800;letter-spacing:-0.025em">{{ stepTitle }}</span><span style="font-family:'DM Mono',monospace;font-size:12px;color:var(--ink-2)">{{ step }} of 6</span></div>
-      </div>
+      </div></div>
+      </sc-if>
+      <sc-if value="{{ settingsMode }}" hint-placeholder-val="{{ false }}">
+        <div style="flex-shrink:0;padding:16px 20px 12px;border-bottom:1px solid var(--line)"><div style="max-width:640px;margin:0 auto;display:flex;flex-direction:column;gap:12px">
+          <sc-if value="{{ phoneSettings }}" hint-placeholder-val="{{ false }}"><button onClick="{{ goRoom }}" style="align-self:flex-start;border:0;background:transparent;color:var(--ink-2);font:inherit;font-size:14px;font-weight:700;display:flex;align-items:center;gap:4px;cursor:pointer;padding:0"><span style="font-family:'Material Symbols Rounded';font-size:20px;line-height:1">arrow_back</span>College Gang</button></sc-if>
+          <div style="display:flex;justify-content:space-between;align-items:flex-end;gap:12px"><div style="display:flex;flex-direction:column;gap:2px;min-width:0"><span style="font-size:11px;font-weight:700;letter-spacing:0.06em;color:var(--ink-2)">ROOM SETTINGS</span><span style="font-size:24px;font-weight:800;letter-spacing:-0.025em">{{ stepTitle }}</span></div><span style="flex-shrink:0;display:flex;align-items:center;gap:6px;height:32px;padding:0 12px;border-radius:999px;background:var(--surface-2);font-size:12px;font-weight:700;color:var(--ink-2)"><span style="font-family:'Material Symbols Rounded';font-size:16px;line-height:1">lock</span>Cricket T20</span></div>
+          <sc-if value="{{ phoneSettings }}" hint-placeholder-val="{{ false }}"><div style="display:flex;gap:6px;overflow-x:auto;margin:0 -20px;padding:0 20px"><sc-for list="{{ secs }}" as="st" hint-placeholder-count="5"><button data-step="{{ st.n }}" onClick="{{ goSection }}" style="flex-shrink:0;height:36px;padding:0 14px;border:0;border-radius:999px;background:{{ st.chipBg }};color:{{ st.chipInk }};font:inherit;font-size:13px;font-weight:{{ st.weight }};cursor:pointer">{{ st.label }}</button></sc-for></div></sc-if>
+        </div></div>
+      </sc-if>
       <div style="flex:1;min-height:0;overflow:auto;padding:16px 20px 24px">
-        <div style="max-width:640px;display:flex;flex-direction:column;gap:16px">
+        <sc-if value="{{ hasNote }}" hint-placeholder-val="{{ false }}"><div role="status" style="max-width:640px;margin:0 auto 16px;box-sizing:border-box;display:flex;gap:10px;align-items:flex-start;padding:12px;border-radius:14px;background:{{ nt.bg }};font-size:13px;line-height:1.45"><span style="font-family:'Material Symbols Rounded';font-size:20px;line-height:1;color:{{ nt.ink }}">{{ nt.icon }}</span><span><b>{{ nt.title }}</b> <span style="color:var(--ink-2)">{{ nt.body }}</span></span></div></sc-if>
+        <div style="max-width:640px;margin:0 auto;display:flex;flex-direction:column;gap:16px;{{ roStyle }}">
 
           <sc-if value="{{ s1 }}" hint-placeholder-val="{{ false }}">
             <div style="display:flex;flex-direction:column;gap:12px">
@@ -306,16 +401,29 @@
           </sc-if>
         </div>
       </div>
-      <div style="flex-shrink:0;display:flex;gap:10px;padding:12px 20px 16px;border-top:1px solid var(--line);background:var(--surface)">
+      <sc-if value="{{ createMode }}" hint-placeholder-val="{{ true }}">
+      <div style="flex-shrink:0;padding:12px 20px 16px;border-top:1px solid var(--line);background:var(--surface)"><div style="max-width:640px;margin:0 auto;display:flex;gap:10px">
         <button onClick="{{ back }}" style="height:52px;padding:0 20px;border:1px solid var(--line);border-radius:14px;background:var(--surface);color:var(--ink);font:inherit;font-weight:700;font-size:15px;cursor:pointer">{{ backLabel }}</button>
         <button onClick="{{ next }}" style="flex:1;max-width:420px;margin-left:auto;height:52px;border:0;border-radius:14px;background:{{ nextBg }};color:{{ nextInk }};font:inherit;font-weight:700;font-size:16px;cursor:pointer">{{ nextLabel }}</button>
-      </div>
+      </div></div>
+      </sc-if>
+      <sc-if value="{{ settingsMode }}" hint-placeholder-val="{{ false }}">
+        <div style="flex-shrink:0;padding:12px 20px 16px;border-top:1px solid var(--line);background:var(--surface)"><div style="max-width:640px;margin:0 auto;display:flex;flex-direction:column;gap:8px">
+          <div style="display:flex;gap:10px;align-items:center">
+            <sc-if value="{{ wideSettings }}" hint-placeholder-val="{{ true }}"><button onClick="{{ goRoom }}" style="height:52px;padding:0 20px;border:1px solid var(--line);border-radius:14px;background:var(--surface);color:var(--ink);font:inherit;font-weight:700;font-size:15px;cursor:pointer;display:flex;align-items:center;gap:6px"><span style="font-family:'Material Symbols Rounded';font-size:20px;line-height:1">arrow_back</span>Back to room</button></sc-if>
+            <sc-if value="{{ wideSettings }}" hint-placeholder-val="{{ true }}"><span style="flex:1"></span></sc-if>
+            <sc-if value="{{ hasPrev }}" hint-placeholder-val="{{ true }}"><button onClick="{{ prevSection }}" style="height:52px;padding:0 20px;border:1px solid var(--line);border-radius:14px;background:var(--surface);color:var(--ink);font:inherit;font-weight:700;font-size:15px;cursor:pointer">Prev</button></sc-if>
+            <button onClick="{{ nextSection }}" style="flex:1;max-width:{{ nextMax }};height:52px;border:0;border-radius:14px;background:var(--brand);color:#fffaf6;font:inherit;font-weight:700;font-size:16px;cursor:pointer">{{ nextSectionLabel }}</button>
+          </div>
+          <sc-if value="{{ noSaveNote }}" hint-placeholder-val="{{ true }}"><span style="font-size:12px;color:var(--ink-2);line-height:1.4;text-align:right">{{ noSaveText }}</span></sc-if>
+        </div></div>
+      </sc-if>
     </div>
   </div>
 </sc-if>
 </div>
 </x-dc>
-<script type="text/x-dc" data-dc-script data-props="{&quot;screen&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;signin&quot;,&quot;hub&quot;,&quot;empty&quot;,&quot;join&quot;,&quot;wizard:1&quot;,&quot;wizard:2&quot;,&quot;wizard:3&quot;,&quot;wizard:4&quot;,&quot;wizard:5&quot;,&quot;wizard:6&quot;,&quot;hubNow&quot;,&quot;joinCode&quot;,&quot;joinError:invalid&quot;,&quot;joinError:full&quot;,&quot;joinError:locked&quot;,&quot;joinError:limited&quot;,&quot;roomMissing&quot;],&quot;default&quot;:&quot;hub&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;Prototype&quot;},&quot;mode&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;light&quot;,&quot;dark&quot;],&quot;default&quot;:&quot;light&quot;,&quot;tsType&quot;:&quot;'light'|'dark'&quot;,&quot;section&quot;:&quot;Theme&quot;},&quot;height&quot;:{&quot;editor&quot;:null,&quot;tsType&quot;:&quot;string&quot;}}">
+<script type="text/x-dc" data-dc-script data-props="{&quot;screen&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;signin&quot;,&quot;hub&quot;,&quot;empty&quot;,&quot;join&quot;,&quot;wizard:1&quot;,&quot;wizard:2&quot;,&quot;wizard:3&quot;,&quot;wizard:4&quot;,&quot;wizard:5&quot;,&quot;wizard:6&quot;,&quot;hubNow&quot;,&quot;wall:many&quot;,&quot;wall:live&quot;,&quot;wall:scheduled&quot;,&quot;wall:scheduledNoTime&quot;,&quot;wall:retention&quot;,&quot;wall:setupAdmin&quot;,&quot;wall:setupAdminOnly&quot;,&quot;wall:setupSeat&quot;,&quot;wall:setupWait&quot;,&quot;wall:season&quot;,&quot;wall:one&quot;,&quot;wall:past&quot;,&quot;wall:lonePast&quot;,&quot;wall:error&quot;,&quot;wall:loading&quot;,&quot;settings:basics&quot;,&quot;settings:squad&quot;,&quot;settings:scoring&quot;,&quot;settings:ai&quot;,&quot;settings:invite&quot;,&quot;settings:locked&quot;,&quot;settings:conflict&quot;,&quot;profile&quot;,&quot;joinCode&quot;,&quot;joinError:invalid&quot;,&quot;joinError:full&quot;,&quot;joinError:locked&quot;,&quot;joinError:limited&quot;,&quot;roomMissing&quot;],&quot;default&quot;:&quot;hub&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;Prototype&quot;},&quot;mode&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;light&quot;,&quot;dark&quot;],&quot;default&quot;:&quot;light&quot;,&quot;tsType&quot;:&quot;'light'|'dark'&quot;,&quot;section&quot;:&quot;Theme&quot;},&quot;height&quot;:{&quot;editor&quot;:null,&quot;tsType&quot;:&quot;string&quot;}}">
 class Component extends DCLogic {
   state = { screen: null, step: 1, bp: 'phone', hue: 195, preset: 'standard', mine: false,
     f: { minM: 2, maxM: 10, purse: 120, sqMin: 18, sqMax: 25, WK: 2, BAT: 5, BOWL: 5, AR: 3, os: 8, proxy: false, ai: true, fit: 1, ceil: 1, scan: 1, scoring: 'default' } };
@@ -333,8 +441,12 @@ class Component extends DCLogic {
   renderVals() {
     const sc = this.state.screen ?? this.props.screen ?? 'hub';
     const [scr, stepStr] = sc.split(':');
-    const step = scr === 'wizard' ? (this.state.screen ? this.state.step : Number(stepStr || this.state.step)) : this.state.step;
-    const f = this.state.f; const wide = this.state.bp !== 'phone';
+    const isSet = scr === 'settings';
+    const SMAP = { basics: 2, squad: 3, scoring: 4, ai: 5, invite: 6, locked: 3, conflict: 3 };
+    const step = scr === 'wizard' ? (this.state.screen ? this.state.step : Number(stepStr || this.state.step)) : isSet ? (this.state.screen ? this.state.step : (SMAP[stepStr] || 2)) : this.state.step;
+    const f0 = this.state.f; const wide = this.state.bp !== 'phone';
+    const lockedV = isSet && !this.state.screen && stepStr === 'locked', conflictV = isSet && !this.state.screen && stepStr === 'conflict';
+    const f = conflictV ? { ...f0, sqMin: 20 } : f0;
     const labels = [['Sport', 'Pick a Sport Pack'], ['Basics', 'Name, season, time'], ['Squad rules', 'Purse, roles, quotas'], ['Scoring', 'Points per stat'], ['AI', 'Lifelines, report card'], ['Invite', 'Get friends in']];
     const steps = labels.map((l, i) => { const n = i + 1, done = n < step, cur = n === step; return { n, label: l[0], sub: l[1], mark: done ? '✓' : String(n), bg: cur ? 'var(--brand-tint)' : 'transparent', dotBg: done || cur ? 'var(--brand)' : 'var(--surface-2)', dotInk: done || cur ? '#fffaf6' : 'var(--ink-2)', weight: cur ? '800' : '600', barBg: n <= step ? 'var(--brand)' : 'var(--line)' }; });
     const roleSum = f.WK + f.BAT + f.BOWL + f.AR; const roleOver = roleSum > f.sqMin;
@@ -362,6 +474,57 @@ class Component extends DCLogic {
       chip: chip[st][0], chipBg: chip[st][1], chipInk: chip[st][2],
       count: st === 'setup' ? `${n} / ${min} min` : `${n} / ${max} max`,
       pct: Math.min(100, Math.round(100 * n / (st === 'setup' ? min : max))) + '%', barBg: st === 'setup' && n < min ? 'var(--brand)' : 'var(--ok)' }));
+    // ---- Franchise wall (home-redesign P-1, pending approval). Each room is painted in its own franchise colour; no franchise = inverse surface + admin tile.
+    const RM = {
+      live: { name: 'Monsoon League', fr: 'Byte Bashers', mono: 'BB', hue: 255, sub: 'IPL 2027', st: 'AUCTION LIVE', phase: 2, fig: 'LIVE', lab: 'AUCTION IN PROGRESS', status: 'The auction is live. Take your seat.', cta: 'Join the auction' },
+      scheduled: { name: 'Family Cup', fr: "Dad's Army", mono: 'DA', hue: 165, sub: 'Season 2', st: 'AUCTION NEXT', phase: 2, fig: '2d 04:12', lab: 'UNTIL THE AUCTION', status: 'Sat 15 Nov, 8:00 PM your time. Rules are set.', cta: 'Open lobby' },
+      scheduledNoTime: { name: 'Friday Five', fr: 'Kochi Kites', mono: 'KK', hue: 75, sub: 'Season 1', st: 'AUCTION NEXT', phase: 2, fig: 'Time not set', lab: 'THE COMMISSIONER PICKS A START', status: 'Rules are set. No start time yet.', cta: 'Open lobby' },
+      retention: { name: 'Hostel Premier', fr: 'Hostel Bombers', mono: 'HB', hue: 285, sub: 'Season 3', st: 'RETENTION', phase: 1, fig: '6', lab: 'FRANCHISES', status: 'Retention window is open.', cta: 'Open room' },
+      setupAdmin: { name: 'College Gang', fr: "Shane's Raiders", mono: 'SR', hue: 15, sub: "you're the commissioner", st: 'SETUP', phase: 0, fig: '3/6', lab: 'MANAGERS JOINED', status: '1 more to reach the minimum of 4.', cta: 'Invite managers' },
+      setupAdminOnly: { name: 'Office League', fr: null, mono: null, hue: null, sub: "You're the commissioner · no franchise", st: 'SETUP', phase: 0, fig: '5/8', lab: 'MANAGERS JOINED', status: "Enough managers. Move the room on when you're ready.", cta: 'Invite managers' },
+      setupSeat: { name: 'Canteen Cup', fr: null, mono: null, hue: null, sub: 'No franchise yet', st: 'SETUP', phase: 0, fig: '3/6', lab: 'MANAGERS JOINED', status: "You're in. Pick your franchise to take a seat.", cta: 'Take your seat' },
+      setupWait: { name: 'Hall Hustle', fr: 'Library Legends', mono: 'LL', hue: 225, sub: 'Season 1', st: 'SETUP', phase: 0, fig: '4/6', lab: 'MANAGERS JOINED', status: 'Waiting for the Commissioner', cta: 'Open room' },
+      season: { name: 'Office Nerds XI', fr: 'Chai Chargers', mono: 'CC', hue: 45, sub: 'Cricket T20', st: 'SEASON LIVE', phase: 3, fig: '8', lab: 'FRANCHISES', status: 'The season is live.', cta: 'Open room' }
+    };
+    const ORDER = ['scheduled', 'scheduledNoTime', 'retention', 'setupAdmin', 'setupAdminOnly', 'setupSeat', 'season', 'setupWait'];
+    const DONE = [{ name: 'Family Cup 2026', mono: 'SR', hue: 315 }, { name: 'Office Nerds 2025', mono: 'CC', hue: 45 }, { name: 'College Gang 2025', mono: null, hue: null }];
+    const adminTile = (px) => ({ mono: 'shield_person', monoFont: "'Material Symbols Rounded'", monoSize: px });
+    const paint = (r, px) => r.hue == null
+      ? { bg: 'var(--inverse)', ink: 'var(--on-inverse)', tileBg: 'var(--inverse-2)', tileInk: 'var(--on-inverse-2)', ctaBg: 'var(--on-inverse)', ctaInk: 'var(--inverse)', ...adminTile(px === 56 ? '28px' : '22px') }
+      : { bg: `oklch(0.56 0.15 ${r.hue})`, ink: `oklch(0.99 0.005 ${r.hue})`, tileBg: `oklch(0.99 0.005 ${r.hue})`, tileInk: `oklch(0.56 0.15 ${r.hue})`, ctaBg: `oklch(0.99 0.005 ${r.hue})`, ctaInk: `oklch(0.42 0.12 ${r.hue})`, mono: r.mono, monoFont: 'inherit', monoSize: px === 56 ? '20px' : '15px' };
+    const subOf = (r) => r.fr ? `${r.fr} · ${r.sub}` : r.sub;
+    const PH = ['SETUP', 'RETENTION', 'AUCTION', 'SEASON'];
+    const heroOf = (k) => { const r = RM[k]; return { ...paint(r, 56), name: r.name, sub: subOf(r), chip: r.st, fig: r.fig, figSize: r.fig.length > 6 ? '32px' : '56px', figLabel: r.lab, status: r.status, cta: r.cta, pad: wide ? '32px' : '22px', phases: PH.map((label, i) => ({ label, bar: i <= r.phase ? 'currentColor' : 'oklch(1 0 0 / 0.3)', op: i === r.phase ? '1' : '0.75' })) }; };
+    const tileOf = (k) => { const r = RM[k]; return { ...paint(r, 40), name: r.name, sub: subOf(r), chip: r.st, fig: r.fig, figSize: r.fig.length > 6 ? '18px' : '28px', figLabel: r.lab, foot: r.status }; };
+    const wv = scr === 'hubNow' ? 'many' : stepStr;
+    const wl = { hasHero: false, hasWall: false, hasPast: false, ghost: false, error: false, loading: false, tiles: [], past: [], skelHero: wide ? '232px' : '420px' };
+    let h = heroOf('scheduled');
+    if (scr === 'wall' || scr === 'hubNow') {
+      if (wv === 'error') wl.error = true;
+      else if (wv === 'loading') wl.loading = true;
+      else if (wv === 'lonePast') { wl.hasPast = true; wl.ghost = true; wl.past = [DONE[0]]; }
+      else {
+        const key = wv === 'many' ? 'scheduled' : wv === 'one' ? 'setupAdmin' : wv === 'past' ? 'live' : wv;
+        h = heroOf(key); wl.hasHero = true;
+        const rest = wv === 'one' ? [] : wv === 'past' ? ['scheduled', 'retention', 'setupAdmin'] : wv === 'many' ? ['retention', 'setupAdmin', 'setupAdminOnly'] : ORDER.filter((k) => ORDER.indexOf(k) > ORDER.indexOf(key)).slice(0, 5);
+        wl.tiles = rest.map(tileOf); wl.hasWall = wv !== 'one';
+        if (wv === 'past') { wl.hasPast = true; wl.past = DONE; }
+      }
+      wl.past = wl.past.map((d) => d.hue == null ? { name: d.name, bg: 'var(--inverse)', ink: 'var(--on-inverse)', mono: 'shield_person', monoFont: "'Material Symbols Rounded'", monoSize: '18px' } : { name: d.name, bg: `oklch(0.56 0.15 ${d.hue})`, ink: '#fff', mono: d.mono, monoFont: 'inherit', monoSize: '12px' });
+    }
+    const ghosts = [15, 45, 75, 105, 135, 165, 195, 225, 255, 285, 315, 345].map((hue) => ({ bg: `oklch(0.56 0.15 ${hue} / 0.14)`, line: `oklch(0.56 0.15 ${hue} / 0.4)` }));
+    // ---- Room settings (home-redesign P-1)
+    const SECS = [[2, 'Basics', 'Name, season, managers', 'badge'], [3, 'Squad rules', 'Purse, roles, quotas', 'groups'], [4, 'Scoring', 'Points per stat', 'calculate'], [5, 'AI', 'Lifelines, report card', 'smart_toy'], [6, 'Invite', 'Code and managers', 'person_add']];
+    const secs = SECS.map(([n, label, sub, icon]) => { const cur = n === step; return { n, label, sub, icon, bg: cur ? 'var(--brand-tint)' : 'transparent', dotBg: cur ? 'var(--brand)' : 'var(--surface-2)', dotInk: cur ? '#fffaf6' : 'var(--ink-2)', weight: cur ? '800' : '600', chipBg: cur ? 'var(--brand-tint)' : 'var(--surface-2)', chipInk: cur ? 'var(--brand-ink)' : 'var(--ink-2)' }; });
+    const SNAME = { 2: 'Basics', 3: 'Squad rules', 4: 'Scoring', 5: 'AI', 6: 'Invite' };
+    const readOnly = lockedV;
+    const NOTE = lockedV ? { bg: 'var(--warn-tint)', ink: 'var(--warn-ink)', icon: 'lock_clock', title: 'Settings are locked.', body: "The auction is live, so the rules can't change now. You can still read them here." }
+      : conflictV ? { bg: 'var(--bad-tint)', ink: 'var(--bad)', icon: 'sync_problem', title: 'Someone saved changes while you were editing.', body: "You're seeing the saved values. Your edit wasn't saved, so make it again if you still want it." }
+      : isSet ? { bg: 'var(--surface-2)', ink: 'var(--ink-2)', icon: 'info', title: 'Changes save per section.', body: 'Rules stay editable until the auction goes live. The sport is fixed.' } : null;
+    const noSaveText = step === 4 ? 'Points come from the Sport Pack, so there is nothing to save here.' : step === 6 ? 'The invite code and managers update as soon as you tap them.' : 'Next saves this section.';
+    const canSave = isSet && step !== 4 && step !== 6;
+    const AV = [15, 45, 75, 105, 135, 165, 195, 225, 255, 285, 315].map((hue, i) => ({ bg: `oklch(0.56 0.15 ${hue})`, text: ['SR', 'AK', 'PM', 'RD', 'NV', 'ZH', 'KB', 'MJ', 'TS', 'LO', 'DY'][i], font: 'inherit', ring: i === 0 ? '0 0 0 3px var(--surface), 0 0 0 5px var(--ink)' : 'none' }));
+    AV.push({ bg: 'oklch(0.45 0.1 250)', text: 'G', font: 'inherit', ring: 'none' });
     const JE = {
       invalid: { icon: 'key_off', tileBg: 'var(--bad-tint)', tileInk: 'var(--bad)', title: "This code doesn't work", body: 'It may have expired or been replaced by a new one. Ask your Commissioner for a fresh code.', cta: 'Try another code', ctaBg: 'var(--brand)', ctaInk: '#fffaf6', wait: '' },
       full: { icon: 'group_off', tileBg: 'var(--bad-tint)', tileInk: 'var(--bad)', title: 'Monsoon League is full', body: 'All 10 seats are taken. If the Commissioner frees one up, this code will work again.', cta: 'Try another code', ctaBg: 'var(--brand)', ctaInk: '#fffaf6', wait: '' },
@@ -371,26 +534,31 @@ class Component extends DCLogic {
     const lim = { minM: [2, 12], maxM: [2, 12], purse: [20, 500], sqMin: [11, 30], sqMax: [11, 30], WK: [0, 6], BAT: [0, 10], BOWL: [0, 10], AR: [0, 8], os: [0, 12], fit: [0, 5], ceil: [0, 5], scan: [0, 5] };
     return {
       rootRef: this.rootRef, frameH: this.props.height ?? '100vh', wide,
-      isSignin: scr === 'signin', notSignin: scr !== 'signin', isHub: scr === 'hub', isHubEmpty: scr === 'empty', isJoin: scr === 'join', isWizard: scr === 'wizard',
-      isHubNow: scr === 'hubNow', isJoinCode: scr === 'joinCode', isJoinError: scr === 'joinError', isRoomMissing: scr === 'roomMissing',
+      isSignin: scr === 'signin', notSignin: scr !== 'signin', isHub: scr === 'hub', isHubEmpty: scr === 'empty', isJoin: scr === 'join', isWizard: scr === 'wizard' || isSet,
+      isWall: scr === 'wall' || scr === 'hubNow', wl, h, ghosts, isProfile: scr === 'profile', avatars: AV, goProfile: () => this.setState({ screen: 'profile' }),
+      createMode: !isSet, settingsMode: isSet, railCreate: wide && !isSet, railSettings: wide && isSet, phoneSettings: !wide && isSet, secs,
+      wideSettings: wide, hasPrev: step > 2, nextMax: wide ? '420px' : 'none', nextSectionLabel: step === 6 ? 'Done' : 'Next', noSaveNote: isSet && !readOnly, prevSection: () => this.setState({ screen: 'settings', step: step - 1 }), nextSection: () => step === 6 ? (window.location.href = 'Room.dc.html') : this.setState({ screen: 'settings', step: step + 1 }), goSection: (e) => this.setState({ screen: 'settings', step: Number(e.currentTarget.dataset.step) }), goRoom: () => { window.location.href = 'Room.dc.html'; },
+      hasNote: isSet && !!NOTE, nt: NOTE || {}, roStyle: readOnly ? 'pointer-events:none;opacity:0.55' : '', canSave, noSave: isSet && !canSave, noSaveText,
+      saveLabel: readOnly ? 'Locked' : 'Save ' + (SNAME[step] || '').toLowerCase(), saveBg: readOnly ? 'var(--surface-2)' : 'var(--brand)', saveInk: readOnly ? 'var(--ink-3)' : '#fffaf6',
+      isHubNow: false, isJoinCode: scr === 'joinCode', isJoinError: scr === 'joinError', isRoomMissing: scr === 'roomMissing',
       goHubNow: () => this.setState({ screen: 'hubNow' }), goJoinCode: () => this.setState({ screen: 'joinCode' }),
       nowCards, je: JE[stepStr] || JE.invalid,
       presets: [['standard', 'Standard auction'], ['short-pool', 'Short pool (80 players)']].map(([id, label]) => { const on = id === this.state.preset; return { id, label, border: on ? '2px solid var(--brand)' : '1px solid var(--line)', dotBorder: on ? '0' : '2px solid var(--line)', dotBg: on ? 'var(--brand)' : 'transparent', dotCore: on ? '#fffaf6' : 'transparent', weight: on ? '800' : '600' }; }),
       pickPreset: (e) => this.setState({ preset: e.currentTarget.dataset.p }),
       adminOnly: !this.state.mine, hasMine: this.state.mine, makeMine: () => this.setState({ mine: true }), joinedCount: this.state.mine ? 4 : 3,
-      goHub: () => this.setState({ screen: 'hub' }), goJoin: () => this.setState({ screen: 'join' }), goWizard: () => this.setState({ screen: 'wizard', step: 1 }), goInvite: () => this.setState({ screen: 'wizard', step: 6 }),
+      goHub: () => this.setState({ screen: 'hubNow' }), goJoin: () => this.setState({ screen: 'join' }), goWizard: () => this.setState({ screen: 'wizard', step: 1 }), goInvite: () => this.setState({ screen: 'wizard', step: 6 }),
       goRoomLink: () => { window.location.href = 'Room.dc.html'; },
       swatches, pickHue: (e) => { const h = Number(e.currentTarget.dataset.hue); if (!TAKEN[h]) this.setState({ hue: h }); },
       pickBg: `oklch(0.56 0.15 ${this.state.hue})`, pickRoomBg: `oklch(0.972 0.014 ${this.state.hue})`,
-      step, steps, stepTitle: ['Choose a sport', 'Room basics', 'Squad rules', 'Scoring', 'AI settings', 'Invite your friends'][step - 1],
+      step, steps, stepTitle: isSet ? SNAME[step] : ['Choose a sport', 'Room basics', 'Squad rules', 'Scoring', 'AI settings', 'Invite your friends'][step - 1],
       s1: step === 1, s2: step === 2, s3: step === 3, s4: step === 4, s5: step === 5, s6: step === 6,
       goStep: (e) => this.setState({ screen: 'wizard', step: Number(e.currentTarget.dataset.step) }),
-      back: () => step === 1 ? this.setState({ screen: 'hub' }) : this.setState({ screen: 'wizard', step: step - 1 }),
-      next: () => { if (step === 3 && roleOver) return; step === 6 ? this.setState({ screen: 'hub' }) : this.setState({ screen: 'wizard', step: step + 1 }); },
+      back: () => step === 1 ? this.setState({ screen: 'hubNow' }) : this.setState({ screen: 'wizard', step: step - 1 }),
+      next: () => { if (step === 3 && roleOver) return; step === 6 ? this.setState({ screen: 'hubNow' }) : this.setState({ screen: 'wizard', step: step + 1 }); },
       backLabel: step === 1 ? 'Cancel' : 'Back', nextLabel: step === 6 ? 'Open room' : step === 2 ? 'Create room' : 'Continue',
       nextBg: step === 3 && roleOver ? 'var(--surface-2)' : 'var(--brand)', nextInk: step === 3 && roleOver ? 'var(--ink-3)' : '#fffaf6',
       f, roleSum, roleOver, roleSumInk: roleOver ? 'var(--bad)' : 'var(--ink-2)',
-      roleRows: [['WK', 4], ['BAT', 1], ['BOWL', 2], ['AR', 3]].map(([k, s]) => ({ k, key: k, v: f[k], bg: `var(--role${s}-bg)`, ink: `var(--role${s}-ink)` })),
+      roleRows: [['BAT', 1], ['BOWL', 2], ['AR', 3], ['WK', 4]].map(([k, s]) => ({ k, key: k, v: f[k], bg: `var(--role${s}-bg)`, ink: `var(--role${s}-ink)` })),
       lifeRows: [['fit', 'Fit Check', 'fact_check', 'Go/No-Go on your own squad'], ['ceil', 'Price Ceiling', 'vertical_align_top', 'Max sensible bid for this lot'], ['scan', 'Rival Scan', 'radar', 'Who needs and can afford him']].map(([key, label, icon, desc]) => ({ key, label, icon, desc, v: f[key] })),
       adj: (e) => { const k = e.currentTarget.dataset.k, d = Number(e.currentTarget.dataset.d); const [lo, hi] = lim[k] || [0, 999]; set({ [k]: Math.max(lo, Math.min(hi, f[k] + d)) }); },
       toggle: (e) => { const k = e.currentTarget.dataset.k; set({ [k]: !f[k] }); },

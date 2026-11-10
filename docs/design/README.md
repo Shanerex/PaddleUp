@@ -17,6 +17,10 @@ Source of truth for UI. Build agents: read this file first, then open `design-sy
 |---|---|---|---|
 | Auth | Sign in (OAuth + magic link) | Home `signin` | FR-1 |
 | Home | Home hub (rooms + what's happening), empty state | Home `hub`, `empty` | FR-2 |
+| Home (v2, home-redesign) | Franchise wall: hero band (the room that needs you most) over a wall of tiles in each room's franchise colour; hero per state, single room, Past seasons strip, lone completed room, load error, loading; blank wall for no rooms (added 2026-11-10, approved) | Home `wall:many\|live\|scheduled\|scheduledNoTime\|retention\|setupAdmin\|setupAdminOnly\|setupSeat\|setupWait\|season\|one\|past\|lonePast\|error\|loading`, `empty` (App Screens 8a-8p) | FR-2 |
+| Setup (v2) | Room settings: its own mode of the wizard (room-name rail, five sections, sport locked, Prev/Next with Next saving the section, Back to room), read-only when the auction is live, version conflict, and the Note a manager sees (added 2026-11-10, approved) | Home `settings:basics\|squad\|scoring\|ai\|invite\|locked\|conflict`; Room `settingsNote` (App Screens 8q-8x) | FR-10..13, FR-15 |
+| Room (v2) | Scheduled room: "Open the lobby" for the Commissioner and for a manager, and the manager with no start time yet (added 2026-11-10, approved) | Room `setupScheduled`, `setupManager`, `setupManagerNoStart` (App Screens 8y-8aa) | FR-40 |
+| Account (v2) | Profile (name, avatar, sign out) and sign-in without Apple (added 2026-11-10, approved) | Home `profile`, `signin` (App Screens 8ab, 8ac) | FR-1, FR-3 |
 | Join | Join room via code, create franchise (name, monogram, colour) | Home `join` | FR-11 |
 | Setup | 6-step wizard: Sport · Basics · Squad rules · Scoring · AI · Invite | Home `wizard:1–6` | FR-10–15, FR-70–72 |
 | Pre-auction | Lobby (countdown, readiness, house rules) | Room `lobby` | FR-40 |
@@ -44,7 +48,7 @@ Source of truth for UI. Build agents: read this file first, then open `design-sy
 Open decision: pick one auction direction (1a/1b/1c) and one advisor presentation (2a/2b) before building FR-41+.
 
 ## Principles
-- Two colour worlds: outside a room (auth, home hub, room-setup wizard) use `--brand`. Inside a room, the manager's franchise colour (`--team*`) drives the header, primary actions, tints and `--room-bg`.
+- Two colour worlds: outside a room (auth, room-setup wizard, Room settings, profile) use `--brand`. Inside a room, the manager's franchise colour (`--team*`) drives the header, primary actions, tints and `--room-bg`. The home hub is the bridge: its chrome and app-level actions are `--brand`, but each room's hero and tile is painted in that room's franchise colour (inverse surface when you have no franchise there). See decisions/2026-11-10-home-franchise-wall.
 - Rivals always render in their own franchise colour (monogram).
 - Danger, warning and AI surfaces never take the team colour. AI (Team Table) lives on `--inverse`.
 - Every live-changing number (bids, purse, timer, points) uses DM Mono with tabular numerals. Fixed-height containers, no layout shift (FR-112).

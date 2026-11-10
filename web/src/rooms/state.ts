@@ -13,3 +13,13 @@ export const STATE_LABELS: Record<RoomState, string> = {
 export function isPreAuction(state: RoomState): boolean {
   return state === "setup" || state === "retention" || state === "auction_scheduled";
 }
+
+/** The state chip text (Design System 08), shared by the hub, the room header and the kit chip. */
+export const STATE_CHIP_LABELS: Record<RoomState, string> = {
+  setup: "SETUP",
+  retention: "RETENTION",
+  auction_scheduled: "AUCTION NEXT",
+  auction_live: "AUCTION LIVE",
+  season_live: "SEASON LIVE",
+  completed: "COMPLETED",
+};

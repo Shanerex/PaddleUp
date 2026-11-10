@@ -6,6 +6,7 @@ import com.paddleup.packs.dto.RoleDto;
 import com.paddleup.packs.dto.RuleDto;
 import com.paddleup.packs.dto.StatDto;
 import com.paddleup.packs.dto.TagDto;
+import com.paddleup.packs.service.PackDisplayRules;
 import com.paddleup.rooms.dto.AiSettingsDto;
 import com.paddleup.rooms.dto.PackLabelsDto;
 import com.paddleup.rooms.dto.RoomConfigDto;
@@ -136,6 +137,8 @@ class RoomConfigValidator {
       out.add(
           new Violation(
               "displayUnit", "Label must be plain text of at most " + LABEL_MAX + " characters"));
+    } else if (PackDisplayRules.unitProblem(unit) != null) {
+      out.add(new Violation("displayUnit", PackDisplayRules.unitProblem(unit)));
     }
   }
 

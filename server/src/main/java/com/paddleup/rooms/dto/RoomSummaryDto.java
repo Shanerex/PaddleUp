@@ -8,7 +8,9 @@ import java.util.UUID;
 
 /**
  * One room on the caller's home hub. {@code myFranchise} is null for an admin-only Commissioner;
- * {@code packName} is null when the pack has no display name.
+ * {@code packName} is null when the pack has no display name. {@code auctionStartsAt} is set only
+ * for a room in {@code auction_scheduled} that has a start; {@code serverNow} is the server clock
+ * when the list was built, the same on every item.
  */
 public record RoomSummaryDto(
     @Schema(requiredMode = REQUIRED) UUID id,
@@ -22,4 +24,6 @@ public record RoomSummaryDto(
     @Schema(requiredMode = REQUIRED) int minManagers,
     @Schema(requiredMode = REQUIRED) int maxManagers,
     @Schema(nullable = true) FranchiseDto myFranchise,
-    @Schema(requiredMode = REQUIRED) Instant updatedAt) {}
+    @Schema(requiredMode = REQUIRED) Instant updatedAt,
+    @Schema(nullable = true) Instant auctionStartsAt,
+    @Schema(requiredMode = REQUIRED) Instant serverNow) {}

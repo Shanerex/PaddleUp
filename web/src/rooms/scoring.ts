@@ -30,8 +30,8 @@ function band(from: number, to: number): string {
 
 /**
  * The pack's scoring rules as read-only tables (Home `wizard:4`): one card of points per stat,
- * one of bonuses, and one per rate band. Every label comes from the room's pack snapshot, so no
- * sport words live in the UI.
+ * one of bonuses, and one per rate band; a stat the pack puts in a group is listed in that group's
+ * card instead. Every label comes from the room's pack snapshot, so no sport words live in the UI.
  */
 export function scoringGroups(rules: Rule[], labels: Labels): ScoreGroup[] {
   const stat = (id: unknown) => labelFor(labels.stats, String(id ?? ""));
@@ -39,19 +39,33 @@ export function scoringGroups(rules: Rule[], labels: Labels): ScoreGroup[] {
   const perStat: ScoreGroup = { title: "Points per stat", note: "", rows: [] };
   const bonuses: ScoreGroup = { title: "Bonuses", note: "", rows: [] };
   const bands: ScoreGroup[] = [];
+  // One card per pack stat group, in first-appearance order. A stat with no group uses the two
+  // fixed cards above, so a pack with no groups reads as it always did.
+  const grouped = new Map<string, ScoreGroup>();
+  const statGroup = (id: unknown): string | undefined => labels.stats.find((s) => s.id === id)?.group || undefined;
+  const target = (id: unknown, fallback: ScoreGroup): ScoreGroup => {
+    const name = statGroup(id);
+    if (!name) return fallback;
+    let card = grouped.get(name);
+    if (!card) {
+      card = { title: name, note: "", rows: [] };
+      grouped.set(name, card);
+    }
+    return card;
+  };
 
   function add(rule: Rule, suffix = "") {
     switch (kind(rule.type)) {
       case "perunit":
-        perStat.rows.push({ label: `${stat(rule.stat)}${suffix}`, points: signed(rule.points) });
+        target(rule.stat, perStat).rows.push({ label: `${stat(rule.stat)}${suffix}`, points: signed(rule.points) });
         break;
       case "thresholdbonus":
         for (const t of (rule.tiers as { atLeast?: number; points?: number }[]) ?? []) {
-          bonuses.rows.push({ label: `${stat(rule.stat)} ${t.atLeast}+${suffix}`, points: signed(t.points) });
+          target(rule.stat, bonuses).rows.push({ label: `${stat(rule.stat)} ${t.atLeast}+${suffix}`, points: signed(t.points) });
         }
         break;
       case "eventtypebonus":
-        bonuses.rows.push({ label: `${stat(rule.stat)}: ${humanise(String(rule.eventType ?? "")).toLowerCase()}${suffix}`, points: signed(rule.points) });
+        target(rule.stat, bonuses).rows.push({ label: `${stat(rule.stat)}: ${humanise(String(rule.eventType ?? "")).toLowerCase()}${suffix}`, points: signed(rule.points) });
         break;
       case "bandedrate": {
         const min = rule.minVolume as { stat?: string; atLeast?: number } | undefined;
@@ -79,5 +93,5 @@ export function scoringGroups(rules: Rule[], labels: Labels): ScoreGroup[] {
   }
 
   rules.forEach((r) => add(r));
-  return [perStat, bonuses, ...bands].filter((g) => g.rows.length > 0);
+  return [...grouped.values(), perStat, bonuses, ...bands].filter((g) => g.rows.length > 0);
 }

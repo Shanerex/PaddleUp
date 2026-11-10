@@ -10,7 +10,11 @@ import {
   updateProfile,
   type Profile,
 } from "../../api/client";
+import { BackLink } from "../../ui/AppShell";
+import { Button } from "../../ui/Button";
+import { Icon } from "../../ui/Icon";
 import { avatarSrc } from "./avatar";
+import s from "./profile.module.css";
 
 export function ProfileView() {
   const router = useRouter();
@@ -71,75 +75,95 @@ export function ProfileView() {
 
   if (!profile) {
     return (
-      <section className="panel">
-        <p aria-live="assertive" className="alert">
+      <div className={s.page}>
+        <p aria-live="assertive" className={s.error}>
           {error}
         </p>
-        {!error && <p>Loading your profile.</p>}
-      </section>
+        {!error && <p className={s.helper}>Loading your profile.</p>}
+      </div>
     );
   }
 
   const choices = [
     ...presets.map((id, i) => ({ value: id, label: `Avatar ${i + 1}` })),
-    ...(profile.googlePictureUrl
-      ? [{ value: profile.googlePictureUrl, label: "Google picture" }]
-      : []),
+    ...(profile.googlePictureUrl ? [{ value: profile.googlePictureUrl, label: "Google picture" }] : []),
   ];
 
   return (
-    <section className="panel">
-      <div className="identity">
-        {/* eslint-disable-next-line @next/next/no-img-element -- small bundled svg or Google url */}
-        <img className="avatar-large" src={avatarSrc(profile.avatar)} alt="Your avatar" />
-        <div>
-          <h1>{profile.displayName}</h1>
-          <p>{profile.email}</p>
-        </div>
+    <div className={s.page}>
+      <BackLink />
+      <h1 className={s.title}>Your profile</h1>
+      <div className={s.cols}>
+        <section className={`${s.card} ${s.identity}`} aria-label="Your account">
+          {/* eslint-disable-next-line @next/next/no-img-element -- small bundled svg or Google url */}
+          <img className={s.avatarLarge} src={avatarSrc(profile.avatar)} alt="Your avatar" />
+          <div className={s.who}>
+            <h2 className={s.name}>{profile.displayName}</h2>
+            <span className={s.email}>{profile.email}</span>
+          </div>
+          <span className={s.note}>Your name shows next to your franchise in every room you&apos;re in.</span>
+        </section>
+
+        <form onSubmit={save} className={`${s.card} ${s.form}`} noValidate>
+          <label className={s.label}>
+            Display name
+            <span className={s.input}>
+              <input value={name} maxLength={30} required onChange={(e) => setName(e.target.value)} />
+              <span className={s.count} aria-hidden="true">
+                {name.length} / 30
+              </span>
+            </span>
+            <span className={s.helper}>2–30 characters.</span>
+          </label>
+
+          <div className={s.avatars}>
+            <span className={s.label}>Avatar</span>
+            <div className={s.grid}>
+              {choices.map((choice) => (
+                <button
+                  key={choice.value}
+                  type="button"
+                  className={s.avatar}
+                  aria-label={choice.label}
+                  aria-pressed={avatar === choice.value}
+                  onClick={() => setAvatar(choice.value)}
+                >
+                  {/* eslint-disable-next-line @next/next/no-img-element -- small bundled svg or Google url */}
+                  <img src={avatarSrc(choice.value)} alt="" />
+                </button>
+              ))}
+            </div>
+            {profile.googlePictureUrl && <span className={s.helper}>The last one is your Google picture.</span>}
+          </div>
+
+          <p aria-live="assertive" className={s.error}>
+            {error}
+          </p>
+          <div className={s.actions}>
+            <Button type="submit" variant="brand" size="M48" busy={busy}>
+              Save
+            </Button>
+            <output className={s.saved}>
+              {saved && (
+                <>
+                  <Icon name="check_circle" size={18} />
+                  Saved.
+                </>
+              )}
+            </output>
+          </div>
+        </form>
       </div>
 
-      <form onSubmit={save} className="stack" noValidate>
-        <label className="field">
-          <span>Display name</span>
-          <input
-            value={name}
-            maxLength={30}
-            required
-            onChange={(e) => setName(e.target.value)}
-          />
-        </label>
-
-        <div className="field">
-          <span>Avatar</span>
-          <div className="avatar-grid">
-            {choices.map((choice) => (
-              <button
-                key={choice.value}
-                type="button"
-                className="avatar-option"
-                aria-label={choice.label}
-                aria-pressed={avatar === choice.value}
-                onClick={() => setAvatar(choice.value)}
-              >
-                {/* eslint-disable-next-line @next/next/no-img-element -- small bundled svg or Google url */}
-                <img src={avatarSrc(choice.value)} alt="" />
-              </button>
-            ))}
-          </div>
+      <section className={s.signOut} aria-label="Sign out">
+        <div className={s.signOutText}>
+          <span className={s.signOutTitle}>Sign out</span>
+          <span className={s.helper}>You stay in your rooms. Sign back in with Google or a magic link.</span>
         </div>
-
-        <p aria-live="assertive" className="alert">
-          {error}
-        </p>
-        <output className="notice">{saved ? "Saved." : ""}</output>
-        <button type="submit" className="btn btn-primary" disabled={busy}>
-          Save
-        </button>
-      </form>
-
-      <button type="button" className="btn btn-quiet" onClick={leave}>
-        Sign out
-      </button>
-    </section>
+        <Button variant="outline" size="M48" icon="logout" onClick={leave} style={{ color: "var(--bad)" }}>
+          Sign out
+        </Button>
+      </section>
+    </div>
   );
 }

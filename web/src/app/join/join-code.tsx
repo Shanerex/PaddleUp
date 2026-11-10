@@ -5,6 +5,7 @@ import { useState, type FormEvent } from "react";
 import { formatCode, normaliseCode } from "../../rooms/codes";
 import { Button } from "../../ui/Button";
 import { BackLink, shell } from "../../ui/AppShell";
+import { Icon } from "../../ui/Icon";
 import { Field } from "../../ui/kit";
 import s from "./join.module.css";
 
@@ -27,6 +28,9 @@ export function JoinCode() {
   return (
     <form className={shell.narrow} onSubmit={submit} noValidate>
       <BackLink />
+      <span className={s.tile} style={{ background: "var(--brand-tint)", color: "var(--brand-ink)" }}>
+        <Icon name="key" size={28} />
+      </span>
       <div className={s.titles}>
         <h1 className={s.title}>Join a room</h1>
         <p className={shell.lede}>Paste the invite code a friend sent you. Codes work for 7 days.</p>

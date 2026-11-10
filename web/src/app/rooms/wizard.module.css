@@ -1,4 +1,4 @@
-/* Home `wizard:1-6` (Home.dc.html 128-245). Room setup uses --brand: no franchise yet. */
+/* Home `wizard:1-6` and `settings:*`. Room setup and settings use --brand: outside the room world. */
 .frame {
   flex: 1;
   min-height: 0;
@@ -17,6 +17,7 @@
     width: 280px;
     flex-shrink: 0;
     padding: 24px 16px;
+    overflow-y: auto;
     background: var(--surface);
     border-right: 1px solid var(--line);
   }
@@ -98,12 +99,24 @@
   flex-direction: column;
 }
 
+/* Header, body and footer share one centred 640px column. The header and footer stay put and only
+   the body scrolls (AppShell gives the frame a fixed height). */
 .top {
   flex-shrink: 0;
+  padding: 16px 20px 0;
+}
+
+.topSettings {
+  padding-bottom: 12px;
+  border-bottom: 1px solid var(--line);
+}
+
+.topInner {
+  max-width: 640px;
+  margin: 0 auto;
   display: flex;
   flex-direction: column;
   gap: 12px;
-  padding: 16px 20px 0;
 }
 
 .bars {
@@ -145,31 +158,261 @@
 
 .body {
   flex: 1;
+  min-height: 0;
+  overflow: auto;
   padding: 16px 20px 24px;
 }
 
 .content {
   max-width: 640px;
+  margin: 0 auto;
   display: flex;
   flex-direction: column;
   gap: 16px;
 }
 
-.footer {
-  position: sticky;
-  bottom: 0;
-  flex-shrink: 0;
+/* The section's fields; a locked room disables the fieldset and dims it (Home `settings:locked`). */
+.fields {
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+  border: 0;
   display: flex;
-  gap: 10px;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.fields:disabled {
+  opacity: 0.55;
+}
+
+.footer {
+  flex-shrink: 0;
   padding: 12px 20px 16px;
   border-top: 1px solid var(--line);
   background: var(--surface);
+}
+
+.footerInner {
+  max-width: 640px;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.footerRow {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.spacer {
+  display: none;
+}
+
+@media (min-width: 640px) {
+  .spacer {
+    display: block;
+    flex: 1;
+  }
+}
+
+/* "Back to room" lives in the footer on desktop and as the header link on a phone. */
+.backRoom {
+  display: none;
+}
+
+@media (min-width: 640px) {
+  .backRoom {
+    display: inline-flex;
+  }
 }
 
 .next {
   flex: 1;
   max-width: 420px;
   margin-left: auto;
+}
+
+.footerSettings .next {
+  margin-left: 0;
+}
+
+.caption {
+  font-size: 12px;
+  line-height: 1.4;
+  color: var(--ink-2);
+  text-align: right;
+}
+
+/* Room settings (Home `settings:*`). */
+.railHead {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 0 10px 14px;
+}
+
+.railTitle {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  min-width: 0;
+}
+
+.railName {
+  font-size: 15px;
+  font-weight: 800;
+  overflow-wrap: anywhere;
+}
+
+.dotIcon {
+  font-family: inherit;
+}
+
+.sport {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 12px 10px 0;
+  padding: 12px;
+  border-radius: 14px;
+  background: var(--surface-2);
+}
+
+.sportText {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+
+.sportLabel {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  color: var(--ink-2);
+}
+
+.sportName {
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.backLink {
+  align-self: flex-start;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--ink-2);
+  font: inherit;
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+@media (min-width: 640px) {
+  .backLink {
+    display: none;
+  }
+}
+
+.titleStack {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.eyebrow {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  color: var(--ink-2);
+}
+
+.lockChip {
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 32px;
+  padding: 0 12px;
+  border-radius: 999px;
+  background: var(--surface-2);
+  color: var(--ink-2);
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.chips {
+  display: flex;
+  gap: 6px;
+  margin: 0 -20px;
+  padding: 0 20px;
+  overflow-x: auto;
+}
+
+@media (min-width: 640px) {
+  .chips {
+    display: none;
+  }
+}
+
+.sectionChip {
+  flex-shrink: 0;
+  height: 36px;
+  padding: 0 14px;
+  border: 0;
+  border-radius: 999px;
+  background: var(--surface-2);
+  color: var(--ink-2);
+  font: inherit;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.sectionChip[aria-current="step"] {
+  background: var(--brand-tint);
+  color: var(--brand-ink);
+  font-weight: 800;
+}
+
+.settingsNote {
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+  padding: 12px;
+  border-radius: 14px;
+  font-size: 13px;
+  line-height: 1.45;
+}
+
+.neutral {
+  background: var(--surface-2);
+  color: var(--ink-2);
+}
+
+.warn {
+  background: var(--warn-tint);
+  color: var(--warn-ink);
+}
+
+.bad {
+  background: var(--bad-tint);
+  color: var(--bad);
+}
+
+.settingsNote b {
+  color: var(--ink);
+}
+
+.noteBody {
+  color: var(--ink-2);
 }
 
 .intro {
@@ -260,6 +503,12 @@
   display: flex;
   flex-direction: column;
   gap: 8px;
+}
+
+.groupTight {
+  display: flex;
+  flex-direction: column;
+  gap: 6px; /* Home.dc.html wizard:2-3: label to control is 6, the rule lists below use 8 */
 }
 
 .groupHead {
@@ -612,4 +861,9 @@
 .list {
   margin: 0;
   padding: 0;
+}
+
+.topSettings .titleRow {
+  align-items: flex-end;
+  gap: 12px;
 }

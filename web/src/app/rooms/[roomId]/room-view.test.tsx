@@ -246,8 +246,32 @@ describe("RoomView as a manager (Room `setupManager`)", () => {
     await user.click(screen.getByRole("button", { name: "Save changes" }));
 
     expect(await screen.findByText("Too late for that.")).toBeTruthy();
+    expect(screen.getByText("The auction has started, so franchises are locked. Your change wasn't saved.")).toBeTruthy();
     expect(await screen.findByText("AUCTION LIVE")).toBeTruthy();
     expect(screen.queryByRole("dialog")).toBeNull();
+  });
+
+  it("tells a manager sent back from settings that only the Commissioner changes them (Room `settingsNote`)", async () => {
+    vi.mocked(getRoom).mockResolvedValue(room("setup", { myRole: "manager", myFranchiseId: "f-ben", advanceTo: [] }));
+    render(<RoomView roomId="room-1" note="settings" />);
+
+    const note = await screen.findByText("Only the Commissioner changes settings.");
+    expect(note.closest("[role='status']")?.textContent).toContain("Ann can change the rules until the auction goes live.");
+  });
+
+  it("says when the refresh failed and when the room on screen is from", async () => {
+    const user = userEvent.setup();
+    render(<RoomView roomId="room-1" />);
+    await screen.findByText("AUCTION NEXT");
+    vi.mocked(getRoom).mockRejectedValue(new ApiError(500, null));
+
+    fireEvent(document, new Event("visibilitychange"));
+
+    const banner = await screen.findByText("Couldn't refresh the room.");
+    expect(banner.closest("[role='alert']")?.textContent).toMatch(/Showing what we had at \d{1,2}:\d{2}/);
+    vi.mocked(getRoom).mockResolvedValue(room("auction_scheduled", { myRole: "manager", myFranchiseId: "f-ben", advanceTo: [] }));
+    await user.click(screen.getByRole("button", { name: "Retry" }));
+    await waitFor(() => expect(screen.queryByText("Couldn't refresh the room.")).toBeNull());
   });
 });
 

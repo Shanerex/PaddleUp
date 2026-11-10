@@ -99,13 +99,28 @@ class CricketPackTest {
   }
 
   @Test
+  void displayFieldsAreFilledInPackOrder() {
+    withPack(
+        pack -> {
+          assertThat(pack.roles().stream().map(r -> r.abbr()).toList())
+              .containsExactly("BAT", "BWL", "AR", "WK");
+          assertThat(pack.statSchema()).allSatisfy(st -> assertThat(st.group()).isNotBlank());
+          assertThat(pack.statSchema().stream().map(st -> st.group()).distinct().toList())
+              .containsExactly("Fielding & other", "Batting", "Bowling");
+        });
+  }
+
+  @Test
   void standardPresetHoldsMoneySquadAndMinimumsInLakh() {
     withPack(
         pack -> {
           var p = preset(pack, "standard");
           assertThat(p.purse()).isEqualTo(12_000);
           assertThat(p.currencyCode()).isEqualTo("INR");
-          assertThat(p.displayUnit()).isEqualTo(new PresetDto.DisplayUnit("Crore", 100));
+          assertThat(p.displayUnit())
+              .isEqualTo(
+                  new PresetDto.DisplayUnit(
+                      "Crore", 100, "Cr", new PresetDto.DisplayUnit.Minor("Lakh", "L", 1)));
           assertThat(p.squadMin()).isEqualTo(18);
           assertThat(p.squadMax()).isEqualTo(25);
           assertThat(p.roleMinimums()).isEqualTo(Map.of("WK", 2, "BAT", 5, "BOWL", 5, "AR", 3));
