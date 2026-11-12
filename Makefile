@@ -25,5 +25,9 @@ server-dev:
 web-dev: web-install
 	cd web && npm run dev
 
-web-install:
-	cd web && npm ci
+# npm ci only when the lockfile is newer than the last install. npm writes the marker itself;
+# the touch covers an install that leaves it untouched.
+web/node_modules/.package-lock.json: web/package-lock.json
+	cd web && npm ci && touch node_modules/.package-lock.json
+
+web-install: web/node_modules/.package-lock.json

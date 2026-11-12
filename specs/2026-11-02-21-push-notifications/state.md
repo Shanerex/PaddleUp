@@ -6,7 +6,7 @@ g1: none
 g2: none
 g3: none
 bump: none
-next: when deps are merged: git switch -c feature/2026-11-02-21-push-notifications main, then /rx:next (pm drafts requirements.md)
+next: deferred to P2, not scheduled; to revive: git switch -c feature/2026-11-02-21-push-notifications main, then /rx:next (pm drafts requirements.md)
 ---
 # State: 2026-11-02-21-push-notifications
 
@@ -18,3 +18,4 @@ next: when deps are merged: git switch -c feature/2026-11-02-21-push-notificatio
 - 2026-11-02 intake: why: people miss auction starts, outbids and match results.
 - 2026-11-02 intake: who: Managers who opt in.
 - 2026-11-02 intake: done-when: web push for auction starting soon, outbid (when off the auction screen) and post-match points summary; the report-card-ready hook is added by report-card.
+- 2026-11-12 intake: deferred to P2 by owner (low priority; nothing depends on it); see decisions/2026-11-12-tiered-lanes-quick-in-parallel
