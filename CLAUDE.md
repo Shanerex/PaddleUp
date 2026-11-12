@@ -50,11 +50,11 @@ Not: real-money play, public lobbies, native apps, AI that bids or acts for a ma
   sets rules and limits, the mock sets the look. rx spawn prompts for UI work include those files.
 
 ## rx
-Workflow: /rx:feature <name>, then /rx:next.
-Specs live in specs/<id>/. All P0/P1 specs are pre-seeded; build order and how to start one
-are in docs/roadmap.md (git switch -c feature/<id> main, then /rx:next; not /rx:feature).
-Formats are in the rx-spec skill.
-Requirements: anything with a lifetime gets a state x entry-point matrix before its ACs
-(learnings/2026-11-02-state-matrix-for-lifecycles). Verify: besides the AC tests, run the
-changed user flows in a real browser (Playwright, make dev) incl. new tab and stale state, and
-screenshot each changed screen beside its mock at 390 and 1440 (decisions/2026-11-03-design-source-fidelity).
+Workflow: /rx:next on a pre-seeded spec in specs/<id>/ (not /rx:feature); lane, build order and
+how to start are in docs/roadmap.md, formats in the rx-spec skill. Requirements: anything with a
+lifetime gets a state x entry-point matrix before its ACs (learnings/2026-11-02-state-matrix-for-lifecycles).
+Scope freezes at G2: later finds go in this spec's own state.md as "deferred to <id>: ...". A plan
+over 100 lines or 40 tasks is split before G2. architecture.md changes are a patch under plan.md
+"Architecture changes", never a task. Verify: the AC tests; /code-review on the branch (findings join
+the fix loop, the PR opens after G3); the changed flows in a real browser (Playwright, make dev) incl.
+new tab and stale state; each changed screen beside its mock at 390 and 1440 (decisions/2026-11-03-design-source-fidelity).

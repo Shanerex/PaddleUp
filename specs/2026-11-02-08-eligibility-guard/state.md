@@ -6,7 +6,7 @@ g1: none
 g2: none
 g3: none
 bump: none
-next: when deps are merged: git switch -c feature/2026-11-02-08-eligibility-guard main, then /rx:next (pm drafts requirements.md)
+next: when deps are merged: git switch -c feature/2026-11-02-08-eligibility-guard main, write quick.md (quick lane, docs/roadmap.md), then /rx:next
 ---
 # State: 2026-11-02-08-eligibility-guard
 
