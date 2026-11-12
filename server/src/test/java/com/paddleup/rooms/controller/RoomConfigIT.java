@@ -182,14 +182,22 @@ class RoomConfigIT extends AbstractRoomsIT {
   }
 
   @Test
-  void aScoringRuleOnAnUnknownStatNamesTheRule() {
-    assertThat(
-            violationsFor(
-                c ->
-                    ((ObjectNode) ((ArrayNode) c.get("scoringRules").get("rules")).get(0))
-                        .put("stat", "not-a-stat"),
-                0))
-        .containsExactly("scoringRules.rules[0].stat");
+  void aClientSentChangeToTheScoringRulesIsIgnored() {
+    Person commissioner = person();
+    String roomId = createRoom(commissioner);
+    JsonNode before = config(commissioner, roomId).get("scoringRules");
+    ObjectNode edited = config(commissioner, roomId);
+    ((ObjectNode) ((ArrayNode) edited.get("scoringRules").get("rules")).get(0))
+        .put("stat", "not-a-stat");
+    ((ArrayNode) edited.get("scoringRules").get("rules")).remove(1);
+    edited.put("purse", 4321);
+
+    var saved = save(commissioner, roomId, 1, edited);
+
+    assertThat(saved.getStatusCode()).as(saved.getBody()).isEqualTo(HttpStatus.OK);
+    JsonNode after = config(commissioner, roomId);
+    assertThat(after.get("purse").asLong()).isEqualTo(4321);
+    assertThat(after.get("scoringRules")).isEqualTo(before);
   }
 
   /** Saves a config whose first scoring rule is a role-conditional chain {@code depth} deep. */
@@ -213,11 +221,13 @@ class RoomConfigIT extends AbstractRoomsIT {
         payload);
   }
 
-  // Security review S-6: an over-deep rule chain is a 400, never a stack overflow or a 500.
+  // Security review S-6: an over-deep rule chain never overflows the stack or gives a 500; the
+  // rules are ignored on save, so a chain inside the parser limit is dropped.
   @Test
-  void anOverDeepRuleChainIsRefusedAsAViolation() {
-    assertThat(violationFields(saveNestedRule(20)))
-        .containsExactly("scoringRules.rules[0].rule.rule.rule");
+  void anOverDeepRuleChainIsDroppedNotStored() {
+    var response = saveNestedRule(20);
+    assertThat(response.getStatusCode()).as(response.getBody()).isEqualTo(HttpStatus.OK);
+    assertThat(response.getBody()).doesNotContain("\"id\":\"c\"");
   }
 
   @Test
@@ -269,7 +279,10 @@ class RoomConfigIT extends AbstractRoomsIT {
     assertThat(read.getStatusCode()).as(read.getBody()).isEqualTo(HttpStatus.OK);
     // The repair path works too: a later save of the same room is not 500.
     int version = body(read).get("configVersion").asInt();
-    var again = save(commissioner, roomId, version, config(commissioner, roomId).put("purse", 77));
+    // The name is changed, not the purse: a purse could fall below a base price in whichever
+    // season dataset earlier tests left as the latest.
+    var again =
+        save(commissioner, roomId, version, config(commissioner, roomId).put("name", "Repaired"));
     assertThat(again.getStatusCode()).as(again.getBody()).isEqualTo(HttpStatus.OK);
   }
 
@@ -281,33 +294,6 @@ class RoomConfigIT extends AbstractRoomsIT {
   @Test
   void aLargeConfigOfExtremeBandValuesStaysReadable() {
     saveLargestThenRead(bandRules(false, "{\"from\":-1e6,\"to\":-1e6,\"points\":-1e6}"));
-  }
-
-  @Test
-  void aConfigPastTheSavedSizeCapIs400NotStored() {
-    Person commissioner = person();
-    String roomId = createRoom(commissioner);
-    ObjectNode config = config(commissioner, roomId);
-    ArrayNode rules = (ArrayNode) config.get("scoringRules").get("rules");
-    rules.removeAll();
-    for (int i = 0; i < 100; i++) {
-      ObjectNode rule = rules.addObject();
-      rule.put("type", "banded-rate").put("id", "b" + i);
-      rule.put("numerator", "runs").put("denominator", "balls-faced").put("scale", 1);
-      ArrayNode bands = rule.putArray("bands");
-      for (int b = 0; b < 50; b++) {
-        bands.addObject().put("from", 1).put("to", 2).put("points", 3);
-      }
-    }
-    // Under the 256 KB request cap, so the saved-size cap is what refuses it.
-    assertThat(config.toString().length()).isLessThan(256 * 1024);
-
-    var response = save(commissioner, roomId, 1, config);
-
-    assertThat(response.getStatusCode()).as(response.getBody()).isEqualTo(HttpStatus.BAD_REQUEST);
-    assertThat(body(response).get("error").asText()).isEqualTo("invalid_config");
-    assertThat(body(get(commissioner, "/api/rooms/" + roomId)).get("configVersion").asInt())
-        .isEqualTo(1);
   }
 
   @Test

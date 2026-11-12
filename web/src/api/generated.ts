@@ -4,6 +4,22 @@
  */
 
 export interface paths {
+    "/api/rooms/{roomId}/scoring/rules": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["readRules"];
+        put: operations["editRules"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/rooms/{roomId}/auction/schedule": {
         parameters: {
             query?: never;
@@ -94,6 +110,38 @@ export interface paths {
         get: operations["mine"];
         put?: never;
         post: operations["create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/rooms/{roomId}/scoring/rules/revert": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["revertRules"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/rooms/{roomId}/scoring/rules/post-freeze-change": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["changeRulesAfterFreeze"];
         delete?: never;
         options?: never;
         head?: never;
@@ -356,6 +404,38 @@ export interface paths {
         patch: operations["update"];
         trace?: never;
     };
+    "/api/rooms/{roomId}/scoring/rules/log": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["ruleLog"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/rooms/{roomId}/scoring/matches/{matchId}/points": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["matchPoints"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/rooms/{roomId}/auction": {
         parameters: {
             query?: never;
@@ -488,6 +568,92 @@ export interface paths {
 export type webhooks = Record<string, never>;
 export interface components {
     schemas: {
+        AppearanceBonus: {
+            type: "AppearanceBonus";
+        } & (Omit<components["schemas"]["RuleDto"], "type"> & {
+            id?: string;
+            points?: number;
+            label?: string;
+        });
+        Band: {
+            from?: number;
+            to?: number;
+            points?: number;
+        };
+        BandedRate: {
+            type: "BandedRate";
+        } & (Omit<components["schemas"]["RuleDto"], "type"> & {
+            id?: string;
+            numerator?: string;
+            denominator?: string;
+            scale?: number;
+            minVolume?: components["schemas"]["MinVolume"];
+            bands?: components["schemas"]["Band"][];
+            label?: string;
+        });
+        EditRulesRequest: {
+            /** Format: int32 */
+            version: number;
+            rules: components["schemas"]["RuleSetDto"];
+        };
+        EventTypeBonus: {
+            type: "EventTypeBonus";
+        } & (Omit<components["schemas"]["RuleDto"], "type"> & {
+            id?: string;
+            stat?: string;
+            eventType?: string;
+            points?: number;
+            label?: string;
+        });
+        MinVolume: {
+            stat?: string;
+            atLeast?: number;
+        };
+        PerUnit: {
+            type: "PerUnit";
+        } & (Omit<components["schemas"]["RuleDto"], "type"> & {
+            id?: string;
+            stat?: string;
+            points?: number;
+            label?: string;
+        });
+        RoleConditional: {
+            type: "RoleConditional";
+        } & (Omit<components["schemas"]["RuleDto"], "type"> & {
+            id?: string;
+            roles?: string[];
+            rule?: components["schemas"]["AppearanceBonus"] | components["schemas"]["BandedRate"] | components["schemas"]["EventTypeBonus"] | components["schemas"]["PerUnit"] | components["schemas"]["RoleConditional"] | components["schemas"]["ThresholdBonus"];
+            label?: string;
+        });
+        RuleDto: {
+            type: string;
+        };
+        RuleSetDto: {
+            rules?: (components["schemas"]["AppearanceBonus"] | components["schemas"]["BandedRate"] | components["schemas"]["EventTypeBonus"] | components["schemas"]["PerUnit"] | components["schemas"]["RoleConditional"] | components["schemas"]["ThresholdBonus"])[];
+        };
+        ThresholdBonus: {
+            type: "ThresholdBonus";
+        } & (Omit<components["schemas"]["RuleDto"], "type"> & {
+            id?: string;
+            stat?: string;
+            tiers?: components["schemas"]["Tier"][];
+            label?: string;
+        });
+        Tier: {
+            atLeast?: number;
+            points?: number;
+        };
+        RuleSetViewDto: {
+            rules: components["schemas"]["RuleSetDto"];
+            status: string;
+            /** Format: int32 */
+            version: number;
+            /** @description The pack version the default was taken from */
+            packVersion: string;
+            frozen: boolean;
+            /** Format: date-time */
+            freezesAt?: string | null;
+        };
         ScheduleRequest: {
             /** Format: date-time */
             startsAt: string;
@@ -644,27 +810,6 @@ export interface components {
             };
             reportCardVisibility: string;
         };
-        AppearanceBonus: {
-            type: "AppearanceBonus";
-        } & (Omit<components["schemas"]["RuleDto"], "type"> & {
-            id?: string;
-            points?: number;
-        });
-        Band: {
-            from?: number;
-            to?: number;
-            points?: number;
-        };
-        BandedRate: {
-            type: "BandedRate";
-        } & (Omit<components["schemas"]["RuleDto"], "type"> & {
-            id?: string;
-            numerator?: string;
-            denominator?: string;
-            scale?: number;
-            minVolume?: components["schemas"]["MinVolume"];
-            bands?: components["schemas"]["Band"][];
-        });
         DisplayUnit: {
             label?: string;
             /** Format: int64 */
@@ -672,23 +817,11 @@ export interface components {
             short?: string;
             minor?: components["schemas"]["Minor"];
         };
-        EventTypeBonus: {
-            type: "EventTypeBonus";
-        } & (Omit<components["schemas"]["RuleDto"], "type"> & {
-            id?: string;
-            stat?: string;
-            eventType?: string;
-            points?: number;
-        });
         IncrementStep: {
             /** Format: int64 */
             from?: number;
             /** Format: int64 */
             step?: number;
-        };
-        MinVolume: {
-            stat?: string;
-            atLeast?: number;
         };
         Minor: {
             label?: string;
@@ -696,13 +829,6 @@ export interface components {
             /** Format: int64 */
             divisor?: number;
         };
-        PerUnit: {
-            type: "PerUnit";
-        } & (Omit<components["schemas"]["RuleDto"], "type"> & {
-            id?: string;
-            stat?: string;
-            points?: number;
-        });
         Retention: {
             /** Format: int32 */
             maxRetentions?: number;
@@ -716,13 +842,6 @@ export interface components {
             rtmFromSeason?: number;
             rtmCounterRaise?: boolean;
         };
-        RoleConditional: {
-            type: "RoleConditional";
-        } & (Omit<components["schemas"]["RuleDto"], "type"> & {
-            id?: string;
-            roles?: string[];
-            rule?: components["schemas"]["AppearanceBonus"] | components["schemas"]["BandedRate"] | components["schemas"]["EventTypeBonus"] | components["schemas"]["PerUnit"] | components["schemas"]["RoleConditional"] | components["schemas"]["ThresholdBonus"];
-        });
         RoomConfigDto: {
             name: string;
             competition: string;
@@ -764,12 +883,6 @@ export interface components {
              */
             gapSeconds?: number;
         };
-        RuleDto: {
-            type: string;
-        };
-        RuleSetDto: {
-            rules?: (components["schemas"]["AppearanceBonus"] | components["schemas"]["BandedRate"] | components["schemas"]["EventTypeBonus"] | components["schemas"]["PerUnit"] | components["schemas"]["RoleConditional"] | components["schemas"]["ThresholdBonus"])[];
-        };
         SaveConfigRequest: {
             /** Format: int32 */
             version: number;
@@ -779,16 +892,9 @@ export interface components {
             tag?: string;
             prices?: number[];
         };
-        ThresholdBonus: {
-            type: "ThresholdBonus";
-        } & (Omit<components["schemas"]["RuleDto"], "type"> & {
-            id?: string;
+        AppearanceRuleDto: {
             stat?: string;
-            tiers?: components["schemas"]["Tier"][];
-        });
-        Tier: {
             atLeast?: number;
-            points?: number;
         };
         PackLabelsDto: {
             packId: string;
@@ -801,6 +907,8 @@ export interface components {
                 [key: string]: string;
             };
             packName?: string | null;
+            /** @description The pack's appearance rule at creation; absent on rooms made before it */
+            appearanceRule?: components["schemas"]["AppearanceRuleDto"];
         };
         RestrictedCategoryDto: {
             id?: string;
@@ -855,6 +963,17 @@ export interface components {
             presetId: string;
             name: string;
             competition?: string;
+        };
+        RevertRequest: {
+            /** Format: int32 */
+            version: number;
+        };
+        PostFreezeChangeRequest: {
+            /** Format: int32 */
+            version: number;
+            rules: components["schemas"]["RuleSetDto"];
+            reason: string;
+            attested: boolean;
         };
         TicketDto: {
             ticket?: string;
@@ -1026,6 +1145,46 @@ export interface components {
             /** Format: date-time */
             serverNow: string;
         };
+        RuleDiffDto: {
+            added: string[];
+            removed: string[];
+            changed: string[];
+        };
+        RuleLogEntryDto: {
+            /** Format: int64 */
+            seq: number;
+            /** @description edit, revert or post_freeze_change */
+            kind: string;
+            /** Format: uuid */
+            actor: string;
+            /** Format: date-time */
+            occurredAt: string;
+            reason?: string | null;
+            attested: boolean;
+            before: components["schemas"]["RuleSetDto"];
+            after: components["schemas"]["RuleSetDto"];
+            diff: components["schemas"]["RuleDiffDto"];
+        };
+        MatchPointsDto: {
+            matchId: string;
+            players: components["schemas"]["PlayerPointsDto"][];
+        };
+        PlayerPointsDto: {
+            /** Format: uuid */
+            poolPlayerId: string;
+            total: number;
+            lines: components["schemas"]["PointsLineDto"][];
+            /**
+             * Format: int32
+             * @description The rule set version the points came from
+             */
+            ruleSetVersion: number;
+        };
+        PointsLineDto: {
+            ruleId: string;
+            label: string;
+            points: number;
+        };
         AuctionEventDto: {
             /** Format: int64 */
             seq: number;
@@ -1104,6 +1263,54 @@ export interface components {
 }
 export type $defs = Record<string, never>;
 export interface operations {
+    readRules: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                roomId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["RuleSetViewDto"];
+                };
+            };
+        };
+    };
+    editRules: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                roomId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["EditRulesRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["RuleSetViewDto"];
+                };
+            };
+        };
+    };
     schedule: {
         parameters: {
             query?: never;
@@ -1300,6 +1507,58 @@ export interface operations {
                 };
                 content: {
                     "*/*": components["schemas"]["RoomDto"];
+                };
+            };
+        };
+    };
+    revertRules: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                roomId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RevertRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["RuleSetViewDto"];
+                };
+            };
+        };
+    };
+    changeRulesAfterFreeze: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                roomId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PostFreezeChangeRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["RuleSetViewDto"];
                 };
             };
         };
@@ -1829,6 +2088,51 @@ export interface operations {
                 };
                 content: {
                     "*/*": components["schemas"]["ProfileDto"];
+                };
+            };
+        };
+    };
+    ruleLog: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                roomId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["RuleLogEntryDto"][];
+                };
+            };
+        };
+    };
+    matchPoints: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                roomId: string;
+                matchId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["MatchPointsDto"];
                 };
             };
         };

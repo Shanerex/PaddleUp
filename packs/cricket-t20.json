@@ -106,79 +106,79 @@
   ],
   "defaultRuleSet": {
     "rules": [
-      {"type": "per-unit", "id": "runs-points", "stat": "runs", "points": 1},
-      {"type": "per-unit", "id": "four-bonus", "stat": "fours", "points": 2},
-      {"type": "per-unit", "id": "six-bonus", "stat": "sixes", "points": 4},
+      {"type": "per-unit", "id": "runs-points", "label": "Runs", "stat": "runs", "points": 1},
+      {"type": "per-unit", "id": "four-bonus", "label": "Four bonus", "stat": "fours", "points": 2},
+      {"type": "per-unit", "id": "six-bonus", "label": "Six bonus", "stat": "sixes", "points": 4},
       {
-        "type": "threshold-bonus", "id": "fifty-bonus", "stat": "runs",
+        "type": "threshold-bonus", "id": "fifty-bonus", "label": "Half-century bonus", "stat": "runs",
         "tiers": [{"atLeast": 50, "points": 10}]
       },
       {
-        "type": "threshold-bonus", "id": "century-bonus", "stat": "runs",
+        "type": "threshold-bonus", "id": "century-bonus", "label": "Century bonus", "stat": "runs",
         "tiers": [{"atLeast": 100, "points": 20}]
       },
       {
-        "type": "role-conditional", "id": "duck-penalty", "roles": ["BAT", "WK", "AR"],
-        "rule": {"type": "per-unit", "id": "duck-points", "stat": "duck", "points": -5}
+        "type": "role-conditional", "id": "duck-penalty", "label": "Duck", "roles": ["BAT", "WK", "AR"],
+        "rule": {"type": "per-unit", "id": "duck-points", "label": "Duck", "stat": "duck", "points": -5}
       },
       {
-        "type": "banded-rate", "id": "strike-rate-bands", "numerator": "strike-rate",
+        "type": "banded-rate", "id": "strike-rate-bands", "label": "Strike rate", "numerator": "strike-rate",
         "denominator": "in-playing-xi", "scale": 1,
         "minVolume": {"stat": "balls-faced", "atLeast": 10},
         "bands": [
-          {"from": 170.01, "to": 100000, "points": 6},
-          {"from": 150, "to": 170.01, "points": 4},
+          {"from": 170, "to": 100000, "points": 6},
+          {"from": 150, "to": 170, "points": 4},
           {"from": 130, "to": 150, "points": 2},
           {"from": 60, "to": 70, "points": -2},
           {"from": 0, "to": 60, "points": -4}
         ]
       },
-      {"type": "per-unit", "id": "wicket-points", "stat": "wickets", "points": 25},
+      {"type": "per-unit", "id": "wicket-points", "label": "Wickets", "stat": "wickets", "points": 25},
       {
-        "type": "event-type-bonus", "id": "lbw-bonus", "stat": "wickets",
+        "type": "event-type-bonus", "id": "lbw-bonus", "label": "LBW bonus", "stat": "wickets",
         "eventType": "lbw", "points": 8
       },
       {
-        "type": "event-type-bonus", "id": "bowled-bonus", "stat": "wickets",
+        "type": "event-type-bonus", "id": "bowled-bonus", "label": "Bowled bonus", "stat": "wickets",
         "eventType": "bowled", "points": 8
       },
       {
-        "type": "threshold-bonus", "id": "three-wicket-bonus", "stat": "wickets",
+        "type": "threshold-bonus", "id": "three-wicket-bonus", "label": "3-wicket haul", "stat": "wickets",
         "tiers": [{"atLeast": 3, "points": 10}]
       },
       {
-        "type": "threshold-bonus", "id": "five-wicket-bonus", "stat": "wickets",
+        "type": "threshold-bonus", "id": "five-wicket-bonus", "label": "5-wicket haul", "stat": "wickets",
         "tiers": [{"atLeast": 5, "points": 20}]
       },
-      {"type": "per-unit", "id": "maiden-points", "stat": "maidens", "points": 12},
+      {"type": "per-unit", "id": "maiden-points", "label": "Maidens", "stat": "maidens", "points": 12},
       {
-        "type": "banded-rate", "id": "economy-bands", "numerator": "economy",
+        "type": "banded-rate", "id": "economy-bands", "label": "Economy rate", "numerator": "economy",
         "denominator": "in-playing-xi", "scale": 1,
         "minVolume": {"stat": "balls-bowled", "atLeast": 12},
         "bands": [
           {"from": 0, "to": 5, "points": 6},
           {"from": 5, "to": 6, "points": 4},
           {"from": 6, "to": 7, "points": 2},
-          {"from": 10.01, "to": 12.01, "points": -2},
-          {"from": 12.01, "to": 1000, "points": -4}
+          {"from": 10, "to": 12, "points": -2},
+          {"from": 12, "to": 1000, "points": -4}
         ]
       },
-      {"type": "per-unit", "id": "catch-points", "stat": "catches", "points": 8},
+      {"type": "per-unit", "id": "catch-points", "label": "Catches", "stat": "catches", "points": 8},
       {
-        "type": "threshold-bonus", "id": "catch-tier-bonus", "stat": "catches",
+        "type": "threshold-bonus", "id": "catch-tier-bonus", "label": "3-catch bonus", "stat": "catches",
         "tiers": [{"atLeast": 3, "points": 4}]
       },
-      {"type": "per-unit", "id": "stumping-points", "stat": "stumpings", "points": 12},
+      {"type": "per-unit", "id": "stumping-points", "label": "Stumpings", "stat": "stumpings", "points": 12},
       {
-        "type": "event-type-bonus", "id": "direct-run-out-bonus", "stat": "run-outs",
+        "type": "event-type-bonus", "id": "direct-run-out-bonus", "label": "Direct run-out", "stat": "run-outs",
         "eventType": "direct", "points": 12
       },
       {
-        "type": "event-type-bonus", "id": "assisted-run-out-bonus", "stat": "run-outs",
+        "type": "event-type-bonus", "id": "assisted-run-out-bonus", "label": "Assisted run-out", "stat": "run-outs",
         "eventType": "assisted", "points": 6
       },
-      {"type": "per-unit", "id": "player-of-match-points", "stat": "player-of-match", "points": 25},
-      {"type": "appearance-bonus", "id": "appearance-bonus", "points": 4}
+      {"type": "per-unit", "id": "player-of-match-points", "label": "Player of the Match", "stat": "player-of-match", "points": 25},
+      {"type": "appearance-bonus", "id": "appearance-bonus", "label": "Playing XI", "points": 4}
     ]
   },
   "appearanceRule": {"stat": "in-playing-xi", "atLeast": 1},

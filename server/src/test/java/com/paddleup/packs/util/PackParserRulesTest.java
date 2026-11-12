@@ -131,4 +131,33 @@ class PackParserRulesTest {
     assertThat(result.violations().get(0).message()).contains("minVolume");
     assertThat(result.violations().get(1).message()).contains("rule");
   }
+
+  @Test
+  void labelRoundTripsOnEveryPrimitiveAndItsAbsenceIsAccepted() throws Exception {
+    var rules =
+        json(
+            """
+            [
+              {"type":"per-unit","id":"r1","label":"L1","stat":"s1","points":1},
+              {"type":"threshold-bonus","id":"r2","label":"L2","stat":"s1","tiers":[{"atLeast":3,"points":4}]},
+              {"type":"banded-rate","id":"r3","label":"L3","numerator":"s1","denominator":"s2","scale":1,
+               "minVolume":{"stat":"s2","atLeast":10},"bands":[{"from":0,"to":50,"points":-2}]},
+              {"type":"role-conditional","id":"r4","label":"L4","roles":["ro1"],
+               "rule":{"type":"per-unit","id":"r4a","stat":"s2","points":2}},
+              {"type":"event-type-bonus","id":"r5","label":"L5","stat":"s1","eventType":"e1","points":8},
+              {"type":"appearance-bonus","id":"r6","label":"L6","points":4},
+              {"type":"per-unit","id":"r7","stat":"s1","points":1}
+            ]
+            """);
+
+    var result = parser.parseRules(rules, "p.json", "p1");
+
+    assertThat(result.violations()).isEmpty();
+    assertThat(result.value().rules())
+        .extracting(RuleDto::label)
+        .containsExactly("L1", "L2", "L3", "L4", "L5", "L6", null);
+    var written = mapper.writeValueAsString(result.value());
+    var back = mapper.readValue(written, com.paddleup.packs.dto.RuleSetDto.class);
+    assertThat(back).isEqualTo(result.value());
+  }
 }
