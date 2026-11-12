@@ -11,7 +11,8 @@ import java.util.UUID;
  * {@code serverNow} is the server clock when the state was read, so a client can correct for its
  * own clock. {@code lastSeq} is the seq of the last event the state includes. {@code ready} is the
  * lobby readiness (empty once the auction starts) and {@code nextBid} the only amount the next bid
- * on the open lot may have, from the increment ladder.
+ * on the open lot may have, from the increment ladder. {@code bidLock} is the viewer's own reason
+ * they cannot bid that amount now, absent when they can (or have no franchise).
  */
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public record AuctionStateDto(
@@ -35,4 +36,5 @@ public record AuctionStateDto(
     LotDto nextLot,
     @Schema(requiredMode = Schema.RequiredMode.REQUIRED) List<UUID> connected,
     @Schema(requiredMode = Schema.RequiredMode.REQUIRED) List<UUID> ready,
-    Long nextBid) {}
+    Long nextBid,
+    BidLockDto bidLock) {}

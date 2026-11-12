@@ -21,11 +21,16 @@ import org.springframework.test.context.TestPropertySource;
 class AuctionStubPackIT extends AbstractAuctionIT {
 
   private static String csv() {
+    return csv(true);
+  }
+
+  /** {@code spike} puts one player far above the rest; a small purse cannot hold that price. */
+  private static String csv(boolean spike) {
     var rows = new StringBuilder("name,country,role,tags,base_price,set,provider_id\n");
     String[] roles = {"gk", "def", "mid", "fwd"};
     String[] sets = {"Keepers", "Defence", "Midfield", "Attack"};
     for (int i = 0; i < 20; i++) {
-      long price = i == 7 ? 5_250_000 : 300_000 + (i % 5) * 100_000L;
+      long price = spike && i == 7 ? 5_250_000 : 300_000 + (i % 5) * 100_000L;
       rows.append("Fake ")
           .append(i + 1)
           .append(",Spain,")
@@ -53,6 +58,8 @@ class AuctionStubPackIT extends AbstractAuctionIT {
     ObjectNode config = (ObjectNode) body(get(commissioner, "/api/rooms/" + roomId)).get("config");
     config.put("squadMin", 3).put("squadMax", 20);
     config.putObject("roleMinimums");
+    // The scripted bids hand one franchise every foreign player; keep the cap out of this scenario.
+    config.putObject("categoryQuotas").put("foreign-cap", 20);
     var saved =
         put(
             commissioner,
@@ -114,6 +121,92 @@ class AuctionStubPackIT extends AbstractAuctionIT {
     assertThat(eventCount(room, "lot_sold")).isEqualTo(sold);
     assertThat(eventCount(room, "lot_unsold")).isEqualTo(unsold);
     assertThat(eventCount(room, "auction_ended")).isEqualTo(1);
+  }
+
+  /**
+   * A stub-pack room for two managers, with the squad rules, the purse and the foreign cap given.
+   */
+  private Room stubRoom(int squadMin, int squadMax, long purse, int foreignCap) throws Exception {
+    assertThat(importSeason("stub-football", csv(false)).imported()).isEqualTo(20);
+    Person commissioner = person();
+    String roomId = createRoom(commissioner, "stub-football", "standard");
+    Person a = insertManager(roomId, "crimson");
+    Person b = insertManager(roomId, "sky");
+    ObjectNode config = (ObjectNode) body(get(commissioner, "/api/rooms/" + roomId)).get("config");
+    config.put("squadMin", squadMin).put("squadMax", squadMax).put("purse", purse);
+    config.putObject("roleMinimums");
+    config.putObject("categoryQuotas").put("foreign-cap", foreignCap);
+    var saved =
+        put(
+            commissioner,
+            "/api/rooms/" + roomId + "/config",
+            Map.of("version", 1, "config", config));
+    assertThat(saved.getStatusCode()).as(saved.getBody()).isEqualTo(HttpStatus.OK);
+    return new Room(
+        roomId, commissioner, List.of(a, b), List.of(franchise(roomId, a), franchise(roomId, b)));
+  }
+
+  /** Lot {@code lot} closes with no bid and the next one opens. */
+  private void skipLot() {
+    advance(20);
+    tick();
+    advance(5);
+    tick();
+  }
+
+  /** AC-1 on the second pack: a franchise at squad max is refused with squad_full. */
+  @Test
+  void aFranchiseAtSquadMaxIsRefusedOnTheStubPack() throws Exception {
+    Room room = stubRoom(1, 1, 100_000_000, 4);
+    goLive(room);
+    assertThat(outcome(bid(room, room.manager(0), 1, 300_000))).isEqualTo("accepted");
+    advance(10);
+    tick();
+    advance(5);
+    tick();
+
+    assertThat(outcome(bid(room, room.manager(0), 2, 400_000))).isEqualTo("rejected:squad_full");
+    assertThat(outcome(bid(room, room.manager(1), 2, 400_000))).isEqualTo("accepted");
+  }
+
+  /** AC-2 on the second pack: the foreign cap refuses a foreign lot, not a local one. */
+  @Test
+  void aFranchiseAtTheCategoryCapIsRefusedAForeignLotOnTheStubPack() throws Exception {
+    // Lots alternate local (odd lots) and foreign (even lots).
+    Room room = stubRoom(1, 20, 100_000_000, 1);
+    goLive(room);
+    skipLot();
+    assertThat(outcome(bid(room, room.manager(0), 2, 400_000))).isEqualTo("accepted");
+    advance(10);
+    tick();
+    advance(5);
+    tick();
+    // Lot 3 is local: allowed. Skip it; lot 4 is foreign: the cap of 1 is met.
+    assertThat(state(room, room.manager(0)).get("lot").get("no").asInt()).isEqualTo(3);
+    skipLot();
+
+    assertThat(state(room, room.manager(0)).get("bidLock").get("category").asText())
+        .isEqualTo("foreign-cap");
+    assertThat(outcome(bid(room, room.manager(0), 4, 600_000))).isEqualTo("rejected:quota");
+    assertThat(outcome(bid(room, room.manager(1), 4, 600_000))).isEqualTo("accepted");
+  }
+
+  /**
+   * AC-3 on the second pack: with a squad minimum of 3, a win on lot 1 (base 300 000) must leave
+   * the two cheapest players still to come, 300 000 each, so 600 000. One unit under is refused,
+   * exactly the reserve is accepted.
+   */
+  @Test
+  void aBidThatLeavesLessThanTheReserveIsRefusedOnTheStubPack() throws Exception {
+    Room tight = stubRoom(3, 20, 899_999, 4);
+    goLive(tight);
+    assertThat(outcome(bid(tight, tight.manager(0), 1, 300_000))).isEqualTo("rejected:reserve");
+    assertThat(state(tight, tight.manager(0)).get("bidLock").get("reason").asText())
+        .isEqualTo("reserve");
+
+    Room exact = stubRoom(3, 20, 900_000, 4);
+    goLive(exact);
+    assertThat(outcome(bid(exact, exact.manager(0), 1, 300_000))).isEqualTo("accepted");
   }
 
   private UUID franchise(String roomId, Person who) {

@@ -30,6 +30,7 @@ export type DatasetPack = components["schemas"]["DatasetPackDto"];
 export type DatasetSummary = components["schemas"]["DatasetSummaryDto"];
 export type ImportReport = components["schemas"]["ImportReportDto"];
 export type AuctionState = components["schemas"]["AuctionStateDto"];
+export type BidLock = components["schemas"]["BidLockDto"];
 export type AuctionLot = components["schemas"]["LotDto"];
 export type AuctionStanding = components["schemas"]["StandingDto"];
 export type Presence = components["schemas"]["PresenceDto"];

@@ -3,6 +3,7 @@ package com.paddleup.auction.service;
 import com.paddleup.auction.dto.AuctionConfigDto;
 import com.paddleup.auction.dto.AuctionEventDto;
 import com.paddleup.auction.dto.AuctionStateDto;
+import com.paddleup.auction.dto.BidLockDto;
 import com.paddleup.auction.dto.IntentResultDto;
 import com.paddleup.auction.dto.LastResultDto;
 import com.paddleup.auction.dto.LotDto;
@@ -44,7 +45,11 @@ final class AuctionViews {
   }
 
   static AuctionStateDto state(
-      AuctionState s, Instant serverNow, Collection<UUID> connected, Collection<UUID> ready) {
+      AuctionState s,
+      Instant serverNow,
+      Collection<UUID> connected,
+      Collection<UUID> ready,
+      BidLockDto bidLock) {
     boolean started = s.phase() == Phase.LIVE || s.phase() == Phase.ENDED;
     AuctionConfigDto config =
         started
@@ -92,11 +97,12 @@ final class AuctionViews {
         lot(s.nextLot()),
         List.copyOf(connected),
         s.phase() == Phase.SCHEDULED ? List.copyOf(ready) : List.of(),
-        nextBid(s));
+        nextBid(s),
+        bidLock);
   }
 
   /** The only amount the next bid may have, or null when no lot is open. */
-  private static Long nextBid(AuctionState s) {
+  static Long nextBid(AuctionState s) {
     Lot lot = s.lot();
     return s.phase() == Phase.LIVE && s.lotOpen() && lot != null
         ? Ladder.required(s.ladder(), lot.basePrice(), s.currentBid())

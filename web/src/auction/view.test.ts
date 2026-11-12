@@ -105,6 +105,20 @@ describe("buildView", () => {
     expect(v).toMatchObject({ timerFrozen: true, timeLeftMs: 17_000, timerNote: "WAITING", urgent: false });
   });
 
+  it("locks the button with the squad rule the server names, and stays ready without one", () => {
+    const lock = { reason: "quota", category: "cap" };
+    const locked = buildView(input({}, { bidLock: lock }));
+    expect(locked).toMatchObject({ canBid: false, cause: "bid_locked", bidLock: lock });
+    const ready = buildView(input());
+    expect(ready).toMatchObject({ canBid: true, cause: null, bidLock: null });
+  });
+
+  it("lets leading, offline and ended outrank a squad lock", () => {
+    const lock = { reason: "squad_full" };
+    expect(buildView(input({ connection: "reconnecting" }, { bidLock: lock })).cause).toBe("reconnecting");
+    expect(buildView(input({}, { phase: "ended", lotOpen: false, bidLock: lock })).cause).toBe("ended");
+  });
+
   it("shows no purse and no bid cause but the lot for a Commissioner without a franchise", () => {
     const v = buildView(input({ me: null }, { currentBid: 25, leaderFranchiseId: RIVAL }));
     expect(v).toMatchObject({ hasFranchise: false, purse: null, cause: "no_franchise", myStatus: "none", status: "bidding" });

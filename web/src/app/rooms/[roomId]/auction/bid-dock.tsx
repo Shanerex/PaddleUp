@@ -1,20 +1,22 @@
 "use client";
 
-import type { RoomConfig } from "../../../../api/client";
-import { LOCK_LINES, OBSERVER_LINE } from "../../../../auction/copy";
+import type { Room, RoomConfig } from "../../../../api/client";
+import { LOCK_LINES, OBSERVER_LINE, bidLockReason } from "../../../../auction/copy";
 import { formatMoney } from "../../../../rooms/money";
 import type { AuctionView } from "../../../../auction/view";
 import { Icon } from "../../../../ui/Icon";
 import s from "./auction.module.css";
 
-type Money = Pick<RoomConfig, "currencyCode" | "displayUnit">;
+type Money = Pick<RoomConfig, "currencyCode" | "displayUnit" | "categoryQuotas">;
 
 /**
  * The bid dock (AuctionBidDock): a lifeline slot and the bid button, 72 px tall, at the bottom of the
  * screen. The next amount is the server's `nextBid`; nothing here computes one. A franchise always
- * has exactly one `bid-button` of one size, whatever it says, so nothing around it moves.
+ * has exactly one `bid-button` of one size, whatever it says, so nothing around it moves. When a
+ * squad rule forbids the next bid the button turns into the `bidLocked` box: "Can't bid {next}" and
+ * the reason in the room's pack words.
  */
-export function BidDock({ view, config, onBid }: { view: AuctionView; config: Money; onBid: () => void }) {
+export function BidDock({ view, config, labels, onBid }: { view: AuctionView; config: Money; labels: Room["packLabels"]; onBid: () => void }) {
   const money = (n: number) => formatMoney(n, config);
   const next = view.nextBid;
   const bid = view.currentBid;
@@ -50,6 +52,26 @@ export function BidDock({ view, config, onBid }: { view: AuctionView; config: Mo
             {c.title}
           </span>
           {c.line && <span className={s.dockLine}>{c.line}</span>}
+        </span>
+      </>
+    );
+  } else if (view.cause === "bid_locked" && view.bidLock && next !== null) {
+    state = "bid_locked";
+    box = `${s.dockQuiet} ${s.dockLocked}`;
+    body = (
+      <>
+        <Icon name="lock" size={24} />
+        <span className={s.dockStack}>
+          <span className={s.dockTitle} style={{ color: "var(--ink)" }}>
+            Can&apos;t bid {money(next)}
+          </span>
+          <span className={s.dockLine}>
+            {bidLockReason(view.bidLock, {
+              roles: labels.roles,
+              categories: labels.restrictedCategories,
+              quotas: config.categoryQuotas,
+            })}
+          </span>
         </span>
       </>
     );

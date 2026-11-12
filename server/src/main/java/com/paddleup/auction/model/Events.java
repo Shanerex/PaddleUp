@@ -41,7 +41,7 @@ public final class Events {
         seq, at, EventKind.START_REFUSED, null, null, null, null, Map.of("reason", reason));
   }
 
-  /** The snapshot the live auction works from; {@code lotOrder} holds pool player ids. */
+  /** A go-live snapshot with no squad rules, as logs were written before the squad guard. */
   public static AuctionEvent auctionStarted(
       long seq,
       Instant at,
@@ -51,6 +51,24 @@ public final class Events {
       int gapSeconds,
       Map<UUID, Long> purses,
       List<UUID> lotOrder) {
+    return auctionStarted(
+        seq, at, ladder, openSeconds, bidSeconds, gapSeconds, purses, lotOrder, null);
+  }
+
+  /**
+   * The snapshot the live auction works from; {@code lotOrder} holds pool player ids. {@code squad}
+   * may be null, which logs no squad rules.
+   */
+  public static AuctionEvent auctionStarted(
+      long seq,
+      Instant at,
+      List<Step> ladder,
+      int openSeconds,
+      int bidSeconds,
+      int gapSeconds,
+      Map<UUID, Long> purses,
+      List<UUID> lotOrder,
+      SquadRules squad) {
     var payload = new LinkedHashMap<String, Object>();
     payload.put(
         "ladder",
@@ -64,6 +82,21 @@ public final class Events {
     purses.forEach((id, purse) -> byFranchise.put(id.toString(), purse));
     payload.put("purses", byFranchise);
     payload.put("lots", lotOrder.stream().map(UUID::toString).toList());
+    if (squad != null) {
+      var rules = new LinkedHashMap<String, Object>();
+      rules.put("min", squad.min());
+      rules.put("max", squad.max());
+      rules.put("roleMinimums", new LinkedHashMap<String, Object>(squad.roleMinimums()));
+      rules.put(
+          "quotas",
+          squad.quotas().stream()
+              .map(
+                  q ->
+                      Map.<String, Object>of(
+                          "category", q.category(), "tag", q.tag(), "max", q.max()))
+              .toList());
+      payload.put("squad", rules);
+    }
     return new AuctionEvent(seq, at, EventKind.AUCTION_STARTED, null, null, null, null, payload);
   }
 

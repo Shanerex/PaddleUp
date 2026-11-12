@@ -183,6 +183,11 @@ function Auction({ roomId, data, reloadRoom }: { roomId: string; data: Data; rel
     setOutbid(null);
     dismiss();
   }, [dismiss]);
+  // A refusal may mean the screen was behind (a squad lock the bid patch cannot know): read again.
+  const refused = outcome?.kind === "rejected";
+  useEffect(() => {
+    if (refused) live.resync();
+  }, [refused, outcome, live]);
   useEffect(() => {
     if (!outbid && !outcome) return;
     const id = setTimeout(dismissToast, TOAST_MS);
@@ -371,7 +376,7 @@ function Auction({ roomId, data, reloadRoom }: { roomId: string; data: Data; rel
           )}
         </div>
         <div className={s.dockBar}>
-          <BidDock view={view} config={room.config} onBid={() => state.lot && view.nextBid !== null && void bidder.press(state.lot.no, view.nextBid)} />
+          <BidDock view={view} config={room.config} labels={room.packLabels} onBid={() => state.lot && view.nextBid !== null && void bidder.press(state.lot.no, view.nextBid)} />
         </div>
         <Notices
           reconnecting={offline}

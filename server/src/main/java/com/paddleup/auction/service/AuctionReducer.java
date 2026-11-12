@@ -6,6 +6,7 @@ import com.paddleup.auction.model.LastResult;
 import com.paddleup.auction.model.Lot;
 import com.paddleup.auction.model.Phase;
 import com.paddleup.auction.model.SquadEntry;
+import com.paddleup.auction.model.SquadRules;
 import com.paddleup.auction.model.Step;
 import java.time.Duration;
 import java.util.ArrayList;
@@ -98,6 +99,7 @@ public final class AuctionReducer {
     b.openSeconds = (int) e.number("openSeconds");
     b.bidSeconds = (int) e.number("bidSeconds");
     b.gapSeconds = (int) e.number("gapSeconds");
+    b.squadRules = squadRules((Map<String, Object>) e.payload().get("squad"));
     // Sorted by franchise id: jsonb does not keep key order, so live state and replay must agree.
     Map<UUID, Long> purses = new TreeMap<>();
     ((Map<String, Object>) e.payload().get("purses"))
@@ -131,6 +133,32 @@ public final class AuctionReducer {
     b.nextOpenAt = null;
     b.lastResult = null;
     clearLot(b);
+  }
+
+  /** The frozen squad rules, or null for a go-live logged before the squad guard. */
+  @SuppressWarnings("unchecked")
+  private static SquadRules squadRules(Map<String, Object> squad) {
+    if (squad == null) {
+      return null;
+    }
+    Map<String, Integer> roleMinimums = new TreeMap<>();
+    ((Map<String, Object>) squad.get("roleMinimums"))
+        .forEach((role, min) -> roleMinimums.put(role, ((Number) min).intValue()));
+    List<SquadRules.Quota> quotas =
+        ((List<Map<String, Object>>) squad.get("quotas"))
+            .stream()
+                .map(
+                    q ->
+                        new SquadRules.Quota(
+                            String.valueOf(q.get("category")),
+                            String.valueOf(q.get("tag")),
+                            ((Number) q.get("max")).intValue()))
+                .toList();
+    return new SquadRules(
+        ((Number) squad.get("min")).intValue(),
+        ((Number) squad.get("max")).intValue(),
+        roleMinimums,
+        quotas);
   }
 
   private static void sold(AuctionState.Builder b, AuctionEvent e) {

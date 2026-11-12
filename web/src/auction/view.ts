@@ -1,4 +1,4 @@
-import type { AuctionState } from "../api/client";
+import type { AuctionState, BidLock } from "../api/client";
 import type { Connection } from "./live";
 
 /**
@@ -30,6 +30,7 @@ export type Cause =
   | "locked"
   | "resolved"
   | "leading"
+  | "bid_locked"
   | "no_lot";
 
 export type ViewInput = {
@@ -58,6 +59,8 @@ export type AuctionView = {
   nextBid: number | null;
   canBid: boolean;
   cause: Cause | null;
+  /** The squad rule that forbids my next bid, when `cause` is `bid_locked`. */
+  bidLock: BidLock | null;
   sending: boolean;
   /** The lot clock is not running: offline, paused, adjourned, ended or locked. */
   timerFrozen: boolean;
@@ -125,6 +128,7 @@ export function buildView(input: ViewInput): AuctionView {
   else if (!biddable) cause = "locked";
   else if (state?.nextBid == null) cause = "no_lot";
   else if (myStatus === "leading") cause = "leading";
+  else if (state?.bidLock) cause = "bid_locked";
   const canBid = cause === null && !input.sending;
 
   const running = online && biddable;
@@ -165,6 +169,7 @@ export function buildView(input: ViewInput): AuctionView {
     nextBid: state?.nextBid ?? null,
     canBid,
     cause,
+    bidLock: cause === "bid_locked" ? (state?.bidLock ?? null) : null,
     sending: input.sending,
     timerFrozen: !running,
     timerGrey: !running && !closed,

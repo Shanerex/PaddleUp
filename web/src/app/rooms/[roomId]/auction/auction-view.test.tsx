@@ -153,6 +153,28 @@ describe("AuctionView", () => {
     expect(screen.getByTestId("leader").textContent).toContain("Blue FC");
   });
 
+  it("rereads the state after a refusal, so a squad lock the patch could not know shows up", async () => {
+    feed.set(snap(live({ currentBid: 300_000, leaderFranchiseId: "fb", nextBid: 400_000 })));
+    vi.mocked(bid).mockResolvedValue({ outcome: "rejected", reason: "reserve", lot: 1, serverNow: "x" });
+    render(<AuctionView roomId="r1" />);
+
+    await userEvent.click(await screen.findByTestId("bid-button"));
+
+    expect((await screen.findByTestId("notice-rejected")).textContent).toContain("too little purse");
+    expect(feed.live.resync).toHaveBeenCalled();
+  });
+
+  it("shows the bidLocked dock with the reason when the server names a squad lock", async () => {
+    feed.set(snap(live({ currentBid: 300_000, leaderFranchiseId: "fb", nextBid: 400_000, bidLock: { reason: "reserve", role: "gk" } })));
+    vi.mocked(getRoom).mockResolvedValue(room({ packLabels: { ...labels, restrictedCategories: [] }, config: { ...config, categoryQuotas: {} } }));
+    render(<AuctionView roomId="r1" />);
+
+    const button = await screen.findByTestId("bid-button");
+    expect(button.getAttribute("data-state")).toBe("bid_locked");
+    expect(button.textContent).toContain("Can't bid €0.4 M");
+    expect(button.textContent).toContain("Goalkeeper minimum");
+  });
+
   it("shows outbid when the lead moves off me, and the new next amount on the button", async () => {
     feed.set(snap(live({ currentBid: 300_000, leaderFranchiseId: "fa", nextBid: 400_000 })));
     render(<AuctionView roomId="r1" />);

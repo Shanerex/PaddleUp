@@ -1,6 +1,7 @@
 package com.paddleup.rooms.service;
 
 import com.paddleup.accounts.dto.UserId;
+import com.paddleup.packs.dto.RestrictedCategoryDto;
 import com.paddleup.rooms.dto.AuctionInputsDto;
 import com.paddleup.rooms.dto.RoomAccessDto;
 import com.paddleup.rooms.dto.RoomState;
@@ -120,7 +121,22 @@ public class AuctionRoomPort {
                         p.basePrice(),
                         p.set(),
                         p.position()))
-            .toList());
+            .toList(),
+        quotas(room));
+  }
+
+  /**
+   * The room's cap per restricted category, with the pack tag it counts (snapshotted at creation).
+   */
+  private static List<AuctionInputsDto.Quota> quotas(Room room) {
+    List<AuctionInputsDto.Quota> quotas = new ArrayList<>();
+    for (RestrictedCategoryDto category : room.packSnapshot().restrictedCategories()) {
+      Integer max = room.config().categoryQuotas().get(category.id());
+      if (max != null) {
+        quotas.add(new AuctionInputsDto.Quota(category.id(), category.tag(), max));
+      }
+    }
+    return quotas;
   }
 
   private static int setIndex(List<String> setOrder, String set) {

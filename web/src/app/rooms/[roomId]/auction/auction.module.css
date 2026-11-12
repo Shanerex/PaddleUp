@@ -588,6 +588,13 @@
   gap: 12px;
 }
 
+/* The bidLocked box (AuctionBidDock): two lines, so it may grow past 72 px. */
+.dockLocked {
+  height: auto;
+  min-height: 72px;
+  padding: 10px 18px;
+}
+
 .spin {
   animation: spin 900ms linear infinite;
 }
