@@ -2,7 +2,6 @@ test_cmd: make test
 source_globs: server/src/main/**,web/src/**,packs/**
 test_globs: server/src/test/**,web/tests/**
 lint_cmd: make lint
-version_file: server/pom.xml
 enforce_plan_first: true
 security_review: verify
 feature_id: date-slug
