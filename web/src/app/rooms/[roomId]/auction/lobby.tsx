@@ -71,6 +71,11 @@ export function Lobby(p: LobbyProps) {
   const when = localStart(p.startsAt);
   const config = room.config;
   const minimums = Object.entries(config.roleMinimums ?? {}).filter(([, n]) => n > 0);
+  // One tile per restricted category the room caps, worded and capped from the room's own copy.
+  const caps = (room.packLabels.restrictedCategories ?? []).flatMap((c) => {
+    const max = c.id ? config.categoryQuotas?.[c.id] : undefined;
+    return c.id && max !== undefined ? [{ id: c.id, label: c.label ?? c.id, max }] : [];
+  });
   const hue = mine ? hueOf(mine.colour) : 38;
   const lastSeen = p.lastSeen?.toLocaleTimeString(undefined, { hour: "numeric", minute: "2-digit" });
   const youLead = room.myRole === "commissioner";
@@ -168,6 +173,9 @@ export function Lobby(p: LobbyProps) {
               {minimums.length > 0 && (
                 <Rule label="ROLE MINIMUMS" value={minimums.map(([k, n]) => `${n} ${roleShort(room.packLabels.roles, k)}`).join(" · ")} />
               )}
+              {caps.map((c) => (
+                <Rule key={c.id} label={c.label.toUpperCase()} value={`≤ ${c.max}`} />
+              ))}
               {p.timer?.openSeconds !== undefined && p.timer.bidSeconds !== undefined && (
                 <Rule label="TIMER" value={`${p.timer.openSeconds}s open · ${p.timer.bidSeconds}s per bid`} />
               )}

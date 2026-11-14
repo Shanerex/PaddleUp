@@ -698,6 +698,12 @@ export interface components {
             ready: string[];
             /** Format: int64 */
             nextBid?: number;
+            bidLock?: components["schemas"]["BidLockDto"];
+        };
+        BidLockDto: {
+            reason: string;
+            role?: string;
+            category?: string;
         };
         LastResultDto: {
             /** Format: int32 */

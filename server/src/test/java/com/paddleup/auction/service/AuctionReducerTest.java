@@ -8,6 +8,7 @@ import com.paddleup.auction.model.AuctionState;
 import com.paddleup.auction.model.Events;
 import com.paddleup.auction.model.Lot;
 import com.paddleup.auction.model.Phase;
+import com.paddleup.auction.model.SquadRules;
 import com.paddleup.auction.model.Step;
 import java.time.Instant;
 import java.util.ArrayList;
@@ -199,5 +200,36 @@ class AuctionReducerTest {
 
     assertThat(AuctionReducer.apply(AuctionState.initial(ROOM, catalog()), copy))
         .isEqualTo(AuctionReducer.apply(AuctionState.initial(ROOM, catalog()), original));
+  }
+
+  @Test
+  void theGoLiveEventFreezesTheSquadRules() {
+    var rules =
+        new SquadRules(
+            3, 5, Map.of("r1", 1, "r2", 1), List.of(new SquadRules.Quota("cap", "t", 2)));
+    AuctionEvent started =
+        Events.auctionStarted(
+            1,
+            T0,
+            List.of(new Step(0, 5)),
+            20,
+            10,
+            5,
+            Map.of(A, 1000L),
+            List.of(P1, P2, P3),
+            rules);
+
+    AuctionState s = AuctionReducer.replay(AuctionState.initial(ROOM, catalog()), List.of(started));
+
+    assertThat(s.squadRules()).isEqualTo(rules);
+  }
+
+  @Test
+  void aGoLiveLoggedBeforeTheSquadGuardMeansNoSquadRules() {
+    AuctionState s =
+        AuctionReducer.replay(AuctionState.initial(ROOM, catalog()), List.of(started(1)));
+
+    assertThat(started(1).payload()).doesNotContainKey("squad");
+    assertThat(s.squadRules()).isNull();
   }
 }

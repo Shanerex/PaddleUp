@@ -3,6 +3,7 @@ package com.paddleup.auction.service;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.paddleup.PaddleUpApplication;
 import com.paddleup.auction.AbstractAuctionIT;
 import com.paddleup.support.MutableClock;
@@ -19,6 +20,7 @@ import org.springframework.core.env.Environment;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 
@@ -315,6 +317,42 @@ class AuctionRecoveryIT extends AbstractAuctionIT {
       second.clock.freeze(T0.plusSeconds(120));
       second.tick();
       assertThat(second.state(room, room.commissioner()).get("phase").asText()).isEqualTo("live");
+    }
+  }
+
+  /**
+   * AC-4: the squad rules are frozen in the go-live event. A room edit after go-live (made straight
+   * in the database, since REST refuses it) and a restart change no decision.
+   */
+  @Test
+  void theSquadRulesAreFrozenAtGoLiveSoARoomEditAndARestartChangeNoDecision() {
+    Room room = room(2, 6);
+    ObjectNode config =
+        (ObjectNode) body(get(room.commissioner(), "/api/rooms/" + room.id())).get("config");
+    // Winning a lot at 20 leaves 39, but two more players at 20 each need 40.
+    config.put("purse", 59).put("squadMin", 3);
+    var saved =
+        put(
+            room.commissioner(),
+            "/api/rooms/" + room.id() + "/config",
+            Map.of("version", configVersion(room.commissioner(), room.id()), "config", config));
+    assertThat(saved.getStatusCode()).as(saved.getBody()).isEqualTo(HttpStatus.OK);
+    goLive(room);
+    JsonNode snapshot = events(room, room.commissioner(), 0).get("events").get(1).get("payload");
+    assertThat(snapshot.get("squad").get("min").asInt()).isEqualTo(3);
+    assertThat(snapshot.get("squad").get("max").asInt()).isEqualTo(5);
+    assertThat(outcome(bid(room, room.manager(0), 1, 20))).isEqualTo("rejected:reserve");
+
+    // The Commissioner "edits" the room after go-live: no squad minimum, a big purse.
+    jdbc.update(
+        "UPDATE rooms SET config = jsonb_set(jsonb_set(config, '{squadMin}', '1'),"
+            + " '{purse}', '100000') WHERE id = ?",
+        UUID.fromString(room.id()));
+
+    assertThat(outcome(bid(room, room.manager(1), 1, 20))).isEqualTo("rejected:reserve");
+    try (Server restarted = new Server(clock.instant())) {
+      var again = restarted.bid(room, room.manager(0), UUID.randomUUID(), 1, 20);
+      assertThat(outcome(again)).isEqualTo("rejected:reserve");
     }
   }
 }

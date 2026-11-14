@@ -29,6 +29,7 @@ const labels = {
     { id: "def", label: "Defender" },
   ],
   tags: [{ id: "foreign", label: "Foreign" }],
+  restrictedCategories: [{ id: "foreign-cap", label: "Foreign players", tag: "foreign", max: 4 }],
   stats: [],
   terminology: {},
 } as unknown as Room["packLabels"];
@@ -41,6 +42,7 @@ const config = {
   squadMin: 11,
   squadMax: 18,
   roleMinimums: { gk: 1, def: 3 },
+  categoryQuotas: { "foreign-cap": 4 },
   openSeconds: 30,
   bidSeconds: 15,
 } as unknown as Room["config"];
@@ -117,7 +119,7 @@ function view(over: Partial<ViewInput> = {}, st: Record<string, unknown> = {}) {
 describe("BidDock", () => {
   it("shows one 72 px bid button with the server's next bid and the step, beside an inert lifeline slot", async () => {
     const onBid = vi.fn();
-    render(<BidDock view={view()} config={config} onBid={onBid} />);
+    render(<BidDock view={view()} config={config} labels={labels} onBid={onBid} />);
     const button = screen.getByTestId("bid-button");
     expect(button.getAttribute("data-state")).toBe("ready");
     expect(button.textContent).toContain("RAISE PADDLE");
@@ -137,7 +139,7 @@ describe("BidDock", () => {
     ["sending", { sending: true }, "Raising paddle…"],
   ])("keeps the same single button, disabled, while %s", async (state, over, words) => {
     const onBid = vi.fn();
-    render(<BidDock view={view(over)} config={config} onBid={onBid} />);
+    render(<BidDock view={view(over)} config={config} labels={labels} onBid={onBid} />);
     const button = screen.getByTestId("bid-button") as HTMLButtonElement;
     expect(button.getAttribute("data-state")).toBe(state);
     expect(button.disabled).toBe(true);
@@ -154,15 +156,40 @@ describe("BidDock", () => {
     ["locked", { phase: "mystery" }, "Bidding's locked"],
     ["resolved", { lotOpen: false, lastResult: { lot: 3, sold: true, franchiseId: "rival", amount: 300_000 } }, "Next lot coming up…"],
   ])("locks for %s", (state, st, words) => {
-    render(<BidDock view={view({}, st)} config={config} onBid={() => {}} />);
+    render(<BidDock view={view({}, st)} config={config} labels={labels} onBid={() => {}} />);
     const button = screen.getByTestId("bid-button") as HTMLButtonElement;
     expect(button.getAttribute("data-state")).toBe(state);
     expect(button.disabled).toBe(true);
     expect(button.textContent).toContain(words);
   });
 
+  it.each([
+    ["squad_full", { reason: "squad_full" }, "Your squad is full."],
+    ["quota", { reason: "quota", category: "foreign-cap" }, "You're at the cap of 4 for Foreign players."],
+    ["reserve with a role", { reason: "reserve", role: "gk" }, "short on purse to fill your Goalkeeper minimum at base price."],
+    ["reserve for the squad minimum", { reason: "reserve" }, "short on purse to fill your squad minimum at base price."],
+  ])("shows the locked box for %s: the next bid and the reason in the pack's words", async (_n, lock, words) => {
+    const onBid = vi.fn();
+    render(<BidDock view={view({}, { bidLock: lock })} config={config} labels={labels} onBid={onBid} />);
+    const button = screen.getByTestId("bid-button") as HTMLButtonElement;
+    expect(button.getAttribute("data-state")).toBe("bid_locked");
+    expect(button.disabled).toBe(true);
+    expect(button.textContent).toContain("Can't bid €0.4 M");
+    expect(button.textContent).toContain(words);
+    expect(screen.getAllByTestId("bid-button")).toHaveLength(1);
+    expect(screen.getByTestId("lifeline-slot")).toBeTruthy();
+    await userEvent.click(button);
+    expect(onBid).not.toHaveBeenCalled();
+  });
+
+  it("names no sport in the locked reason", () => {
+    render(<BidDock view={view({}, { bidLock: { reason: "reserve", role: "def" } })} config={config} labels={labels} onBid={() => {}} />);
+    expect(screen.getByTestId("bid-button").textContent).toContain("Defender");
+    expect(screen.getByTestId("bid-button").textContent).not.toMatch(/bat|bowl|wicket|cricket|overseas|₹|cr\b/i);
+  });
+
   it("gives a Commissioner without a franchise no button and says why", () => {
-    render(<BidDock view={view({ me: null })} config={config} onBid={() => {}} />);
+    render(<BidDock view={view({ me: null })} config={config} labels={labels} onBid={() => {}} />);
     expect(screen.queryByTestId("bid-button")).toBeNull();
     expect(screen.queryByTestId("lifeline-slot")).toBeNull();
     expect(screen.getByTestId("bid-observer").textContent).toContain("You lead this room without a franchise");
@@ -248,6 +275,20 @@ describe("Lobby", () => {
     unmount();
     lobby();
     expect(screen.queryByText("TIMER")).toBeNull();
+  });
+
+  it("shows one tile per restricted category with the pack's label and the room's cap (Room `lobby`)", () => {
+    lobby();
+    const tile = screen.getByText("FOREIGN PLAYERS").parentElement as HTMLElement;
+    expect(tile.textContent).toBe("FOREIGN PLAYERS≤ 4");
+  });
+
+  it("shows the room's own cap, not the pack's, and no tile for a category the room does not cap", () => {
+    const { unmount } = lobby({ room: room({ config: { ...config, categoryQuotas: { "foreign-cap": 2 } } }) });
+    expect((screen.getByText("FOREIGN PLAYERS").parentElement as HTMLElement).textContent).toContain("≤ 2");
+    unmount();
+    lobby({ room: room({ config: { ...config, categoryQuotas: {} } }) });
+    expect(screen.queryByText("FOREIGN PLAYERS")).toBeNull();
   });
 
   it("shows the countdown, a status per franchise and an I'm ready button that only asks", async () => {

@@ -16,6 +16,7 @@ import com.paddleup.auction.model.Lot;
 import com.paddleup.auction.model.Outcome;
 import com.paddleup.auction.model.Phase;
 import com.paddleup.auction.model.Reason;
+import com.paddleup.auction.model.SquadRules;
 import com.paddleup.auction.model.Step;
 import com.paddleup.auction.repository.AuctionEventRepository;
 import com.paddleup.auction.repository.AuctionLotRepository;
@@ -362,7 +363,8 @@ final class AuctionRunner {
                 inputs.config().bidSeconds(),
                 inputs.config().gapSeconds(),
                 purses,
-                lots.stream().map(Lot::playerId).toList()),
+                lots.stream().map(Lot::playerId).toList(),
+                squadRules(inputs)),
             Events.lotOpened(seq + 1, now, 1, now.plus(Duration.ofSeconds(open))));
 
     AuctionState.Builder frozen = state.edit();
@@ -370,6 +372,18 @@ final class AuctionRunner {
     AuctionState next = AuctionReducer.replay(frozen.build(), events);
     store(events, next, scheduledBy);
     return new Start(null, events, next);
+  }
+
+  /** The squad rules frozen with the go-live event, so a later room edit changes no decision. */
+  private static SquadRules squadRules(AuctionInputsDto inputs) {
+    var config = inputs.config();
+    return new SquadRules(
+        config.squadMin(),
+        config.squadMax(),
+        config.roleMinimums(),
+        inputs.quotas().stream()
+            .map(q -> new SquadRules.Quota(q.category(), q.tag(), q.max()))
+            .toList());
   }
 
   private static Map<UUID, Lot> byPlayer(List<Lot> lots) {

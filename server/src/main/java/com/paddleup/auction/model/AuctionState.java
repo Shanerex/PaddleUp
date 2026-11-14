@@ -15,8 +15,10 @@ import java.util.UUID;
  * reducer returns a new state per event. {@code catalog} holds the lot cards (by pool player id)
  * that the log refers to by id; it is read from {@code auction_lots} and is not part of the log.
  *
- * <p>{@code currentLot} is 0 until lot 1 opens. {@code lotOpen} is false in a gap, when {@code
- * nextOpenAt} says when the next lot opens, and {@code lastResult} says how the last one closed.
+ * <p>{@code squadRules} is frozen at go-live; null for a log written before the squad guard, which
+ * means no squad guard. {@code currentLot} is 0 until lot 1 opens. {@code lotOpen} is false in a
+ * gap, when {@code nextOpenAt} says when the next lot opens, and {@code lastResult} says how the
+ * last one closed.
  */
 public record AuctionState(
     UUID roomId,
@@ -27,6 +29,7 @@ public record AuctionState(
     int openSeconds,
     int bidSeconds,
     int gapSeconds,
+    SquadRules squadRules,
     Map<UUID, Lot> catalog,
     List<Lot> lots,
     int currentLot,
@@ -65,6 +68,7 @@ public record AuctionState(
         0,
         0,
         0,
+        null,
         catalog,
         List.of(),
         0,
@@ -110,6 +114,7 @@ public record AuctionState(
     public int openSeconds;
     public int bidSeconds;
     public int gapSeconds;
+    public SquadRules squadRules;
     public Map<UUID, Lot> catalog;
     public List<Lot> lots;
     public int currentLot;
@@ -134,6 +139,7 @@ public record AuctionState(
       openSeconds = s.openSeconds;
       bidSeconds = s.bidSeconds;
       gapSeconds = s.gapSeconds;
+      squadRules = s.squadRules;
       catalog = s.catalog;
       lots = s.lots;
       currentLot = s.currentLot;
@@ -160,6 +166,7 @@ public record AuctionState(
           openSeconds,
           bidSeconds,
           gapSeconds,
+          squadRules,
           catalog,
           lots,
           currentLot,
