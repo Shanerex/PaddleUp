@@ -25,6 +25,7 @@ function state(over: Partial<AuctionState> = {}): AuctionState {
     unsold: [],
     connected: [],
     ready: [],
+    bidLimits: [],
     nextBid: 20,
     deadline: "2030-03-01T10:00:23Z",
     ...over,
@@ -107,16 +108,33 @@ describe("buildView", () => {
 
   it("locks the button with the squad rule the server names, and stays ready without one", () => {
     const lock = { reason: "quota", category: "cap" };
-    const locked = buildView(input({}, { bidLock: lock }));
+    const locked = buildView(input({}, { bidLimits: [lock] }));
     expect(locked).toMatchObject({ canBid: false, cause: "bid_locked", bidLock: lock });
     const ready = buildView(input());
     expect(ready).toMatchObject({ canBid: true, cause: null, bidLock: null });
   });
 
+  it("locks once the next bid passes a limit's ceiling, so a rival's bid needs no reread", () => {
+    const reserve = { reason: "reserve", role: "r", above: 500 };
+    // I lead: the limit is there, but leading wins.
+    expect(buildView(input({}, { leaderFranchiseId: ME, currentBid: 400, nextBid: 500, bidLimits: [reserve] })).cause).toBe("leading");
+    // A rival's bid patch moves the lead and the next bid past my ceiling: locked at once.
+    const outbid = buildView(input({ iBidOnLot: true }, { leaderFranchiseId: RIVAL, currentBid: 500, nextBid: 600, bidLimits: [reserve] }));
+    expect(outbid).toMatchObject({ canBid: false, cause: "bid_locked", bidLock: reserve });
+    expect(buildView(input({}, { nextBid: 500, bidLimits: [reserve] })).cause).toBeNull();
+  });
+
+  it("names the first limit that refuses the next bid, in the server's order", () => {
+    const purse = { reason: "purse", above: 1000 };
+    const reserve = { reason: "reserve", above: 400 };
+    expect(buildView(input({}, { nextBid: 500, bidLimits: [purse, reserve] })).bidLock).toEqual(reserve);
+    expect(buildView(input({}, { nextBid: 1100, bidLimits: [purse, reserve] })).bidLock).toEqual(purse);
+  });
+
   it("lets leading, offline and ended outrank a squad lock", () => {
     const lock = { reason: "squad_full" };
-    expect(buildView(input({ connection: "reconnecting" }, { bidLock: lock })).cause).toBe("reconnecting");
-    expect(buildView(input({}, { phase: "ended", lotOpen: false, bidLock: lock })).cause).toBe("ended");
+    expect(buildView(input({ connection: "reconnecting" }, { bidLimits: [lock] })).cause).toBe("reconnecting");
+    expect(buildView(input({}, { phase: "ended", lotOpen: false, bidLimits: [lock] })).cause).toBe("ended");
   });
 
   it("shows no purse and no bid cause but the lot for a Commissioner without a franchise", () => {

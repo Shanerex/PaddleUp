@@ -7,7 +7,7 @@ import type { AuctionView } from "../../../../auction/view";
 import { Icon } from "../../../../ui/Icon";
 import s from "./auction.module.css";
 
-type Money = Pick<RoomConfig, "currencyCode" | "displayUnit" | "categoryQuotas">;
+type Money = Pick<RoomConfig, "currencyCode" | "displayUnit">;
 
 /**
  * The bid dock (AuctionBidDock): a lifeline slot and the bid button, 72 px tall, at the bottom of the
@@ -69,7 +69,6 @@ export function BidDock({ view, config, labels, onBid }: { view: AuctionView; co
             {bidLockReason(view.bidLock, {
               roles: labels.roles,
               categories: labels.restrictedCategories,
-              quotas: config.categoryQuotas,
             })}
           </span>
         </span>

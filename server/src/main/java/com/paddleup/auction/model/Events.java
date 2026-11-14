@@ -41,23 +41,9 @@ public final class Events {
         seq, at, EventKind.START_REFUSED, null, null, null, null, Map.of("reason", reason));
   }
 
-  /** A go-live snapshot with no squad rules, as logs were written before the squad guard. */
-  public static AuctionEvent auctionStarted(
-      long seq,
-      Instant at,
-      List<Step> ladder,
-      int openSeconds,
-      int bidSeconds,
-      int gapSeconds,
-      Map<UUID, Long> purses,
-      List<UUID> lotOrder) {
-    return auctionStarted(
-        seq, at, ladder, openSeconds, bidSeconds, gapSeconds, purses, lotOrder, null);
-  }
-
   /**
    * The snapshot the live auction works from; {@code lotOrder} holds pool player ids. {@code squad}
-   * may be null, which logs no squad rules.
+   * may be null, which logs no squad rules (as logs were written before the squad guard).
    */
   public static AuctionEvent auctionStarted(
       long seq,

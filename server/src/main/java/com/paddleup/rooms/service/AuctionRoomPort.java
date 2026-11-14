@@ -126,15 +126,17 @@ public class AuctionRoomPort {
   }
 
   /**
-   * The room's cap per restricted category, with the pack tag it counts (snapshotted at creation).
+   * The cap per restricted category, with the pack tag it counts (snapshotted at creation): the
+   * room's own cap, or the pack's when the room config has none for that category, so a category
+   * the pack restricts is never left uncapped.
    */
   private static List<AuctionInputsDto.Quota> quotas(Room room) {
     List<AuctionInputsDto.Quota> quotas = new ArrayList<>();
     for (RestrictedCategoryDto category : room.packSnapshot().restrictedCategories()) {
       Integer max = room.config().categoryQuotas().get(category.id());
-      if (max != null) {
-        quotas.add(new AuctionInputsDto.Quota(category.id(), category.tag(), max));
-      }
+      quotas.add(
+          new AuctionInputsDto.Quota(
+              category.id(), category.tag(), max != null ? max : category.max()));
     }
     return quotas;
   }

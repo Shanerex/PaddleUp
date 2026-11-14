@@ -26,6 +26,10 @@ const REJECTED: Record<string, Notice> = {
     title: "Cap reached",
     body: "You're at the cap for that kind of player. Nothing changed.",
   },
+  no_room: {
+    title: "No room",
+    body: "That player would leave no room to finish a legal squad. Nothing changed.",
+  },
   reserve: {
     title: "Keep some purse back",
     body: "That bid would leave too little purse to fill your squad at base price. Nothing changed.",
@@ -70,29 +74,35 @@ export function outbidBody(name: string, amount: string): string {
   return `${name} went ${amount}. Rude.`;
 }
 
-/** The pack words a lock reason needs: role and category labels, and the room's cap per category. */
+/** The pack words a lock reason needs: role and category labels. */
 export type LockWords = {
   roles: { id?: string; label?: string }[];
   categories: { id?: string; label?: string }[];
-  quotas: Record<string, number>;
 };
 
 /**
- * The dock's second line when a squad rule forbids the next bid (AuctionBidDock `bidLocked`). Roles
- * and categories are named with the room's pack labels; nothing here names a sport.
+ * The dock's second line when the purse or a squad rule forbids the next bid (AuctionBidDock
+ * `bidLocked`). Roles and categories are named with the room's pack labels, and a cap is the one the
+ * server froze at go-live; nothing here names a sport.
  */
 export function bidLockReason(lock: BidLock, words: LockWords): string {
+  const role = words.roles.find((r) => r.id === lock.role)?.label ?? lock.role;
   switch (lock.reason) {
+    case "purse":
+      return "That's more than your purse has left.";
     case "squad_full":
       return "Your squad is full. Nothing left to buy.";
     case "quota": {
       const label = words.categories.find((c) => c.id === lock.category)?.label ?? lock.category;
-      const max = lock.category ? words.quotas[lock.category] : undefined;
+      const max = lock.cap;
       if (!label) return "You're at a squad cap for this kind of player.";
-      return max === undefined ? `You're at the cap for ${label}.` : `You're at the cap of ${max} for ${label}.`;
+      return max == null ? `You're at the cap for ${label}.` : `You're at the cap of ${max} for ${label}.`;
     }
+    case "no_room":
+      return role
+        ? `Winning this would leave no room for your ${role} minimum.`
+        : "Winning this would leave no room to reach your squad minimum.";
     case "reserve": {
-      const role = words.roles.find((r) => r.id === lock.role)?.label ?? lock.role;
       return role
         ? `You'd be short on purse to fill your ${role} minimum at base price.`
         : "You'd be short on purse to fill your squad minimum at base price.";

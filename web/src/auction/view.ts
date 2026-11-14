@@ -59,7 +59,7 @@ export type AuctionView = {
   nextBid: number | null;
   canBid: boolean;
   cause: Cause | null;
-  /** The squad rule that forbids my next bid, when `cause` is `bid_locked`. */
+  /** The purse or squad rule that forbids my next bid, when `cause` is `bid_locked`. */
   bidLock: BidLock | null;
   sending: boolean;
   /** The lot clock is not running: offline, paused, adjourned, ended or locked. */
@@ -100,6 +100,16 @@ export function statusOf(state: AuctionState | null): Status {
   }
 }
 
+/**
+ * The first of my bid limits that refuses `amount`, in the server's order, so it names the same
+ * rule the server would refuse with. The limits hold for the whole lot, so a bid patch that only
+ * raises the next bid still gets the right lock without a reread.
+ */
+export function lockOn(state: AuctionState | null, amount: number | null): BidLock | null {
+  if (!state || amount == null) return null;
+  return (state.bidLimits ?? []).find((l) => l.above == null || amount > l.above) ?? null;
+}
+
 export function buildView(input: ViewInput): AuctionView {
   const { state, me } = input;
   const status = statusOf(state);
@@ -128,7 +138,7 @@ export function buildView(input: ViewInput): AuctionView {
   else if (!biddable) cause = "locked";
   else if (state?.nextBid == null) cause = "no_lot";
   else if (myStatus === "leading") cause = "leading";
-  else if (state?.bidLock) cause = "bid_locked";
+  else if (lockOn(state, state.nextBid)) cause = "bid_locked";
   const canBid = cause === null && !input.sending;
 
   const running = online && biddable;
@@ -169,7 +179,7 @@ export function buildView(input: ViewInput): AuctionView {
     nextBid: state?.nextBid ?? null,
     canBid,
     cause,
-    bidLock: cause === "bid_locked" ? (state?.bidLock ?? null) : null,
+    bidLock: cause === "bid_locked" ? lockOn(state, state?.nextBid ?? null) : null,
     sending: input.sending,
     timerFrozen: !running,
     timerGrey: !running && !closed,

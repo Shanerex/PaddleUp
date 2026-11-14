@@ -13,6 +13,7 @@ public final class Reason {
   public static final String SQUAD_FULL = "squad_full";
   public static final String QUOTA = "quota";
   public static final String RESERVE = "reserve";
+  public static final String NO_ROOM = "no_room";
   public static final String OUTBID = "outbid";
   public static final String LOT_CLOSED = "lot_closed";
 

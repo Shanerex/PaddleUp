@@ -12,10 +12,7 @@ next: open a PR; a human merges
 
 ## Log
 <!-- Append one line per event: YYYY-MM-DD phase: what happened. -->
-- 2026-11-02 intake: feature created, pre-seeded from docs/PaddleUp_PRD.md; build order in docs/roadmap.md
-- 2026-11-02 intake: scope: FR-44; module: auction
-- 2026-11-02 intake: depends on: 2026-11-02-06-auction-engine, 2026-11-02-07-auction-screen
-- 2026-11-02 intake: why: without it a franchise can bid itself into an illegal squad; the Fit Engine also depends on it.
+- 2026-11-02 intake (summary): created, pre-seeded from docs/PaddleUp_PRD.md (build order in docs/roadmap.md); scope FR-44, module auction; depends on 2026-11-02-06-auction-engine and 2026-11-02-07-auction-screen; why: without it a franchise can bid itself into an illegal squad, and the Fit Engine depends on it.
 - 2026-11-02 intake: who: Managers (blocked from impossible bids).
 - 2026-11-02 intake: done-when: the server rejects any bid that, if won, would leave the franchise unable to fill remaining role minimums and the squad minimum at base prices, or would break a restricted-category quota or the squad maximum; the UI shows why bidding is disabled.
 - 2026-11-10 intake: deferred from 2026-11-09-home-redesign (R-12), drawn in docs/design/source but not built there: auction screen locked-bid reason, and the lobby OVERSEAS and LIFELINES house-rule tiles (shared with 26-advisor-lifelines).
@@ -28,3 +25,5 @@ next: open a PR; a human merges
 - 2026-11-13 verify: browser check pass at 390 and 1440 (dock bidLocked, lobby tile, new tab); review.md final pass
 - 2026-11-13 verify: bump minor; phase close
 - 2026-11-13 close: decision + learning written, rx-check done green; phase done
+- 2026-11-14 verify: fix loop 1 from /code-review high on PR #12 (10 findings, all fixed): exact SquadReserve (no greedy; best-effort when the pool is short; new reason `no_room` when a win makes the squad less completable), lots sorted once at go-live, guards state per-lot limits and the state sends `bidLimits` (AC-5 text updated to match), pack cap fallback for an uncapped category, malformed squad rules dropped at go-live and skipped on replay, test-only `auctionStarted` overload removed.
+- 2026-11-14 verify: fix loop 1 checks: make test and make lint green; generated.ts equals live springdoc; browser (stub pack, 8082/3002) e2e eligibility.spec (outbid reserve lock with no reread, new tab, no_room) and bidding.spec (purse lock) pass at 390 and 1440, full e2e suite 20/20; dock look unchanged from the approved bidLocked box.

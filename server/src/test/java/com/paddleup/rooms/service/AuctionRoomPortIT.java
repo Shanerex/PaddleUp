@@ -103,4 +103,21 @@ class AuctionRoomPortIT extends AbstractRoomsIT {
     assertThat(inputs.franchises()).hasSize(1);
     assertThat(inputs.config().openSeconds()).isEqualTo(20);
   }
+
+  @Test
+  void aRestrictedCategoryTheRoomConfigDoesNotCapKeepsThePackCap() {
+    jdbc.update(
+        "UPDATE rooms SET config = config #- '{categoryQuotas,overseas-cap}' WHERE id = ?", id());
+
+    var inputs = port.liveInputs(id());
+
+    assertThat(inputs.quotas())
+        .singleElement()
+        .satisfies(
+            q -> {
+              assertThat(q.category()).isEqualTo("overseas-cap");
+              assertThat(q.tag()).isEqualTo("overseas");
+              assertThat(q.max()).isEqualTo(8);
+            });
+  }
 }

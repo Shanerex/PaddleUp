@@ -49,7 +49,7 @@ final class AuctionViews {
       Instant serverNow,
       Collection<UUID> connected,
       Collection<UUID> ready,
-      BidLockDto bidLock) {
+      List<BidLockDto> bidLimits) {
     boolean started = s.phase() == Phase.LIVE || s.phase() == Phase.ENDED;
     AuctionConfigDto config =
         started
@@ -98,7 +98,7 @@ final class AuctionViews {
         List.copyOf(connected),
         s.phase() == Phase.SCHEDULED ? List.copyOf(ready) : List.of(),
         nextBid(s),
-        bidLock);
+        bidLimits);
   }
 
   /** The only amount the next bid may have, or null when no lot is open. */

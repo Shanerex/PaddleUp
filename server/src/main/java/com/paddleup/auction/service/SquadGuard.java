@@ -15,24 +15,17 @@ import org.springframework.stereotype.Component;
 
 /**
  * A franchise may not bid itself into a squad it cannot finish legally: past the squad maximum,
- * past a restricted category's cap, or leaving too little purse to fill the minimums at base price
- * (see {@link SquadReserve}). The rules are the ones frozen at go-live, so a room edit or a restart
- * changes nothing. A state without rules (a log from before this guard) has no squad guard.
+ * past a restricted category's cap, into a squad the pool can no longer complete, or leaving too
+ * little purse to fill the minimums at base price (see {@link SquadReserve}). The rules are the
+ * ones frozen at go-live, so a room edit or a restart changes nothing. A state without rules (a log
+ * from before this guard) has no squad guard.
  */
 @Component
 @Order(1)
 public class SquadGuard implements BidGuard {
 
   @Override
-  public Optional<String> check(AuctionState state, UUID franchiseId, long amount) {
-    return lock(state, franchiseId, amount).map(BidLock::reason);
-  }
-
-  /**
-   * Why {@code franchiseId} cannot bid {@code amount} on the open lot, with the role or category it
-   * concerns, or empty when the squad rules have no objection.
-   */
-  public Optional<BidLock> lock(AuctionState state, UUID franchiseId, long amount) {
+  public Optional<BidLock> limit(AuctionState state, UUID franchiseId) {
     SquadRules rules = state.squadRules();
     Lot lot = state.lot();
     if (rules == null || lot == null) {
@@ -40,30 +33,23 @@ public class SquadGuard implements BidGuard {
     }
     List<Lot> held = held(state, franchiseId);
     if (held.size() >= rules.max()) {
-      return Optional.of(new BidLock(Reason.SQUAD_FULL, null, null));
+      return Optional.of(BidLock.any(Reason.SQUAD_FULL, null, null, null));
     }
     for (SquadRules.Quota quota : rules.quotas()) {
-      if (lot.tags().contains(quota.tag()) && count(held, quota.tag()) >= quota.max()) {
-        return Optional.of(new BidLock(Reason.QUOTA, null, quota.category()));
+      if (lot.tags().contains(quota.tag()) && SquadReserve.placesLeft(quota, held) <= 0) {
+        return Optional.of(BidLock.any(Reason.QUOTA, null, quota.category(), quota.max()));
       }
     }
-    return reserve(state, rules, franchiseId, amount, lot, held);
-  }
-
-  /** The bid must leave at least the reserve: what it takes to finish a legal squad at base. */
-  private static Optional<BidLock> reserve(
-      AuctionState state,
-      SquadRules rules,
-      UUID franchiseId,
-      long amount,
-      Lot lot,
-      List<Lot> held) {
-    List<Lot> remaining = state.lots().subList(state.currentLot(), state.lots().size());
-    SquadReserve.Result reserve = SquadReserve.of(rules, held, lot, remaining);
-    long left = state.purses().getOrDefault(franchiseId, 0L) - amount;
-    return left < reserve.cost()
-        ? Optional.of(new BidLock(Reason.RESERVE, reserve.role(), null))
-        : Optional.empty();
+    SquadReserve.Result reserve = SquadReserve.of(rules, held, lot, state.lotsByPrice());
+    if (reserve.blocked()) {
+      return Optional.of(BidLock.any(Reason.NO_ROOM, reserve.role(), null, null));
+    }
+    if (reserve.cost() == 0) {
+      return Optional.empty();
+    }
+    long purse = state.purses().getOrDefault(franchiseId, 0L);
+    return Optional.of(
+        new BidLock(Reason.RESERVE, reserve.role(), null, null, purse - reserve.cost()));
   }
 
   private static List<Lot> held(AuctionState state, UUID franchiseId) {
@@ -71,9 +57,5 @@ public class SquadGuard implements BidGuard {
         .map(SquadEntry::lot)
         .map(no -> state.lots().get(no - 1))
         .toList();
-  }
-
-  private static long count(List<Lot> held, String tag) {
-    return held.stream().filter(l -> l.tags().contains(tag)).count();
   }
 }

@@ -30,7 +30,7 @@ class AuctionBidLockIT extends AbstractAuctionIT {
   void aFranchiseAtSquadMaxIsLockedOutAndOnlyThatFranchise() {
     Room room = roomWithSquadMax(1);
     goLive(room);
-    assertThat(state(room, room.manager(0)).has("bidLock")).isFalse();
+    assertThat(lock(state(room, room.manager(0)))).isNull();
     bid(room, room.manager(0), 1, 20);
     advance(10);
     tick();
@@ -42,16 +42,16 @@ class AuctionBidLockIT extends AbstractAuctionIT {
     JsonNode commissioner = state(room, room.commissioner());
 
     assertThat(full.get("lot").get("no").asInt()).isEqualTo(2);
-    assertThat(full.get("bidLock").get("reason").asText()).isEqualTo("squad_full");
-    assertThat(full.get("bidLock").has("role")).isFalse();
-    assertThat(other.has("bidLock")).isFalse();
-    assertThat(commissioner.has("bidLock")).isFalse();
+    assertThat(lock(full).get("reason").asText()).isEqualTo("squad_full");
+    assertThat(lock(full).has("role")).isFalse();
+    assertThat(lock(other)).isNull();
+    assertThat(commissioner.get("bidLimits")).isEmpty();
     assertThat(outcome(bid(room, room.manager(0), 2, 20))).isEqualTo("rejected:squad_full");
     assertThat(outcome(bid(room, room.manager(1), 2, 20))).isEqualTo("accepted");
   }
 
   @Test
-  void theLeaderAndAPassingManagerAreNotShownALock() {
+  void theLeaderGetsItsLimitsAheadOfBeingOutbidAndAPasserGetsNone() {
     Room room = roomWithSquadMax(1);
     goLive(room);
     bid(room, room.manager(0), 1, 20);
@@ -61,11 +61,23 @@ class AuctionBidLockIT extends AbstractAuctionIT {
     tick();
     bid(room, room.manager(1), 2, 20);
 
-    // Lot 2: manager 1 leads. Manager 0 is full, but has nothing to bid against yet.
-    assertThat(state(room, room.manager(1)).has("bidLock")).isFalse();
-    assertThat(state(room, room.manager(0)).get("bidLock").get("reason").asText())
-        .isEqualTo("squad_full");
+    // Lot 2: manager 1 leads, and still has its purse limit, so once outbid the dock knows at once.
+    JsonNode leader = state(room, room.manager(1));
+    assertThat(leader.get("bidLimits")).extracting(l -> l.get("reason").asText()).contains("purse");
+    assertThat(lock(leader)).isNull();
+    assertThat(lock(state(room, room.manager(0))).get("reason").asText()).isEqualTo("squad_full");
     pass(room, room.manager(0), 2);
-    assertThat(state(room, room.manager(0)).has("bidLock")).isFalse();
+    assertThat(state(room, room.manager(0)).get("bidLimits")).isEmpty();
+  }
+
+  @Test
+  void aBidAboveThePurseIsShownAsAPurseLimitNotASquadOne() {
+    Room room = roomWithSquadMax(1);
+    goLive(room);
+
+    JsonNode limits = state(room, room.manager(0)).get("bidLimits");
+    JsonNode purse = limits.get(0);
+    assertThat(purse.get("reason").asText()).isEqualTo("purse");
+    assertThat(purse.has("above")).isTrue();
   }
 }

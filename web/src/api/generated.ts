@@ -532,12 +532,16 @@ export interface components {
             ready: string[];
             /** Format: int64 */
             nextBid?: number;
-            bidLock?: components["schemas"]["BidLockDto"];
+            bidLimits: components["schemas"]["BidLockDto"][];
         };
         BidLockDto: {
             reason: string;
             role?: string;
             category?: string;
+            /** Format: int32 */
+            cap?: number;
+            /** Format: int64 */
+            above?: number;
         };
         LastResultDto: {
             /** Format: int32 */

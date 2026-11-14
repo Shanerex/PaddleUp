@@ -10,6 +10,7 @@ import com.paddleup.auction.model.SquadRules;
 import com.paddleup.auction.model.Step;
 import java.time.Duration;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
@@ -127,6 +128,10 @@ public final class AuctionReducer {
               card.basePrice()));
     }
     b.lots = lots;
+    b.lotsByPrice =
+        lots.stream()
+            .sorted(Comparator.comparingLong(Lot::basePrice).thenComparingInt(Lot::no))
+            .toList();
     b.currentLot = 0;
     b.lotOpen = false;
     b.unsold = new ArrayList<>();
@@ -135,30 +140,40 @@ public final class AuctionReducer {
     clearLot(b);
   }
 
-  /** The frozen squad rules, or null for a go-live logged before the squad guard. */
-  @SuppressWarnings("unchecked")
+  /**
+   * The frozen squad rules, or null for a go-live logged before the squad guard. Read defensively:
+   * an entry that is not a number is skipped, so one bad value can never stop a room's replay.
+   */
   private static SquadRules squadRules(Map<String, Object> squad) {
     if (squad == null) {
       return null;
     }
     Map<String, Integer> roleMinimums = new TreeMap<>();
-    ((Map<String, Object>) squad.get("roleMinimums"))
-        .forEach((role, min) -> roleMinimums.put(role, ((Number) min).intValue()));
-    List<SquadRules.Quota> quotas =
-        ((List<Map<String, Object>>) squad.get("quotas"))
-            .stream()
-                .map(
-                    q ->
-                        new SquadRules.Quota(
-                            String.valueOf(q.get("category")),
-                            String.valueOf(q.get("tag")),
-                            ((Number) q.get("max")).intValue()))
-                .toList();
+    if (squad.get("roleMinimums") instanceof Map<?, ?> mins) {
+      mins.forEach(
+          (role, min) -> {
+            if (role != null && min instanceof Number n) {
+              roleMinimums.put(String.valueOf(role), n.intValue());
+            }
+          });
+    }
+    List<SquadRules.Quota> quotas = new ArrayList<>();
+    if (squad.get("quotas") instanceof List<?> list) {
+      for (Object item : list) {
+        if (item instanceof Map<?, ?> q && q.get("max") instanceof Number max) {
+          quotas.add(
+              new SquadRules.Quota(
+                  String.valueOf(q.get("category")), String.valueOf(q.get("tag")), max.intValue()));
+        }
+      }
+    }
     return new SquadRules(
-        ((Number) squad.get("min")).intValue(),
-        ((Number) squad.get("max")).intValue(),
-        roleMinimums,
-        quotas);
+        size(squad.get("min"), 0), size(squad.get("max"), Integer.MAX_VALUE), roleMinimums, quotas);
+  }
+
+  /** A squad size from the log, or {@code missing} (no limit that way) when it is not a number. */
+  private static int size(Object value, int missing) {
+    return value instanceof Number n ? n.intValue() : missing;
   }
 
   private static void sold(AuctionState.Builder b, AuctionEvent e) {

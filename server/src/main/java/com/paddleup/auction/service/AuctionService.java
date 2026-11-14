@@ -48,7 +48,7 @@ public class AuctionService {
   private final Readiness readiness;
   private final AuctionBroadcaster broadcaster;
   private final StompTicketService tickets;
-  private final SquadGuard squadGuard;
+  private final List<BidGuard> guards;
   private final AuctionProperties props;
   private final Clock clock;
 
@@ -60,7 +60,7 @@ public class AuctionService {
       Readiness readiness,
       AuctionBroadcaster broadcaster,
       StompTicketService tickets,
-      SquadGuard squadGuard,
+      List<BidGuard> guards,
       AuctionProperties props,
       Clock clock) {
     this.port = port;
@@ -70,7 +70,7 @@ public class AuctionService {
     this.readiness = readiness;
     this.broadcaster = broadcaster;
     this.tickets = tickets;
-    this.squadGuard = squadGuard;
+    this.guards = List.copyOf(guards);
     this.props = props;
     this.clock = clock;
   }
@@ -86,7 +86,7 @@ public class AuctionService {
     }
     AuctionState state = await(registry.runner(roomId).schedule(caller, request.startsAt()));
     return AuctionViews.state(
-        state, clock.instant(), presence.connected(roomId), readiness.ready(roomId), null);
+        state, clock.instant(), presence.connected(roomId), readiness.ready(roomId), List.of());
   }
 
   /** Full state for a member; 404 until an auction is scheduled. */
@@ -101,26 +101,26 @@ public class AuctionService {
         clock.instant(),
         presence.connected(roomId),
         readiness.ready(roomId),
-        bidLock(state, access.franchiseId()));
+        bidLimits(state, access.franchiseId()));
   }
 
   /**
-   * Why the viewer's franchise cannot bid the next amount on the open lot, or null when it can, has
-   * no franchise, or is not the one to bid (it leads, or has passed).
+   * Every bid guard's limit on the viewer's franchise for the open lot, in guard order, so the
+   * client can tell which amounts it cannot bid as the price climbs, with no reread. Empty when no
+   * lot is open, the viewer has no franchise, or it has passed. Sent to the leader too: once
+   * outbid, its lock must show at once.
    */
-  private BidLockDto bidLock(AuctionState state, UUID franchiseId) {
-    Long next = AuctionViews.nextBid(state);
-    if (next == null
+  private List<BidLockDto> bidLimits(AuctionState state, UUID franchiseId) {
+    if (AuctionViews.nextBid(state) == null
         || franchiseId == null
         || !state.purses().containsKey(franchiseId)
-        || franchiseId.equals(state.leader())
         || state.passedBy().contains(franchiseId)) {
-      return null;
+      return List.of();
     }
-    return squadGuard
-        .lock(state, franchiseId, next)
-        .map(l -> new BidLockDto(l.reason(), l.role(), l.category()))
-        .orElse(null);
+    return guards.stream()
+        .flatMap(g -> g.limit(state, franchiseId).stream())
+        .map(l -> new BidLockDto(l.reason(), l.role(), l.category(), l.cap(), l.above()))
+        .toList();
   }
 
   /** Events with a seq above {@code after}, at most {@code limit}. */

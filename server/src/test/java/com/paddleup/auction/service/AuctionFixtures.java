@@ -46,7 +46,8 @@ final class AuctionFixtures {
         10,
         5,
         Map.of(A, 1000L, B, 1000L, POOR, 10L),
-        PLAYERS);
+        PLAYERS,
+        null);
   }
 
   /** Lot 1 open at T0 with deadline T0 + 20 s; seq 2 is the last event. */
