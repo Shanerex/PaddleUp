@@ -72,7 +72,7 @@ public class RuleSetService {
     roomPort.access(roomId, user);
     ScoringInputsDto inputs = roomPort.ruleInputs(roomId);
     RuleSetRow row = sets.find(roomId).orElse(null);
-    Optional<Instant> freezesAt = freeze.freezesAt(roomId);
+    Optional<Instant> freezesAt = freeze.freezesAt(inputs);
     boolean frozen =
         FreezePolicy.frozen(row == null ? null : row.frozenAt(), freezesAt, clock.instant());
     return view(inputs, row, frozen, freezesAt);
@@ -165,18 +165,15 @@ public class RuleSetService {
     RuleSetRow row = sets.lock(roomId).orElseThrow();
     // Read after the lock, so a write that waited for the lock is judged at its own turn.
     now = clock.instant();
-    Optional<Instant> freezesAt = freeze.freezesAt(roomId);
-    boolean frozen = FreezePolicy.frozen(row.frozenAt(), freezesAt, now);
-    if (frozen && row.frozenAt() == null) {
-      sets.markFrozen(roomId, freezesAt.orElse(now));
-    }
+    ScoringInputsDto inputs = roomPort.ruleInputs(roomId);
+    boolean frozen = freeze.recordIfDue(roomId, row, inputs, now);
     // After the freeze is recorded, so a stale caller at the freeze instant cannot leave it unseen.
     if (row.version() != version) {
       throw new RuleSetConflictException(
           RuleSetConflictException.STALE_VERSION,
           "The rules changed since you opened them; reload and try again");
     }
-    return new Locked(roomId, roomPort.ruleInputs(roomId), row, frozen, now);
+    return new Locked(roomId, inputs, row, frozen, now);
   }
 
   private RuleSetViewDto save(
@@ -206,9 +203,9 @@ public class RuleSetService {
             before,
             after,
             RuleDiffs.between(before, after)));
-    scoring.recomputeRoom(roomId);
+    scoring.recomputeRoom(roomId, locked.inputs());
     RuleSetRow saved = sets.find(roomId).orElseThrow();
-    Optional<Instant> freezesAt = freeze.freezesAt(roomId);
+    Optional<Instant> freezesAt = freeze.freezesAt(locked.inputs());
     return view(
         locked.inputs(),
         saved,
@@ -254,6 +251,6 @@ public class RuleSetService {
         row == null ? 0 : row.version(),
         inputs.packVersion(),
         frozen,
-        freezesAt.orElse(null));
+        FreezePolicy.reported(row == null ? null : row.frozenAt(), freezesAt).orElse(null));
   }
 }

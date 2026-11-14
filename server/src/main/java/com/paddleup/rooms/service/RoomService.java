@@ -4,7 +4,6 @@ import com.paddleup.accounts.dto.UserId;
 import com.paddleup.accounts.service.DisplayNameSanitiser;
 import com.paddleup.packs.dto.PackDto;
 import com.paddleup.packs.dto.PresetDto;
-import com.paddleup.packs.dto.RuleSetDto;
 import com.paddleup.packs.exception.PackNotFoundException;
 import com.paddleup.packs.service.PackService;
 import com.paddleup.rooms.dto.CreateRoomRequest;
@@ -203,14 +202,14 @@ public class RoomService {
           RoomConflictException.STALE_VERSION,
           "The config changed since you opened it; reload and try again");
     }
+    // The scoring rules stay the stored pack-default snapshot; what the client sent is dropped.
     RoomConfigDto config =
-        keepRules(
-            request
-                .config()
-                .withName(
-                    DisplayNameSanitiser.sanitise(request.config().name()),
-                    DisplayNameSanitiser.sanitise(request.config().competition())),
-            room.config().scoringRules());
+        request
+            .config()
+            .withName(
+                DisplayNameSanitiser.sanitise(request.config().name()),
+                DisplayNameSanitiser.sanitise(request.config().competition()))
+            .withScoringRules(room.config().scoringRules());
     failOn(validator.validate(config, room.packSnapshot(), franchises.count(roomId)));
     pool.requireFits(roomId, config);
     Instant now = clock.instant();
@@ -225,32 +224,6 @@ public class RoomService {
         Map.of("fromVersion", room.configVersion()),
         now);
     return views.room(guard.member(roomId, caller));
-  }
-
-  /**
-   * The scoring rules are the pack-default snapshot taken at creation and are never edited here;
-   * whatever the client sent for them is dropped. The scoring module owns the editable set.
-   */
-  private static RoomConfigDto keepRules(RoomConfigDto sent, RuleSetDto stored) {
-    return new RoomConfigDto(
-        sent.name(),
-        sent.competition(),
-        sent.minManagers(),
-        sent.maxManagers(),
-        sent.purse(),
-        sent.currencyCode(),
-        sent.displayUnit(),
-        sent.incrementLadder(),
-        sent.squadMin(),
-        sent.squadMax(),
-        sent.roleMinimums(),
-        sent.categoryQuotas(),
-        sent.retention(),
-        stored,
-        sent.ai(),
-        sent.openSeconds(),
-        sent.bidSeconds(),
-        sent.gapSeconds());
   }
 
   private PackDto pack(String packId) {

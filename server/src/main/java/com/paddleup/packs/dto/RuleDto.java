@@ -91,17 +91,18 @@ public sealed interface RuleDto {
     }
 
     /**
-     * The rate to look up in the bands: numerator times scale, divided by the denominator, to 2 dp.
-     * Empty when the denominator is not above zero (for example a manual entry that left the
-     * denominator stat at 0), which means no band points. {@code minVolume} does not guard this, as
-     * it reads a different stat.
+     * The rate to look up in the bands: numerator times scale, divided by the denominator, kept to
+     * 16 significant digits and never rounded to the band edges' precision, so a value just below
+     * an edge (59.996 under 60) stays in the lower band. Empty when the denominator is not above
+     * zero (for example a manual entry that left the denominator stat at 0), which means no band
+     * points. {@code minVolume} does not guard this, as it reads a different stat.
      */
     public Optional<BigDecimal> rate(BigDecimal numerator, BigDecimal denominator) {
       if (numerator == null || denominator == null || denominator.signum() <= 0) {
         return Optional.empty();
       }
       return Optional.of(
-          numerator.multiply(scale).divide(denominator, 2, java.math.RoundingMode.HALF_UP));
+          numerator.multiply(scale).divide(denominator, java.math.MathContext.DECIMAL64));
     }
   }
 

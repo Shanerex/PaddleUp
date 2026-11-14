@@ -51,7 +51,7 @@ class CricketPackTest {
             ctx -> {
               assertThat(ctx).hasNotFailed();
               assertThat(ctx.getBean(PackService.class).list())
-                  .contains(new PackSummaryDto(ID, "1.0.0", true));
+                  .contains(new PackSummaryDto(ID, "1.1.0", true));
             });
   }
 

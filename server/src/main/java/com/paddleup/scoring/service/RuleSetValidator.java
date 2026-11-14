@@ -128,6 +128,9 @@ final class RuleSetValidator {
     stat(r.numerator(), at + ".numerator");
     stat(r.denominator(), at + ".denominator");
     number(r.scale(), at + ".scale");
+    if (r.scale() != null && r.scale().signum() <= 0) {
+      out.add(new Violation(at + ".scale", "Must be above zero"));
+    }
     if (r.minVolume() != null) {
       stat(r.minVolume().stat(), at + ".minVolume.stat");
       number(r.minVolume().atLeast(), at + ".minVolume.atLeast");

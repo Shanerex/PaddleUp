@@ -25,6 +25,7 @@ class RuleSetValidatorTest {
           PACK.statSchema(),
           PACK.defaultRuleSet(),
           PACK.appearanceRule(),
+          null,
           null);
 
   static List<String> fields(RuleDto... rules) {
@@ -48,6 +49,16 @@ class RuleSetValidatorTest {
   @Test
   void theCricketDefaultSetIsValid() {
     assertThat(RuleSetValidator.validate(PACK.defaultRuleSet(), INPUTS)).isEmpty();
+  }
+
+  @Test
+  void aBandedRateScaleMustBeAboveZero() {
+    for (String scale : List.of("0", "-1")) {
+      var rule =
+          new RuleDto.BandedRate(
+              "b", "runs", "balls-faced", n(scale), null, List.of(band("0", "10")));
+      assertThat(fields(rule)).containsExactly("rules[0].scale");
+    }
   }
 
   @Test

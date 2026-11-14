@@ -35,6 +35,7 @@ public class ScoringService {
   private final RuleSetRepository ruleSets;
   private final MatchStatsRepository stats;
   private final PointsRepository points;
+  private final FreezePolicy freeze;
   private final Clock clock;
 
   ScoringService(
@@ -42,11 +43,13 @@ public class ScoringService {
       RuleSetRepository ruleSets,
       MatchStatsRepository stats,
       PointsRepository points,
+      FreezePolicy freeze,
       Clock clock) {
     this.roomPort = roomPort;
     this.ruleSets = ruleSets;
     this.stats = stats;
     this.points = points;
+    this.freeze = freeze;
     this.clock = clock;
   }
 
@@ -56,11 +59,13 @@ public class ScoringService {
   /**
    * Reads the rules under the room's rule row lock, creating the row first when absent. A rule edit
    * holds the same lock until it commits, so a recompute that started during an edit waits and then
-   * scores with the committed latest rules and version, never an older set.
+   * scores with the committed latest rules and version, never an older set. A recompute at or past
+   * the freeze instant records the freeze, so a room that has been scored cannot thaw.
    */
   private Rules rulesOf(UUID roomId, ScoringInputsDto inputs) {
     ruleSets.insertIfAbsent(roomId, clock.instant());
     RuleSetRow row = ruleSets.lock(roomId).orElseThrow();
+    freeze.recordIfDue(roomId, row, inputs, clock.instant());
     if (row.rules() == null) {
       return new Rules(inputs.defaultRules(), row.version());
     }
@@ -70,22 +75,32 @@ public class ScoringService {
   /** Scores every pool player that has a stat in this match, replacing the stored rows. */
   @Transactional
   public void recompute(UUID roomId, String matchId) {
-    recompute(roomId, matchId, roomPort.ruleInputs(roomId), roomPort.players(roomId));
+    ScoringInputsDto inputs = roomPort.ruleInputs(roomId);
+    recompute(roomId, matchId, inputs, rulesOf(roomId, inputs), roomPort.players(roomId));
   }
 
   /** Recomputes every match of the room that has any stat. */
   @Transactional
   public void recomputeRoom(UUID roomId) {
-    ScoringInputsDto inputs = roomPort.ruleInputs(roomId);
+    recomputeRoom(roomId, roomPort.ruleInputs(roomId));
+  }
+
+  /** As {@link #recomputeRoom(UUID)}, with the room's inputs already read by the caller. */
+  @Transactional
+  void recomputeRoom(UUID roomId, ScoringInputsDto inputs) {
+    Rules rules = rulesOf(roomId, inputs);
     List<ScoringPlayerDto> players = roomPort.players(roomId);
     for (String matchId : stats.scoredMatches(roomId, inputs.datasetId())) {
-      recompute(roomId, matchId, inputs, players);
+      recompute(roomId, matchId, inputs, rules, players);
     }
   }
 
   private void recompute(
-      UUID roomId, String matchId, ScoringInputsDto inputs, List<ScoringPlayerDto> players) {
-    Rules rules = rulesOf(roomId, inputs);
+      UUID roomId,
+      String matchId,
+      ScoringInputsDto inputs,
+      Rules rules,
+      List<ScoringPlayerDto> players) {
     var provider =
         inputs.datasetId() == null
             ? List.<com.paddleup.scoring.model.ProviderValue>of()

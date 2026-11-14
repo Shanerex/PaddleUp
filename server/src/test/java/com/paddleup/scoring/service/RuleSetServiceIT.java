@@ -53,7 +53,7 @@ class RuleSetServiceIT extends ScoringIT {
     assertThat(view.status()).isEqualTo(RuleSetViewDto.PACK_DEFAULT);
     assertThat(view.version()).isZero();
     assertThat(view.rules()).isEqualTo(defaults());
-    assertThat(view.packVersion()).isEqualTo("1.0.0");
+    assertThat(view.packVersion()).isEqualTo("1.1.0");
     assertThat(view.frozen()).isFalse();
     assertThat(view.freezesAt()).isEqualTo(START);
     assertThat(version(roomId)).isZero();
@@ -80,6 +80,37 @@ class RuleSetServiceIT extends ScoringIT {
 
     assertThat(view.freezesAt()).isNull();
     assertThat(view.frozen()).isFalse();
+  }
+
+  @Test
+  void aScoredRoomStaysFrozenWhenTheFirstMatchIsMovedLater() {
+    clock.freeze(START.plusSeconds(60));
+    // Provider stats recompute the room, which records the freeze with no rule write at all.
+    provider(datasetId, "m1", player.sourcePlayerId(), "10");
+    matches.upsertMatch(datasetId, "m1", START.plus(Duration.ofDays(1)));
+
+    var view = rules.read(roomId, user(manager));
+
+    assertThat(view.frozen()).isTrue();
+    assertThat(view.freezesAt()).isEqualTo(START);
+    assertThat(code(() -> rules.edit(roomId, user(commissioner), 0, runsWorth(defaults(), "2"))))
+        .isEqualTo("frozen");
+  }
+
+  @Test
+  void aMatchThatStartedBeforeTheRoomWasCreatedDoesNotFreezeIt() {
+    var created =
+        jdbc.queryForObject(
+                "SELECT created_at FROM rooms WHERE id = ?", java.sql.Timestamp.class, roomId)
+            .toInstant();
+    matches.upsertMatch(datasetId, "m0", created.minus(Duration.ofDays(1)));
+
+    var view = rules.read(roomId, user(commissioner));
+
+    assertThat(view.freezesAt()).isEqualTo(START);
+    assertThat(view.frozen()).isFalse();
+    assertThat(rules.edit(roomId, user(commissioner), 0, runsWorth(defaults(), "2")).status())
+        .isEqualTo(RuleSetViewDto.CUSTOM);
   }
 
   @Test

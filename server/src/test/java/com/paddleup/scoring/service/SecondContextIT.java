@@ -93,7 +93,7 @@ class SecondContextIT extends ScoringIT {
     assertThat(pointsBefore.get(0).total()).isEqualByComparingTo("34");
     String changed =
         Files.readString(Path.of("../packs/cricket-t20.json"))
-            .replace("\"version\": \"1.0.0\"", "\"version\": \"2.0.0\"")
+            .replace("\"version\": \"1.1.0\"", "\"version\": \"2.0.0\"")
             .replace(
                 "\"id\": \"runs-points\", \"label\": \"Runs\", \"stat\": \"runs\", \"points\": 1",
                 "\"id\": \"runs-points\", \"label\": \"Runs\", \"stat\": \"runs\", \"points\": 9")
@@ -115,7 +115,7 @@ class SecondContextIT extends ScoringIT {
       assertThat(pointsAfter).hasSize(1);
       assertThat(pointsAfter.get(0).total()).isEqualByComparingTo("34");
       assertThat(pointsAfter.get(0).lines()).isEqualTo(pointsBefore.get(0).lines());
-      assertThat(restartedPort.ruleInputs(roomId).packVersion()).isEqualTo("1.0.0");
+      assertThat(restartedPort.ruleInputs(roomId).packVersion()).isEqualTo("1.1.0");
     }
   }
 }

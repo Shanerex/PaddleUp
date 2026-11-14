@@ -17,6 +17,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 class ScoringRoomPortIT extends AbstractRoomsIT {
 
   @Autowired ScoringRoomPort port;
+  @Autowired AppearanceRuleBackfill backfill;
 
   Person commissioner;
   Person manager;
@@ -66,7 +67,7 @@ class ScoringRoomPortIT extends AbstractRoomsIT {
     var inputs = port.ruleInputs(id());
 
     assertThat(inputs.packId()).isEqualTo("cricket-t20");
-    assertThat(inputs.packVersion()).isEqualTo("1.0.0");
+    assertThat(inputs.packVersion()).isEqualTo("1.1.0");
     assertThat(inputs.roles()).extracting("id").containsExactly("BAT", "BOWL", "AR", "WK");
     assertThat(inputs.stats()).isNotEmpty();
     assertThat(inputs.defaultRules().rules()).isNotEmpty();
@@ -88,11 +89,22 @@ class ScoringRoomPortIT extends AbstractRoomsIT {
   }
 
   @Test
-  void aRoomWithoutAnAppearanceRuleInItsSnapshotUsesTheLivePacksRule() {
+  void aRoomWithoutAnAppearanceRuleIsBackfilledOnceAndThenReadsOnlyItsSnapshot() {
     jdbc.update(
         "UPDATE rooms SET pack_snapshot = pack_snapshot - 'appearanceRule' WHERE id = ?", id());
+    assertThat(port.ruleInputs(id()).appearanceRule()).isNull();
 
+    assertThat(backfill.backfillMissing()).isEqualTo(1);
     assertThat(port.ruleInputs(id()).appearanceRule().stat()).isEqualTo("in-playing-xi");
+
+    // Once written, the snapshot is the room's own: a second run leaves an edited rule alone.
+    jdbc.update(
+        "UPDATE rooms SET"
+            + " pack_snapshot = jsonb_set(pack_snapshot, '{appearanceRule,stat}', '\"seen\"')"
+            + " WHERE id = ?",
+        id());
+    assertThat(backfill.backfillMissing()).isZero();
+    assertThat(port.ruleInputs(id()).appearanceRule().stat()).isEqualTo("seen");
   }
 
   @Test

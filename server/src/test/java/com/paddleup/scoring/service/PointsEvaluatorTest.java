@@ -246,6 +246,14 @@ class PointsEvaluatorTest {
   }
 
   @Test
+  void aRateJustBelowAnEdgeIsNotRoundedUpIntoTheHigherBand() {
+    assertRule(batting("59.996", 20), "strike-rate-bands", "-4");
+    assertRule(batting("169.9999", 20), "strike-rate-bands", "4");
+    assertRule(bowling("9.996", 12), "economy-bands", null);
+    assertRule(bowling("11.9999", 12), "economy-bands", "-2");
+  }
+
+  @Test
   void aBandNeedsItsMinimumVolume() {
     assertRule(batting("200", 9), "strike-rate-bands", null);
     assertRule(batting("200", 10), "strike-rate-bands", "6");

@@ -68,7 +68,7 @@ class ScoringApiIT extends ScoringIT {
     assertThat(read.get("status").asText()).isEqualTo("pack-default");
     assertThat(read.get("version").asInt()).isZero();
     assertThat(read.get("frozen").asBoolean()).isFalse();
-    assertThat(read.get("packVersion").asText()).isEqualTo("1.0.0");
+    assertThat(read.get("packVersion").asText()).isEqualTo("1.1.0");
     assertThat(read.get("freezesAt").asText()).isEqualTo("2027-04-01T14:00:00Z");
     assertThat(read.get("rules").get("rules")).isNotEmpty();
     assertThat(read.get("rules").get("rules").get(0).get("label").asText()).isEqualTo("Runs");

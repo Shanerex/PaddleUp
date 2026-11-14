@@ -89,4 +89,30 @@ public record RoomConfigDto(
         bidSeconds,
         gapSeconds);
   }
+
+  /**
+   * This config with the given scoring rules. A config save keeps the stored pack-default snapshot
+   * this way; the scoring module owns the editable rule set.
+   */
+  public RoomConfigDto withScoringRules(RuleSetDto rules) {
+    return new RoomConfigDto(
+        name,
+        competition,
+        minManagers,
+        maxManagers,
+        purse,
+        currencyCode,
+        displayUnit,
+        incrementLadder,
+        squadMin,
+        squadMax,
+        roleMinimums,
+        categoryQuotas,
+        retention,
+        rules,
+        ai,
+        openSeconds,
+        bidSeconds,
+        gapSeconds);
+  }
 }

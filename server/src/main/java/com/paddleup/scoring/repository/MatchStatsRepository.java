@@ -58,6 +58,16 @@ public class MatchStatsRepository {
         .optional();
   }
 
+  /** The earliest scheduled start of the dataset's matches at or after {@code from}. */
+  public Optional<Instant> earliestStart(UUID datasetId, Instant from) {
+    return jdbc.sql(
+            "SELECT starts_at FROM scoring_matches WHERE dataset_id = ? AND starts_at >= ?"
+                + " ORDER BY starts_at LIMIT 1")
+        .params(datasetId, Sql.utc(from))
+        .query((rs, n) -> Sql.instant(rs, "starts_at"))
+        .optional();
+  }
+
   /** Replaces every provider row of the match with {@code values}. */
   public void replaceProviderValues(UUID datasetId, String matchId, List<ProviderValue> values) {
     jdbc.sql("DELETE FROM scoring_stat_values WHERE dataset_id = ? AND match_id = ?")

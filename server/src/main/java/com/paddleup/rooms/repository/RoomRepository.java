@@ -1,6 +1,7 @@
 package com.paddleup.rooms.repository;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.paddleup.packs.dto.AppearanceRuleDto;
 import com.paddleup.rooms.dto.PackLabelsDto;
 import com.paddleup.rooms.dto.RoomConfigDto;
 import com.paddleup.rooms.dto.RoomState;
@@ -10,6 +11,7 @@ import com.paddleup.rooms.util.StoredJson;
 import java.sql.SQLException;
 import java.time.Instant;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 import org.springframework.jdbc.core.RowMapper;
@@ -93,6 +95,27 @@ public class RoomRepository {
         .param(id)
         .query(mapper)
         .optional();
+  }
+
+  /** Ids and pack ids of the rooms whose pack snapshot has no appearance rule. */
+  public List<Map.Entry<UUID, String>> withoutAppearanceRule() {
+    return jdbc.sql(
+            "SELECT id, pack_id FROM rooms WHERE pack_snapshot ->> 'appearanceRule' IS NULL")
+        .query((rs, n) -> Map.entry(rs.getObject("id", UUID.class), rs.getString("pack_id")))
+        .list();
+  }
+
+  /** Writes the appearance rule into the room's snapshot, only if it still has none. */
+  public boolean setAppearanceRule(UUID id, AppearanceRuleDto rule) {
+    return jdbc.sql(
+                """
+                UPDATE rooms SET pack_snapshot = jsonb_set(pack_snapshot, '{appearanceRule}',
+                                                           ?::jsonb)
+                WHERE id = ? AND pack_snapshot ->> 'appearanceRule' IS NULL
+                """)
+            .params(json.write(rule), id)
+            .update()
+        == 1;
   }
 
   /** Saves the config and bumps its version, only if the stored version is still {@code from}. */
