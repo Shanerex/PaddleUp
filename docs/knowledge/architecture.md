@@ -1,6 +1,6 @@
 # Architecture
 
-Source: specs/2026-11-01-project-scaffold/plan.md (proposed; pending review); Sport Packs section from specs/2026-11-02-02-sport-pack-framework/plan.md; Rooms section from specs/2026-11-02-04-rooms/plan.md; Auction engine from specs/2026-11-02-06-auction-engine/plan.md.
+Source: specs/2026-11-01-project-scaffold/plan.md (proposed; pending review); Sport Packs section from specs/2026-11-02-02-sport-pack-framework/plan.md; Rooms section from specs/2026-11-02-04-rooms/plan.md; Auction engine from specs/2026-11-02-06-auction-engine/plan.md; Scoring from specs/2026-11-02-11-scoring-engine/plan.md.
 
 ## Repo layout
 - `server/`: Spring Boot modular monolith, single Maven module (Java 21, Maven wrapper).
@@ -27,6 +27,7 @@ Source: specs/2026-11-01-project-scaffold/plan.md (proposed; pending review); Sp
 - `room_log` is append-only, enforced by a DB trigger that blocks UPDATE and DELETE.
 - Other modules change room state only through `rooms.service.RoomLifecycle`. REST cannot start the auction.
 - The auction reads a room only through `rooms.service.AuctionRoomPort` (access, auctionRefusal, liveInputs, markScheduled). Config carries `openSeconds`, `bidSeconds` and `gapSeconds` (never null on read: absent means 20, 10 and 5 s; ranges 5-120, 3-60, 0-30). Non-members get 404 and non-Commissioners 403 on the auction routes too.
+- Config `scoringRules` is the immutable pack-default snapshot taken at creation, and the pack snapshot carries `appearanceRule`; `saveConfig` never changes either. Scoring reads a room only through `rooms.service.ScoringRoomPort` (access, requireCommissioner, ruleInputs, players, roomsOnDataset).
 - Invites are a revocable 12-char code or link that expires after 7 days; joining is throttled per user and per IP.
 
 ## Auction engine
@@ -35,6 +36,13 @@ Source: specs/2026-11-01-project-scaffold/plan.md (proposed; pending review); Sp
 - Auctions run on one server instance; a second writer fails on the seq key and cannot fork the log. A refused start logs `start_refused` once and stays scheduled until the Commissioner reschedules.
 - Timers: the server `Clock` plus a 100 ms tick (`paddleup.auction.tick`, 0 turns it off). Intents close overdue lots first, so `lot_closed` is exact. Tests step a mutable Clock.
 - Realtime: STOMP at `/api/ws`, broadcasts on `/topic/auctions/{roomId}` only; bids and passes are REST. Two ways in through one auth check (`StompAuth`): the session cookie on a same-origin handshake, or a single-use 30 s ticket from `POST .../auction/ticket` on CONNECT (Vercel does not proxy upgrades). SEND is always refused. The origin allow-list is `paddleup.auth.web-base-url`.
+
+## Scoring
+- The room's edited rule set, its version (compare-and-set, 409 `stale_version`), `frozen_at` and the append-only `scoring_rule_log` (DB trigger blocks UPDATE, DELETE and TRUNCATE) live in scoring. No row, or a row with NULL rules (version 0), means the pack default.
+- Matches and provider stats are stored once per season dataset and shared by every room on it. Manual stats are sparse per-room overrides (override beats provider). Room players map to dataset players through `source_player_id`; added players take manual stats only.
+- Freeze = server `Clock` at or after the earliest `starts_at` of the room's dataset matches. It is checked under the room's rule-set row lock on every write and persisted per room once seen, so a later reschedule cannot thaw it; the freeze is recorded before the stale-version check. After the freeze the only path is a reasoned, attested, logged change that recomputes the room.
+- `PointsEvaluator` is pure. `scoring_points` is replaced per (room, match, player). Every write path and every recompute takes the room's rule row first, then its points rows, so a recompute never overwrites newer rules with older totals.
+- Stat and fixture writes are a service API (`MatchStatsService`) with no REST route yet; the ingestion and manual-entry specs add routes with authz and validation.
 
 ## Shared infrastructure
 - `accounts.service.ClientAddress` is the one way to resolve the client IP (also used for throttle keys).

@@ -87,6 +87,14 @@ public class RoomPoolRepository {
         .optional();
   }
 
+  /** Ids of the rooms whose pool copy was taken from this dataset, in a stable order. */
+  public List<UUID> roomsOnDataset(UUID datasetId) {
+    return jdbc.sql("SELECT room_id FROM room_pools WHERE dataset_id = ? ORDER BY room_id")
+        .param(datasetId)
+        .query(UUID.class)
+        .list();
+  }
+
   public List<PoolPlayer> players(UUID roomId) {
     return jdbc.sql("SELECT * FROM room_pool_players WHERE room_id = ? ORDER BY position, id")
         .param(roomId)

@@ -79,4 +79,11 @@ class RoomConfigFactoryTest {
     assertThat(snapshot.stats()).isEqualTo(PACK.statSchema());
     assertThat(snapshot.restrictedCategories()).isEqualTo(PACK.restrictedCategories());
   }
+
+  @Test
+  void snapshotCarriesThePacksAppearanceRule() {
+    assertThat(factory.snapshot(PACK).appearanceRule())
+        .isNotNull()
+        .isEqualTo(PACK.appearanceRule());
+  }
 }

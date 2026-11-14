@@ -2,6 +2,7 @@ package com.paddleup.rooms.dto;
 
 import static io.swagger.v3.oas.annotations.media.Schema.RequiredMode.REQUIRED;
 
+import com.paddleup.packs.dto.AppearanceRuleDto;
 import com.paddleup.packs.dto.RestrictedCategoryDto;
 import com.paddleup.packs.dto.RoleDto;
 import com.paddleup.packs.dto.StatDto;
@@ -23,7 +24,11 @@ public record PackLabelsDto(
     @Schema(requiredMode = REQUIRED) List<RestrictedCategoryDto> restrictedCategories,
     @Schema(requiredMode = REQUIRED) List<StatDto> stats,
     @Schema(requiredMode = REQUIRED) Map<String, String> terminology,
-    @Schema(nullable = true) String packName) {
+    @Schema(nullable = true) String packName,
+    @Schema(
+            nullable = true,
+            description = "The pack's appearance rule at creation; absent on rooms made before it")
+        AppearanceRuleDto appearanceRule) {
 
   public PackLabelsDto {
     roles = roles == null ? List.of() : List.copyOf(roles);
@@ -43,6 +48,20 @@ public record PackLabelsDto(
       List<RestrictedCategoryDto> restrictedCategories,
       List<StatDto> stats,
       Map<String, String> terminology) {
-    this(packId, packVersion, roles, tags, restrictedCategories, stats, terminology, null);
+    this(packId, packVersion, roles, tags, restrictedCategories, stats, terminology, null, null);
+  }
+
+  /** The constructor from before the appearance rule was snapshotted. */
+  public PackLabelsDto(
+      String packId,
+      String packVersion,
+      List<RoleDto> roles,
+      List<TagDto> tags,
+      List<RestrictedCategoryDto> restrictedCategories,
+      List<StatDto> stats,
+      Map<String, String> terminology,
+      String packName) {
+    this(
+        packId, packVersion, roles, tags, restrictedCategories, stats, terminology, packName, null);
   }
 }

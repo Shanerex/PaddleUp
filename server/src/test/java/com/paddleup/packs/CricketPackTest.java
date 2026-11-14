@@ -51,7 +51,7 @@ class CricketPackTest {
             ctx -> {
               assertThat(ctx).hasNotFailed();
               assertThat(ctx.getBean(PackService.class).list())
-                  .contains(new PackSummaryDto(ID, "1.0.0", true));
+                  .contains(new PackSummaryDto(ID, "1.1.0", true));
             });
   }
 
@@ -64,6 +64,15 @@ class CricketPackTest {
               .containsExactly("BAT", "BOWL", "AR", "WK");
           assertThat(pack.roles()).allSatisfy(r -> assertThat(r.label()).isNotBlank());
         });
+  }
+
+  @Test
+  void everyDefaultRuleCarriesALabelNoLongerThanSixtyCharacters() {
+    withPack(
+        pack ->
+            assertThat(allRules(pack))
+                .isNotEmpty()
+                .allSatisfy(r -> assertThat(r.label()).isNotBlank().hasSizeLessThanOrEqualTo(60)));
   }
 
   @Test
@@ -342,7 +351,8 @@ class CricketPackTest {
           assertThat(rule.minVolume().stat()).isEqualTo("balls-faced");
           assertThat(rule.minVolume().atLeast()).isEqualByComparingTo("10");
           assertBand(rule, "170.01", 20, "6");
-          assertBand(rule, "170", 20, "4");
+          assertBand(rule, "170", 20, "6");
+          assertBand(rule, "169.99", 20, "4");
           assertBand(rule, "150", 20, "4");
           assertBand(rule, "149.99", 20, "2");
           assertBand(rule, "130", 20, "2");
@@ -353,7 +363,7 @@ class CricketPackTest {
           assertBand(rule, "59.99", 20, "-4");
           assertBand(rule, "0", 20, "-4");
           assertBand(rule, "300", 20, "6");
-          assertBand(rule, "170.01", 9, null);
+          assertBand(rule, "170", 9, null);
           assertBand(rule, "10", 10, "-4");
         });
   }
@@ -414,9 +424,11 @@ class CricketPackTest {
           assertBand(rule, "6", 12, "2");
           assertBand(rule, "6.99", 12, "2");
           assertBand(rule, "7", 12, null);
-          assertBand(rule, "10", 12, null);
+          assertBand(rule, "9.99", 12, null);
+          assertBand(rule, "10", 12, "-2");
           assertBand(rule, "10.01", 12, "-2");
-          assertBand(rule, "12", 12, "-2");
+          assertBand(rule, "11.99", 12, "-2");
+          assertBand(rule, "12", 12, "-4");
           assertBand(rule, "12.01", 12, "-4");
           assertBand(rule, "36", 12, "-4");
           assertBand(rule, "4.99", 11, null);

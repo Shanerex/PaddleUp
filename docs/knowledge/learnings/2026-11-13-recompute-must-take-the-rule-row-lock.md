@@ -1,0 +1,2 @@
+tags: [scoring, concurrency, postgres]
+A recompute that reads rules and stats without the scoring_rule_sets row lock can overwrite new-rule points with old-rule totals when it races an edit (code-review CR-1). Every path now takes the rule row first, then the points rows. Also record the freeze before the stale-version check, or a refused stale caller at the freeze instant leaves the room able to thaw (CR-9).

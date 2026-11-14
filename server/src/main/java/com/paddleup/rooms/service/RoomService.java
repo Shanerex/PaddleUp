@@ -202,12 +202,14 @@ public class RoomService {
           RoomConflictException.STALE_VERSION,
           "The config changed since you opened it; reload and try again");
     }
+    // The scoring rules stay the stored pack-default snapshot; what the client sent is dropped.
     RoomConfigDto config =
         request
             .config()
             .withName(
                 DisplayNameSanitiser.sanitise(request.config().name()),
-                DisplayNameSanitiser.sanitise(request.config().competition()));
+                DisplayNameSanitiser.sanitise(request.config().competition()))
+            .withScoringRules(room.config().scoringRules());
     failOn(validator.validate(config, room.packSnapshot(), franchises.count(roomId)));
     pool.requireFits(roomId, config);
     Instant now = clock.instant();

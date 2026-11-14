@@ -61,6 +61,8 @@ class RoomCreateIT extends AbstractRoomsIT {
     assertThat(config.get("ai").get("reportCardVisibility").asText()).isEqualTo("room");
     assertThat(config.get("scoringRules").get("rules")).isNotEmpty();
     assertThat(room.get("packLabels").get("packId").asText()).isEqualTo("cricket-t20");
+    assertThat(room.get("packLabels").get("appearanceRule").get("stat").asText())
+        .isEqualTo("in-playing-xi");
     assertThat(room.get("franchiseCount").asInt()).isZero();
   }
 
