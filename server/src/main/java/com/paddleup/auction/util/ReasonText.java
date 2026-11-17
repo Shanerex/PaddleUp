@@ -37,7 +37,7 @@ public final class ReasonText {
 
   /**
    * The reason without markup, control characters or repeated spaces; empty when it is missing or
-   * far too long to be a reason. The caller asks {@link #tooLong} first, so over-long input is
+   * far too long to be a reason. The caller asks {@link #tooLong} first, so oversized input is
    * never taken for a missing reason.
    */
   public static String sanitise(String raw) {

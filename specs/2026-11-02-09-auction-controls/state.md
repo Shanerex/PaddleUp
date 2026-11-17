@@ -1,12 +1,12 @@
 ---
 feature: 2026-11-02-09-auction-controls
-phase: build
+phase: verify
 status: draft
 g1: approved:Shanerex:2026-11-17
 g2: approved:Shanerex:2026-11-17
 g3: none
 bump: none
-next: all tasks ticked; run /rx:next for verify
+next: qa and security review, then g3 and bump
 ---
 # State: 2026-11-02-09-auction-controls
 
@@ -28,3 +28,6 @@ next: all tasks ticked; run /rx:next for verify
 - 2026-11-17 build: deferred to a new spec (not yet on roadmap): 3w/3x pool "Showing 8 of N" cap, search and role filter; human approved the deferral
 - 2026-11-17 build: T-32 done (reducer accel slots, state DTO accelPosition/accelSize/lotPicks, header "n of m" and Picked by tag; e2e asserts both at 390 and 1440; make test and make lint green); T-30 still not ticked
 - 2026-11-17 build: T-30 done: side-by-side at 390 and 1440 reviewed; auction Commissioner sheets now draw the mock title row with a close button (Sheet title prop, adjourn via ScheduleSheet titleRow); adjourned before any lot says so instead of Lot 0 (copy.ts adjournedLine); e2e 10/10, make test and make lint green
+- 2026-11-17 build: all 32 tasks ticked; side-by-side at 390/1440 reviewed by orchestrator (sheet title row and zero-lots adjourn copy fixed in 0952247); phase verify
+- 2026-11-17 verify: qa pass with notes, security pass (S-1, S-2 minor), /code-review 10 findings; human: picks private, CR-9/CR-10 in scope; review.md verdict fail, fix loop 1
+- 2026-11-18 fix-loop-1: CR-1, CR-2, CR-3/S-2 (+F-4), CR-4..CR-10 and F-2 fixed test first, one commit per fix; picks private (no lot list to others over WS, /events, /audit; admin audit category; stored event intact); reason cap 140 code points; mock pairs at 390 and 1440 in e2e/pairs.spec.ts (auction sheets now a right panel at desktop, role chip and buyer monogram on the skip and re-open rows); not drawn in the mock, deferred: resume lobby (paired with 3e), time of sale on the re-open row (state has no sale time), adjourn copy "after Lot N" (spec copy kept)
