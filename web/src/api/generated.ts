@@ -766,6 +766,10 @@ export interface components {
             accelSize?: number;
             /** Format: int32 */
             lotPicks?: number;
+            /** Format: int64 */
+            resumeLobbySeconds: number;
+            /** Format: int32 */
+            lotsClosed: number;
         };
         BidLockDto: {
             reason: string;

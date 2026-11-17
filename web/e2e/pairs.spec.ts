@@ -30,6 +30,7 @@ const FRAME: Record<string, Frame> = {
   "adjourned-commissioner": { page: "Auction Explorations", id: "3v" },
   adjourned: { page: "Auction Explorations", id: "3e" },
   "resume-lobby": { page: "Auction Explorations", id: "3e" },
+  "resume-lobby-commissioner": { page: "Auction Explorations", id: "3v" },
 };
 
 /** The Next dev badge sits over the bottom-left of a phone screen: out of the pictures and the clicks. */
@@ -158,5 +159,9 @@ for (const size of SIZES) {
     await boss.getByTestId("resume-now").click();
     await expect(manager.getByTestId("notice-resume-lobby")).toContainText("goes live in");
     await shoot(manager, size.name, "resume-lobby");
+    // The Commissioner keeps the adjourned card's two buttons: Start now takes the place of Resume now.
+    await expect(boss.getByTestId("start-now")).toBeVisible();
+    await expect(boss.getByTestId("change-resume-time")).toBeVisible();
+    await shoot(boss, size.name, "resume-lobby-commissioner");
   });
 }

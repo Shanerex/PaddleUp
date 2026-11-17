@@ -53,6 +53,9 @@ export function Controls({ ctx }: { ctx: ControlsContext }) {
   const open = live && state.lotOpen;
   const hasBid = state.currentBid > 0;
   const last = state.lastResult ?? null;
+  // A re-opened lot goes to the head of the queue: after the lot on the block, or in a gap ahead of
+  // the lot that was due next.
+  const placement = open && lot ? `, after Lot ${lot.no}` : state.nextLot ? `, before Lot ${state.nextLot.no}` : "";
   const closeAll = () => {
     setMode(null);
     setReason("");
@@ -223,7 +226,7 @@ export function Controls({ ctx }: { ctx: ControlsContext }) {
               <div className={s.fact}>
                 <Icon name="replay" size={20} />
                 <span>
-                  It comes back next{lot ? `, after Lot ${lot.no}` : ""}, from base {last.card ? ctx.money(last.card.basePrice) : "price"}.
+                  It comes back next{placement}, from base {last.card ? ctx.money(last.card.basePrice) : "price"}.
                 </span>
               </div>
             </div>

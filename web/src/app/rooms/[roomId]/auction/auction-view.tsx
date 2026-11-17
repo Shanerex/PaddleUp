@@ -7,7 +7,7 @@ import { formatLotTime, pageClock } from "../../../../auction/clock";
 import { controlRefusal, reopenedNotice, skippedNotice, type Notice } from "../../../../auction/copy";
 import { useBid } from "../../../../auction/useBid";
 import { useLive, useTicker } from "../../../../auction/useLive";
-import { buildView, lotsClosed } from "../../../../auction/view";
+import { buildView } from "../../../../auction/view";
 import { HOME } from "../../../../auth/redirect";
 import { explainRoomError } from "../../../../rooms/errors";
 import { hueOf } from "../../../../rooms/hues";
@@ -353,6 +353,8 @@ function Auction({ roomId, data, reloadRoom }: { roomId: string; data: Data; rel
   }
 
   const lot = state.lot ?? null;
+  // The lot that plays next: the open (held) lot, or in a gap the one the server queued after it.
+  const playsNext = state.lotOpen ? lot : (state.nextLot ?? null);
   const result: LotResult | null =
     view.result && (view.status === "sold" || view.status === "unsold")
       ? { sold: view.result.sold, who: whoOf(view.result.franchiseId), amount: view.result.amount, youWon: !!me && view.result.franchiseId === me }
@@ -437,13 +439,21 @@ function Auction({ roomId, data, reloadRoom }: { roomId: string; data: Data; rel
             />
           ) : view.status === "adjourned" || view.status === "resume_lobby" ? (
             <AdjournedCard
-              lotsDone={lotsClosed(state)}
+              lotsDone={state.lotsClosed}
               squad={myStanding ? myStanding.squad.length : null}
               purse={view.purse !== null ? money(view.purse) : null}
               resumes={view.status === "adjourned" && state.resumeAt ? resumeLabel(state.resumeAt) : null}
               commish={
-                commish && view.status === "adjourned"
-                  ? { onResumeNow: () => void control("resume_now"), onChangeTime: () => setSheet("retime"), busy: controlBusy, nextLot: lot?.no ?? null, lobbyMinutes: 2 }
+                commish
+                  ? {
+                      onResumeNow: () => void control("resume_now"),
+                      onStartNow: () => void control("start_now"),
+                      onChangeTime: () => setSheet("retime"),
+                      busy: controlBusy,
+                      nextLot: playsNext?.no ?? null,
+                      lobbySeconds: state.resumeLobbySeconds,
+                      inLobby: view.status === "resume_lobby",
+                    }
                   : undefined
               }
             />
@@ -512,7 +522,7 @@ function Auction({ roomId, data, reloadRoom }: { roomId: string; data: Data; rel
           paused={view.status === "paused"}
           pausedLeftMs={state.heldMs}
           onResume={commish ? () => void control("resume") : undefined}
-          resumeLobby={view.status === "resume_lobby" && state.liveAt && serverNow !== null ? { lot: lot?.no ?? null, leftMs: Math.max(0, Date.parse(state.liveAt) - serverNow) } : null}
+          resumeLobby={view.status === "resume_lobby" && state.liveAt && serverNow !== null ? { lot: playsNext?.no ?? null, leftMs: Math.max(0, Date.parse(state.liveAt) - serverNow) } : null}
           toast={toast}
           onRetry={live.retry}
           onDismiss={dismissToast}

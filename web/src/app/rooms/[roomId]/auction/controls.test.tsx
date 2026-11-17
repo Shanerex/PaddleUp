@@ -68,6 +68,30 @@ describe("Controls sheets", () => {
   });
 });
 
+describe("Controls re-open placement", () => {
+  const nextCard = { ...lotCard, no: 8, name: "Next Up" };
+
+  it("comes back after the lot on the block", async () => {
+    await open(ctx());
+    await userEvent.click(screen.getByTestId("control-reopen"));
+    expect(screen.getByTestId("reopen-sheet").textContent).toContain("It comes back next, after Lot 7,");
+  });
+
+  it("in a gap comes back before the lot that plays next, not after the one that just closed (CR2-3)", async () => {
+    await open(ctx({ state: state({ lotOpen: false, lot: { ...lotCard, no: 6, name: "Sam Cole" }, nextLot: nextCard }) }));
+    await userEvent.click(screen.getByTestId("control-reopen"));
+    const text = screen.getByTestId("reopen-sheet").textContent ?? "";
+    expect(text).toContain("It comes back next, before Lot 8,");
+    expect(text).not.toContain("after Lot 6");
+  });
+
+  it("in the last gap just says it comes back next", async () => {
+    await open(ctx({ state: state({ lotOpen: false, lot: { ...lotCard, no: 6, name: "Sam Cole" } }) }));
+    await userEvent.click(screen.getByTestId("control-reopen"));
+    expect(screen.getByTestId("reopen-sheet").textContent).toContain("It comes back next, from base");
+  });
+});
+
 describe("Controls", () => {
   it("lists the controls with Skip available only on a lot with no bid", async () => {
     await open(ctx());
@@ -173,11 +197,28 @@ describe("AdjournedCard", () => {
   it("gives the Commissioner Resume now and Change time, and names the 2-minute lobby", async () => {
     const onResumeNow = vi.fn();
     const onChangeTime = vi.fn();
-    render(<AdjournedCard lotsDone={86} squad={null} purse={null} resumes="Sat" commish={{ onResumeNow, onChangeTime, busy: false, nextLot: 87, lobbyMinutes: 2 }} />);
+    render(<AdjournedCard lotsDone={86} squad={null} purse={null} resumes="Sat" commish={{ onResumeNow, onStartNow: vi.fn(), onChangeTime, busy: false, nextLot: 87, lobbySeconds: 120, inLobby: false }} />);
     await userEvent.click(screen.getByTestId("resume-now"));
     await userEvent.click(screen.getByTestId("change-resume-time"));
     expect(onResumeNow).toHaveBeenCalled();
     expect(onChangeTime).toHaveBeenCalled();
     expect(screen.getByTestId("adjourned-card").textContent).toContain("2-minute countdown, then Lot 87.");
+  });
+
+  it("says the lobby length the room is set to, in seconds when it is not whole minutes", () => {
+    render(<AdjournedCard lotsDone={86} squad={null} purse={null} resumes="Sat" commish={{ onResumeNow: vi.fn(), onStartNow: vi.fn(), onChangeTime: vi.fn(), busy: false, nextLot: 87, lobbySeconds: 90, inLobby: false }} />);
+    expect(screen.getByTestId("adjourned-card").textContent).toContain("90-second countdown, then Lot 87.");
+  });
+
+  it("in the resume lobby swaps Resume now for Start now and keeps Change time", async () => {
+    const onStartNow = vi.fn();
+    const onChangeTime = vi.fn();
+    render(<AdjournedCard lotsDone={86} squad={null} purse={null} resumes={null} commish={{ onResumeNow: vi.fn(), onStartNow, onChangeTime, busy: false, nextLot: 87, lobbySeconds: 120, inLobby: true }} />);
+    expect(screen.queryByTestId("resume-now")).toBeNull();
+    await userEvent.click(screen.getByTestId("start-now"));
+    await userEvent.click(screen.getByTestId("change-resume-time"));
+    expect(onStartNow).toHaveBeenCalled();
+    expect(onChangeTime).toHaveBeenCalled();
+    expect(screen.getByTestId("adjourned-card").textContent).toContain("Start now opens Lot 87 at once.");
   });
 });

@@ -72,6 +72,11 @@ export const UNREACHED: Notice = {
   body: "Your bid may not have gone through. Tap again; it won't be counted twice.",
 };
 
+/** "2-minute" or "90-second": the resume lobby's length as the room is set to, from the server. */
+export function lobbyLength(seconds: number): string {
+  return seconds > 0 && seconds % 60 === 0 ? `${seconds / 60}-minute` : `${seconds}-second`;
+}
+
 /** The adjourned card's first sentence; no lot has a number 0, so zero lots done reads differently. */
 export function adjournedLine(lotsDone: number): string {
   return lotsDone > 0 ? `Adjourned after Lot ${lotsDone}.` : "Adjourned before the first lot closed.";

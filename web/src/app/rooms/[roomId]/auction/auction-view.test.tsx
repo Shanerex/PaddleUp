@@ -99,6 +99,8 @@ const live = (over: Partial<AuctionState> = {}): AuctionState => ({
   pickCounts: [],
   myPicks: [],
   waiting: [],
+  resumeLobbySeconds: 120,
+  lotsClosed: 0,
   nextBid: 300_000,
   deadline: "2030-03-01T10:00:30Z",
   ...over,
@@ -240,21 +242,49 @@ describe("AuctionView", () => {
     expect((screen.getByTestId("bid-button") as HTMLButtonElement).textContent).toContain("Adjourned");
   });
 
-  it("counts the lots that closed for an adjourned auction, not the lot number on screen", async () => {
-    // A re-opened lot carries number 7 but only two lots have closed (one sold, one unsold).
-    feed.set(
-      snap(
-        live({
-          phase: "adjourned",
-          lotOpen: true,
-          lot: { ...live().lot!, no: 7 },
-          unsold: [2],
-          standings: [{ franchiseId: "fa", purse: 1, squad: [{ lot: 1, playerId: "p", price: 1 }] }, { franchiseId: "fb", purse: 1, squad: [] }],
-        }),
-      ),
-    );
+  it("says the adjourned auction stopped after the lots the server counts as closed, in either round", async () => {
+    // A re-opened or accelerated lot carries number 12; nine lots have closed (CR2-4).
+    feed.set(snap(live({ phase: "adjourned", lotOpen: true, lot: { ...live().lot!, no: 12 }, lotsClosed: 9 })));
     render(<AuctionView roomId="r1" />);
-    expect((await screen.findByTestId("adjourned-card")).textContent).toContain("Adjourned after Lot 2.");
+    expect((await screen.findByTestId("adjourned-card")).textContent).toContain("Adjourned after Lot 9.");
+  });
+
+  describe("the resume lobby for the Commissioner and the lot that plays next", () => {
+    const next = { ...lot, no: 7, name: "Next Up" };
+    const lobby = (over: Partial<AuctionState> = {}) =>
+      live({ phase: "resume_lobby", heldMs: 9000, deadline: undefined, lotOpen: false, lot: { ...lot, no: 6 }, nextLot: next, liveAt: new Date(NOW + 102_000).toISOString(), resumeLobbySeconds: 180, lotsClosed: 6, ...over });
+
+    it("names the next lot, not the one that just closed, in the notice (CR2-3)", async () => {
+      feed.set(snap(lobby()));
+      render(<AuctionView roomId="r1" />);
+      expect((await screen.findByTestId("notice-resume-lobby")).textContent).toContain("Lot 7 goes live in");
+    });
+
+    it("gives the Commissioner Start now and Change time, and Start now goes live at once (CR2-2)", async () => {
+      vi.mocked(getRoom).mockResolvedValue(room({ myRole: "commissioner", myFranchiseId: null }));
+      vi.mocked(sendControl).mockResolvedValue({ outcome: "accepted", lot: 0, serverNow: "x" });
+      feed.set(snap(lobby()));
+      render(<AuctionView roomId="r1" />);
+      expect(await screen.findByTestId("start-now")).toBeTruthy();
+      expect(screen.getByTestId("change-resume-time")).toBeTruthy();
+      expect(screen.queryByTestId("resume-now")).toBeNull();
+      expect(screen.getByTestId("adjourned-card").textContent).toContain("Start now opens Lot 7 at once.");
+      await userEvent.click(screen.getByTestId("start-now"));
+      expect(vi.mocked(sendControl).mock.calls.at(-1)?.slice(0, 2)).toEqual(["r1", "start_now"]);
+    });
+
+    it("tells a manager no Commissioner buttons, and the adjourned card names the lobby length and the next lot (CR2-3, CR2-6)", async () => {
+      feed.set(snap(lobby()));
+      const { unmount } = render(<AuctionView roomId="r1" />);
+      await screen.findByTestId("adjourned-card");
+      expect(screen.queryByTestId("start-now")).toBeNull();
+      unmount();
+
+      vi.mocked(getRoom).mockResolvedValue(room({ myRole: "commissioner", myFranchiseId: null }));
+      feed.set(snap(lobby({ phase: "adjourned", liveAt: undefined, resumeAt: "2030-03-02T10:00:00Z" })));
+      render(<AuctionView roomId="r1" />);
+      expect((await screen.findByTestId("adjourned-card")).textContent).toContain("3-minute countdown, then Lot 7.");
+    });
   });
 
   it("shows the Controls chip to the Commissioner only, in the live phases", async () => {

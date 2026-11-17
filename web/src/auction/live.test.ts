@@ -29,6 +29,8 @@ function state(over: Partial<AuctionState> = {}): AuctionState {
     pickCounts: [],
     myPicks: [],
     waiting: [],
+    resumeLobbySeconds: 120,
+    lotsClosed: 0,
     nextBid: 20,
     deadline: "2030-03-01T10:00:20Z",
     ...over,

@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { AuctionState } from "../api/client";
-import { buildView, lotsClosed, statusOf, type ViewInput } from "./view";
+import { buildView, statusOf, type ViewInput } from "./view";
 
 const ME = "fr-me";
 const RIVAL = "fr-rival";
@@ -32,6 +32,8 @@ function state(over: Partial<AuctionState> = {}): AuctionState {
     pickCounts: [],
     myPicks: [],
     waiting: [],
+    resumeLobbySeconds: 120,
+    lotsClosed: 0,
     nextBid: 20,
     deadline: "2030-03-01T10:00:23Z",
     ...over,
@@ -201,30 +203,5 @@ describe("buildView", () => {
   it("has no time before the first server sample", () => {
     const v = buildView(input({ serverNow: null }));
     expect(v.timeLeftMs).toBeNull();
-  });
-});
-
-describe("lotsClosed", () => {
-  const sold = (n: number) => Array.from({ length: n }, (_, i) => ({ lot: i + 1, playerId: `p${i}`, price: 20 }));
-
-  it("counts closed lots, not the number of the lot on screen", () => {
-    // Lot 1 closed sold and lot 2 is open: one lot is done.
-    expect(lotsClosed(state({ lot: { ...state().lot!, no: 2 }, standings: [{ franchiseId: ME, purse: 1, squad: sold(1) }, { franchiseId: RIVAL, purse: 1, squad: [] }] }))).toBe(1);
-    // The gap after lot 2: it has closed, so two are done.
-    expect(lotsClosed(state({ lotOpen: false, lot: { ...state().lot!, no: 2 }, unsold: [2], standings: [{ franchiseId: ME, purse: 1, squad: sold(1) }, { franchiseId: RIVAL, purse: 1, squad: [] }] }))).toBe(2);
-  });
-
-  it("does not count a re-opened lot or the lot number it was given", () => {
-    // Lots 1 and 2 closed, lot 1 re-opened as lot 3 and open now: only lot 2 is done.
-    expect(lotsClosed(state({ lot: { ...state().lot!, no: 3 }, unsold: [2] }))).toBe(1);
-  });
-
-  it("counts sold and unsold lots of the accelerated round with the main pool", () => {
-    // Eight lots sold and one unsold are closed; lot 12 is open, so the lot number is no count.
-    const squads = [
-      { franchiseId: ME, purse: 1, squad: sold(5) },
-      { franchiseId: RIVAL, purse: 1, squad: sold(3) },
-    ];
-    expect(lotsClosed(state({ round: "accelerated", lot: { ...state().lot!, no: 12 }, unsold: [4], standings: squads }))).toBe(9);
   });
 });

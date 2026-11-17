@@ -192,6 +192,14 @@ test.describe("Commissioner controls", () => {
     await expect(manager.getByTestId("bid-button")).toContainText("Resuming soon");
     expect((await auctionState(fx)).phase).toBe("resume_lobby");
     await shoot(manager, "390", "resume-lobby");
+
+    // The Commissioner can start the lot at once or move the time (CR2-2).
+    await expect(boss.getByTestId("start-now")).toBeVisible();
+    await expect(boss.getByTestId("change-resume-time")).toBeVisible();
+    await expect(boss.getByTestId("adjourned-card")).toContainText("Start now opens Lot 1 at once.");
+    await boss.getByTestId("start-now").click();
+    await waitPhase(fx, "live");
+    await expect(manager.getByTestId("lot-card")).toBeVisible();
   });
 
   for (const size of SIZES) {

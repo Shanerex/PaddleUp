@@ -3,7 +3,7 @@
 import Link from "next/link";
 import type { CSSProperties } from "react";
 import { Icon } from "../../../../ui/Icon";
-import { OUTBID_TITLE, adjournedLine, outbidBody, type Notice } from "../../../../auction/copy";
+import { OUTBID_TITLE, adjournedLine, lobbyLength, outbidBody, type Notice } from "../../../../auction/copy";
 import { formatLotTime } from "../../../../auction/clock";
 import { hueOf } from "../../../../rooms/hues";
 import s from "./auction.module.css";
@@ -189,8 +189,12 @@ export function AdjournedCard({
   squad: number | null;
   purse: string | null;
   resumes: string | null;
-  /** The Commissioner's actions (Auction A adjournedCommish): Resume now opens the 2-minute lobby. */
-  commish?: { onResumeNow: () => void; onChangeTime: () => void; busy: boolean; nextLot: number | null; lobbyMinutes: number };
+  /**
+   * The Commissioner's actions (Auction A adjournedCommish): Resume now opens the lobby; in the
+   * lobby itself Start now goes live at once. `nextLot` is the lot that plays next and
+   * `lobbySeconds` the room's lobby length, both from the server.
+   */
+  commish?: { onResumeNow: () => void; onStartNow: () => void; onChangeTime: () => void; busy: boolean; nextLot: number | null; lobbySeconds: number; inLobby: boolean };
 }) {
   return (
     <div className={s.panelCard} data-testid="adjourned-card">
@@ -231,17 +235,26 @@ export function AdjournedCard({
       {commish && (
         <>
           <div className={s.panelActions}>
-            <button type="button" className={s.panelAction} data-testid="resume-now" disabled={commish.busy} onClick={commish.onResumeNow}>
-              <Icon name="play_arrow" size={20} />
-              Resume now
-            </button>
+            {commish.inLobby ? (
+              <button type="button" className={s.panelAction} data-testid="start-now" disabled={commish.busy} onClick={commish.onStartNow}>
+                <Icon name="play_arrow" size={20} />
+                Start now
+              </button>
+            ) : (
+              <button type="button" className={s.panelAction} data-testid="resume-now" disabled={commish.busy} onClick={commish.onResumeNow}>
+                <Icon name="play_arrow" size={20} />
+                Resume now
+              </button>
+            )}
             <button type="button" className={`${s.panelAction} ${s.panelActionSoft}`} data-testid="change-resume-time" disabled={commish.busy} onClick={commish.onChangeTime}>
               <Icon name="edit_calendar" size={20} />
               Change time
             </button>
           </div>
           <span className={s.panelNote}>
-            Resume now opens the lobby for a {commish.lobbyMinutes}-minute countdown{commish.nextLot ? `, then Lot ${commish.nextLot}` : ""}.
+            {commish.inLobby
+              ? `Start now opens ${commish.nextLot ? `Lot ${commish.nextLot}` : "the next lot"} at once.`
+              : `Resume now opens the lobby for a ${lobbyLength(commish.lobbySeconds)} countdown${commish.nextLot ? `, then Lot ${commish.nextLot}` : ""}.`}
           </span>
         </>
       )}

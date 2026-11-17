@@ -114,6 +114,8 @@ function view(over: Partial<ViewInput> = {}, st: Record<string, unknown> = {}) {
       pickCounts: [],
       myPicks: [],
       waiting: [],
+      resumeLobbySeconds: 120,
+      lotsClosed: 0,
       nextBid: 400_000,
       deadline: "2030-01-01T00:00:10Z",
       config: { openSeconds: 30, bidSeconds: 15, gapSeconds: 5, ladder: [] },
