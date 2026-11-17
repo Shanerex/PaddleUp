@@ -27,7 +27,9 @@ import java.util.UUID;
  * {@code heldMs} is the time frozen by pause or adjourn (the open lot's remaining time, or the rest
  * of the gap), {@code resumeAt} the adjourn time, {@code liveAt} the end of the resume lobby.
  * {@code round} is {@code main} or {@code accelerated}; {@code picks} are the accelerated-round
- * nominations by franchise, in lot numbers.
+ * nominations by franchise, in lot numbers. {@code accel} holds, by lot number, the position and
+ * pick count of each lot the accelerated round plays (fixed when the round starts; a re-opened lot
+ * keeps those of the lot it replays) and {@code accelSize} how many lots the round has.
  */
 public record AuctionState(
     UUID roomId,
@@ -59,7 +61,9 @@ public record AuctionState(
     Instant resumeAt,
     Instant liveAt,
     String round,
-    Map<UUID, List<Integer>> picks) {
+    Map<UUID, List<Integer>> picks,
+    Map<Integer, AccelSlot> accel,
+    int accelSize) {
 
   public static final String MAIN = "main";
   public static final String ACCELERATED = "accelerated";
@@ -79,6 +83,7 @@ public record AuctionState(
     var pickCopy = new LinkedHashMap<UUID, List<Integer>>();
     picks.forEach((id, nos) -> pickCopy.put(id, List.copyOf(nos)));
     picks = Collections.unmodifiableMap(pickCopy);
+    accel = Collections.unmodifiableMap(new LinkedHashMap<>(accel));
   }
 
   /** A room with no auction yet. {@code catalog} may be empty until the lots are frozen. */
@@ -113,7 +118,9 @@ public record AuctionState(
         null,
         null,
         MAIN,
-        Map.of());
+        Map.of(),
+        Map.of(),
+        0);
   }
 
   /** The lot being auctioned now, or the one that just closed; null before lot 1 opens. */
@@ -171,6 +178,8 @@ public record AuctionState(
     public Instant liveAt;
     public String round;
     public Map<UUID, List<Integer>> picks;
+    public Map<Integer, AccelSlot> accel;
+    public int accelSize;
 
     private Builder(AuctionState s) {
       roomId = s.roomId;
@@ -203,6 +212,8 @@ public record AuctionState(
       liveAt = s.liveAt;
       round = s.round;
       picks = new LinkedHashMap<>(s.picks);
+      accel = new LinkedHashMap<>(s.accel);
+      accelSize = s.accelSize;
     }
 
     public AuctionState build() {
@@ -236,7 +247,9 @@ public record AuctionState(
           resumeAt,
           liveAt,
           round,
-          picks);
+          picks,
+          accel,
+          accelSize);
     }
   }
 }

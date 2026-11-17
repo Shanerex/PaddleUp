@@ -1,5 +1,6 @@
 package com.paddleup.auction.service;
 
+import com.paddleup.auction.model.AccelSlot;
 import com.paddleup.auction.model.AuctionEvent;
 import com.paddleup.auction.model.AuctionState;
 import com.paddleup.auction.model.LastResult;
@@ -170,16 +171,24 @@ public final class AuctionReducer {
     if (newLot != (int) e.number("newLot")) {
       throw new IllegalStateException("Re-opened lot " + of + " is not numbered " + newLot);
     }
+    if (b.accel.containsKey(of)) {
+      b.accel.put(newLot, b.accel.get(of));
+    }
     b.queue.add(0, newLot);
   }
 
   /** The accelerated round: the picked unsold lots, in order, each as a new lot. */
   private static void roundStarted(AuctionState.Builder b, AuctionEvent e) {
     List<Integer> queue = new ArrayList<>();
+    b.accel = new LinkedHashMap<>();
     for (int original : ints(e.payload().get("order"))) {
+      int picks = (int) b.picks.values().stream().filter(l -> l.contains(original)).count();
       b.unsold.remove(Integer.valueOf(original));
-      queue.add(again(b, original));
+      int no = again(b, original);
+      queue.add(no);
+      b.accel.put(no, new AccelSlot(queue.size(), picks));
     }
+    b.accelSize = queue.size();
     b.queue = queue;
     b.phase = Phase.LIVE;
     b.lotOpen = false;
@@ -280,6 +289,8 @@ public final class AuctionReducer {
     b.resumeAt = null;
     b.liveAt = null;
     b.picks = new LinkedHashMap<>();
+    b.accel = new LinkedHashMap<>();
+    b.accelSize = 0;
     clearLot(b);
   }
 

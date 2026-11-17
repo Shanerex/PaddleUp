@@ -11,6 +11,7 @@ import com.paddleup.auction.dto.PickCountDto;
 import com.paddleup.auction.dto.SquadEntryDto;
 import com.paddleup.auction.dto.StandingDto;
 import com.paddleup.auction.dto.StepDto;
+import com.paddleup.auction.model.AccelSlot;
 import com.paddleup.auction.model.AuctionEvent;
 import com.paddleup.auction.model.AuctionState;
 import com.paddleup.auction.model.EventKind;
@@ -72,6 +73,7 @@ final class AuctionViews {
                             .map(x -> new SquadEntryDto(x.lot(), x.playerId(), x.price()))
                             .toList()))
             .toList();
+    AccelSlot slot = s.lot() == null ? null : s.accel().get(s.lot().no());
     return new AuctionStateDto(
         s.phase().value(),
         s.startsAt(),
@@ -116,7 +118,10 @@ final class AuctionViews {
             : null,
         s.phase() == Phase.NOMINATING
             ? s.purses().keySet().stream().filter(f -> !s.picks().containsKey(f)).toList()
-            : List.of());
+            : List.of(),
+        slot == null ? null : slot.position(),
+        s.accelSize() > 0 ? s.accelSize() : null,
+        slot == null ? null : slot.picks());
   }
 
   /** The only amount the next bid may have, or null when no lot is open. */

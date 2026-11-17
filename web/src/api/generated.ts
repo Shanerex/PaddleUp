@@ -760,6 +760,12 @@ export interface components {
             /** Format: int32 */
             openSlots?: number;
             waiting: string[];
+            /** Format: int32 */
+            accelPosition?: number;
+            /** Format: int32 */
+            accelSize?: number;
+            /** Format: int32 */
+            lotPicks?: number;
         };
         BidLockDto: {
             reason: string;

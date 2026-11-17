@@ -306,7 +306,12 @@ for (const size of SIZES) {
     expect(first.round).toBe("accelerated");
     expect(first.lot.no).toBeGreaterThan(40);
     expect(first.lot.name).toBe(`Fake ${top.lot}`);
-    await expect(one.getByText(`Accelerated round · Lot ${first.lot.no}`)).toBeVisible();
+    // Mock 3y: the header reads "n of m" and the lot card carries "Picked by N"; the same on every tab.
+    expect(first).toMatchObject({ accelPosition: 1, accelSize: 3, lotPicks: top.count });
+    for (const p of [one, two, boss]) {
+      await expect(p.getByText("Accelerated round · 1 of 3")).toBeVisible();
+      await expect(p.getByTestId("picked-by")).toHaveText(`Picked by ${top.count}`);
+    }
     await expect(two.getByTestId("lot-name")).toHaveText(first.lot.name);
     await shoot(one, size.name, "accel-live");
 

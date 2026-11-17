@@ -239,6 +239,37 @@ class AuctionAcceleratedIT extends AbstractAuctionIT {
   }
 
   @Test
+  void anAcceleratedLotCarriesItsPositionTheRoundSizeAndItsPickCountForEveryMember() {
+    Room room = mainDone(7, 4);
+    control(room, "open_round");
+    picks(room, room.manager(0), List.of(7));
+    picks(room, room.manager(1), List.of(6, 7, 5));
+    assertThat(view(room).has("accelSize")).isFalse();
+    control(room, "end_round");
+
+    for (Person who : List.of(room.manager(0), room.manager(1), room.commissioner())) {
+      JsonNode first = state(room, who);
+      assertThat(first.get("lot").get("name").asText()).isEqualTo("Player 7");
+      assertThat(first.get("accelPosition").asInt()).isEqualTo(1);
+      assertThat(first.get("accelSize").asInt()).isEqualTo(3);
+      assertThat(first.get("lotPicks").asInt()).isEqualTo(2);
+    }
+    // The counts stay after the round starts although the picked lots left the pool.
+    assertThat(view(room).get("pickCounts")).isEmpty();
+
+    advance(20);
+    tick();
+    advance(5);
+    tick();
+
+    JsonNode second = view(room);
+    assertThat(second.get("lot").get("name").asText()).isEqualTo("Player 5");
+    assertThat(second.get("accelPosition").asInt()).isEqualTo(2);
+    assertThat(second.get("accelSize").asInt()).isEqualTo(3);
+    assertThat(second.get("lotPicks").asInt()).isEqualTo(1);
+  }
+
+  @Test
   void unpickedLotsStayUnsoldAndOnlyPickedOnesRun() {
     Room room = mainDone(6, 3);
     control(room, "open_round");

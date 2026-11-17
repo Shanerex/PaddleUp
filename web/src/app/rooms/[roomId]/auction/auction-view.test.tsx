@@ -348,11 +348,38 @@ describe("AuctionView", () => {
       expect(vi.mocked(sendControl).mock.calls[0].slice(0, 2)).toEqual(["r1", "end_round"]);
     });
 
-    it("runs an accelerated lot as a normal lot, named as the accelerated round", async () => {
-      feed.set(snap(live({ round: "accelerated", currentBid: 300_000, leaderFranchiseId: "fb", nextBid: 400_000, lot: { ...lot, no: 12 } })));
+    it("runs an accelerated lot as a normal lot, headed 'n of m' with the Picked by tag (mock 3y)", async () => {
+      feed.set(
+        snap(
+          live({
+            round: "accelerated",
+            currentBid: 300_000,
+            leaderFranchiseId: "fb",
+            nextBid: 400_000,
+            lot: { ...lot, no: 12 },
+            accelPosition: 3,
+            accelSize: 11,
+            lotPicks: 3,
+          }),
+        ),
+      );
       render(<AuctionView roomId="r1" />);
-      expect(await screen.findByText("Accelerated round · Lot 12")).toBeTruthy();
+      expect(await screen.findByText("Accelerated round · 3 of 11")).toBeTruthy();
+      expect(screen.getByTestId("picked-by").textContent).toBe("Picked by 3");
       expect(screen.getByTestId("bid-button").textContent).toContain("€0.4 M");
+    });
+
+    it("names the lot when the state carries no queue position, and shows no tag for a main lot", async () => {
+      feed.set(snap(live({ round: "accelerated", lot: { ...lot, no: 12 } })));
+      const { unmount } = render(<AuctionView roomId="r1" />);
+      expect(await screen.findByText("Accelerated round · Lot 12")).toBeTruthy();
+      expect(screen.queryByTestId("picked-by")).toBeNull();
+      unmount();
+
+      feed.set(snap(live()));
+      render(<AuctionView roomId="r1" />);
+      await screen.findByTestId("lot-card");
+      expect(screen.queryByTestId("picked-by")).toBeNull();
     });
   });
 

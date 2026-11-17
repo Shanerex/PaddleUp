@@ -49,6 +49,13 @@ const config = {
 const lot = { no: 3, playerId: "p", name: "Fake 3", country: "Spain", role: "gk", tags: ["foreign"], set: "Keepers", position: 2, basePrice: 300_000 };
 
 describe("LotCard", () => {
+  it("shows a Picked by tag after the lot's tags only when given a count", () => {
+    const { rerender } = render(<LotCard lot={lot} labels={labels} config={config} />);
+    expect(screen.queryByTestId("picked-by")).toBeNull();
+    rerender(<LotCard lot={lot} labels={labels} config={config} pickedBy={3} />);
+    expect(screen.getByTestId("picked-by").textContent).toBe("Picked by 3");
+  });
+
   it("shows role, tags, name, country and base price from the pack's labels and money", () => {
     render(<LotCard lot={lot} labels={labels} config={config} />);
     const card = within(screen.getByTestId("lot-card"));

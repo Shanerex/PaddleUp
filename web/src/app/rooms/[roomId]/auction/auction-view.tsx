@@ -367,7 +367,9 @@ function Auction({ roomId, data, reloadRoom }: { roomId: string; data: Data; rel
         ? "Accelerated round · picking"
         : lot
           ? accelerated
-            ? `Accelerated round · Lot ${lot.no}`
+            ? state.accelPosition != null && state.accelSize != null
+              ? `Accelerated round · ${state.accelPosition} of ${state.accelSize}`
+              : `Accelerated round · Lot ${lot.no}`
             : `${lot.set} · Lot ${lot.no}`
           : "Auction";
   const franchiseChips = state.standings.map((x) => {
@@ -443,7 +445,7 @@ function Auction({ roomId, data, reloadRoom }: { roomId: string; data: Data; rel
           ) : (
             lot && (
               <div className={s.grid}>
-                <LotCard lot={lot} labels={room.packLabels} config={room.config} result={result} />
+                <LotCard lot={lot} labels={room.packLabels} config={room.config} result={result} pickedBy={accelerated ? state.lotPicks : null} />
                 <div className={s.col}>
                   <section className={s.bidPanel} aria-label="Current bid">
                     <div className={s.bidHead}>

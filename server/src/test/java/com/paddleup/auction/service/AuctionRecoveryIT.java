@@ -435,6 +435,26 @@ class AuctionRecoveryIT extends AbstractAuctionIT {
   }
 
   @Test
+  void aRestartDuringTheAcceleratedRoundKeepsPositionSizeAndPickCount() {
+    Room room = inPhase("nominating");
+    control(room, "end_round");
+    JsonNode before = state(room, room.commissioner());
+    // Lot 3 has two picks, lot 2 one: the round plays 3 first.
+    assertThat(before.get("accelPosition").asInt()).isEqualTo(1);
+    assertThat(before.get("accelSize").asInt()).isEqualTo(2);
+    assertThat(before.get("lotPicks").asInt()).isEqualTo(2);
+
+    try (Server restarted = new Server(clock.instant())) {
+      JsonNode after = restarted.state(room, room.commissioner());
+
+      assertThat(withoutNow(after)).isEqualTo(withoutNow(before));
+      assertThat(after.get("accelPosition").asInt()).isEqualTo(1);
+      assertThat(after.get("accelSize").asInt()).isEqualTo(2);
+      assertThat(after.get("lotPicks").asInt()).isEqualTo(2);
+    }
+  }
+
+  @Test
   void anAdjournedAuctionStaysLockedAcrossARestartAndItsTimePassingOpensOnlyTheLobby() {
     Room room = inPhase("adjourned");
 

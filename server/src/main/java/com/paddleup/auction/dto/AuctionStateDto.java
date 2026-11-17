@@ -21,6 +21,11 @@ import java.util.UUID;
  * {@code pickCounts} and {@code waiting} (franchises that have not sent picks); {@code myPicks} and
  * {@code openSlots} are the viewer's own, and {@code openSlots} is absent when the viewer owns no
  * franchise.
+ *
+ * <p>Once the accelerated round has started, {@code accelSize} is how many lots it plays (absent
+ * before), and for the lot shown {@code accelPosition} is its 1-based place in that order and
+ * {@code lotPicks} how many franchises picked it (both absent for a main-round lot). They come from
+ * the log, so a restart gives the same values.
  */
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public record AuctionStateDto(
@@ -54,4 +59,7 @@ public record AuctionStateDto(
     @Schema(requiredMode = Schema.RequiredMode.REQUIRED) List<PickCountDto> pickCounts,
     @Schema(requiredMode = Schema.RequiredMode.REQUIRED) List<Integer> myPicks,
     Integer openSlots,
-    @Schema(requiredMode = Schema.RequiredMode.REQUIRED) List<UUID> waiting) {}
+    @Schema(requiredMode = Schema.RequiredMode.REQUIRED) List<UUID> waiting,
+    Integer accelPosition,
+    Integer accelSize,
+    Integer lotPicks) {}

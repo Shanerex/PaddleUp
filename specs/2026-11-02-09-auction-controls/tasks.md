@@ -36,3 +36,4 @@ Design refs for every UI task: docs/design/README.md plus the screens named in t
 - [x] T-29 (AC-11): accelerated round Commissioner view (pick counts, End round) and accelerated lot live. Design refs: Explorations 3x as edited in T-17, 3y.
 - [ ] T-30 (AC-14): Playwright at 390 and 1440 beside the mocks: Start now, controls, adjourned button, end-of-main choice, paused and adjourned notices from real phases, new tab and stale state; stub pack and check-agnostic pass unchanged.
 - [x] T-31 (AC-2, AC-8): decision entries in docs/knowledge/decisions: controls as runner intents in the one log; play queue with derived re-run lots.
+- [x] T-32 (AC-11): human-approved after G2 (2026-11-17): accelerated lot header matches 3y, "n of m" and "Picked by N"; the auction state DTO carries the accelerated queue position/size and the lot's pick count (server reducer + DTO + test, then web). Design refs: Auction A Spotlight 3y. Do before finishing T-30.
