@@ -149,9 +149,12 @@ export function controlRefusal(action: string, reason: string | undefined, lotNo
     superseded: "That player has already been put back up.",
     time_invalid: "That time has already gone. Pick a later one.",
     round_done: "The accelerated round has already been played.",
+    not_unsold: "One of those players is no longer in the unsold pool.",
+    over_slots: "That is more than your open squad slots.",
+    not_a_franchise: "Only a franchise can pick players.",
   };
   return {
-    title: action === "reopen" ? `Couldn't re-open${lot}` : action === "skip" ? `Couldn't skip${lot}` : "Couldn't do that",
+    title: action === "reopen" ? `Couldn't re-open${lot}` : action === "skip" ? `Couldn't skip${lot}` : action === "picks" ? "Couldn't send your picks" : "Couldn't do that",
     body: `${(reason && WHY[reason]) ?? `The server turned that down${reason ? ` (${reason})` : ""}.`} Nothing changed.`,
   };
 }

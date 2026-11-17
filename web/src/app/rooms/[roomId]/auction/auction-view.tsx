@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties } from "react";
-import { ApiError, getMembers, getRoom, sendControl, setReady, type Member, type Room } from "../../../../api/client";
+import { ApiError, getMembers, getRoom, sendControl, sendPicks, setReady, type Member, type Room } from "../../../../api/client";
 import { formatLotTime, pageClock } from "../../../../auction/clock";
 import { controlRefusal, reopenedNotice, skippedNotice, type Notice } from "../../../../auction/copy";
 import { useBid } from "../../../../auction/useBid";
@@ -18,6 +18,7 @@ import { Icon } from "../../../../ui/Icon";
 import { stateChipLabel } from "../../../../ui/kit";
 import { Button, ButtonLink } from "../../../../ui/Button";
 import s from "./auction.module.css";
+import { MainDoneCard, NominatingPanel, SendPicksBar } from "./accelerated";
 import { BidDock } from "./bid-dock";
 import { Controls } from "./controls";
 import { Lobby } from "./lobby";
@@ -231,7 +232,7 @@ function Auction({ roomId, data, reloadRoom }: { roomId: string; data: Data; rel
 
   // Commissioner intents that need no form: each only asks, and the server's answer or a refusal shows.
   const [controlBusy, setControlBusy] = useState(false);
-  const control = async (action: "start_now" | "resume" | "resume_now") => {
+  const control = async (action: "start_now" | "resume" | "resume_now" | "open_round" | "end_auction" | "end_round") => {
     if (controlBusy) return;
     setControlBusy(true);
     try {
@@ -244,6 +245,29 @@ function Auction({ roomId, data, reloadRoom }: { roomId: string; data: Data; rel
       setControlBusy(false);
     }
   };
+
+  // The accelerated round's picks (Explorations 3w): what I have ticked until I send them. Once sent
+  // (the server no longer lists me as waiting) the server's copy shows and the list is read-only.
+  const [ticked, setTicked] = useState<number[] | null>(null);
+  const [picksBusy, setPicksBusy] = useState(false);
+  const picking = phase === "nominating";
+  const sentPicks = picking && me !== null && !!state && !state.waiting.includes(me);
+  const selected = sentPicks ? (state?.myPicks ?? []) : (ticked ?? state?.myPicks ?? []);
+  const togglePick = (no: number) => setTicked(selected.includes(no) ? selected.filter((x) => x !== no) : [...selected, no]);
+  const sendMyPicks = async () => {
+    if (picksBusy || selected.length === 0) return;
+    setPicksBusy(true);
+    try {
+      const answer = await sendPicks(roomId, selected);
+      if (answer.outcome === "rejected") setControlNotice(controlRefusal("picks", answer.reason, null, null));
+      live.resync();
+    } catch (e) {
+      setControlNotice({ title: "Couldn't send your picks", body: `${explainRoomError(e).message} Nothing changed.` });
+    } finally {
+      setPicksBusy(false);
+    }
+  };
+
   const scheduleSheet = sheet && (
     <div className="team" style={{ "--h": hue } as CSSProperties}>
       <ScheduleSheet
@@ -335,6 +359,21 @@ function Auction({ roomId, data, reloadRoom }: { roomId: string; data: Data; rel
       : null;
   const leader = whoOf(view.leaderId);
   const myStanding = me ? state.standings.find((x) => x.franchiseId === me) : undefined;
+  const accelerated = state.round === "accelerated";
+  const headSub =
+    view.status === "main_done"
+      ? "Main pool done"
+      : view.status === "nominating"
+        ? "Accelerated round · picking"
+        : lot
+          ? accelerated
+            ? `Accelerated round · Lot ${lot.no}`
+            : `${lot.set} · Lot ${lot.no}`
+          : "Auction";
+  const franchiseChips = state.standings.map((x) => {
+    const who = whoOf(x.franchiseId);
+    return { id: x.franchiseId, name: who?.name ?? "Franchise", monogram: who?.monogram ?? "", colour: who?.colour ?? "", done: !state.waiting.includes(x.franchiseId) };
+  });
   const timeText = view.timeLeftMs === null ? "–:––" : formatLotTime(view.timeLeftMs);
 
   return (
@@ -342,7 +381,7 @@ function Auction({ roomId, data, reloadRoom }: { roomId: string; data: Data; rel
       <Header
         roomName={room.config.name}
         pill="LIVE"
-        sub={lot ? `${lot.set} · Lot ${lot.no}` : "Auction"}
+        sub={headSub}
         roomHref={roomHref}
         purse={view.hasFranchise ? { label: "YOUR PURSE", value: view.purse !== null ? money(view.purse) : "" } : null}
         observer={!view.hasFranchise}
@@ -364,7 +403,32 @@ function Auction({ roomId, data, reloadRoom }: { roomId: string; data: Data; rel
           />
         )}
         <div className={s.scroll}>
-          {view.status === "adjourned" || view.status === "resume_lobby" ? (
+          {view.status === "main_done" ? (
+            <MainDoneCard
+              sold={state.standings.reduce((n, x) => n + x.squad.length, 0)}
+              unsold={state.unsoldPool.length}
+              franchises={state.standings.length}
+              commish={commish ? { busy: controlBusy, onOpenRound: () => void control("open_round"), onEnd: () => void control("end_auction") } : undefined}
+            />
+          ) : view.status === "nominating" ? (
+            <NominatingPanel
+              pool={state.unsoldPool}
+              counts={new Map(state.pickCounts.map((c) => [c.lot, c.count]))}
+              openSlots={state.openSlots}
+              selected={selected}
+              sent={sentPicks}
+              onToggle={togglePick}
+              labels={room.packLabels}
+              config={room.config}
+              franchises={franchiseChips}
+              doneCount={franchiseChips.filter((f) => f.done).length}
+              commish={
+                commish
+                  ? { queued: state.pickCounts.length, waiting: state.waiting.length, busy: controlBusy, onEndRound: () => void control("end_round") }
+                  : undefined
+              }
+            />
+          ) : view.status === "adjourned" || view.status === "resume_lobby" ? (
             <AdjournedCard
               lotsDone={Math.max(0, (lot?.no ?? 1) - 1)}
               squad={myStanding ? myStanding.squad.length : null}
@@ -426,9 +490,16 @@ function Auction({ roomId, data, reloadRoom }: { roomId: string; data: Data; rel
             )
           )}
         </div>
-        <div className={s.dockBar}>
-          <BidDock view={view} config={room.config} labels={room.packLabels} onBid={() => state.lot && view.nextBid !== null && void bidder.press(state.lot.no, view.nextBid)} />
-        </div>
+        {view.status === "nominating" ? (
+          me !== null &&
+          state.openSlots !== undefined && <SendPicksBar picked={selected.length} sent={sentPicks} waiting={state.waiting.length} busy={picksBusy} onSend={() => void sendMyPicks()} />
+        ) : (
+          view.status !== "main_done" && (
+            <div className={s.dockBar}>
+              <BidDock view={view} config={room.config} labels={room.packLabels} onBid={() => state.lot && view.nextBid !== null && void bidder.press(state.lot.no, view.nextBid)} />
+            </div>
+          )
+        )}
         <Notices
           reconnecting={offline}
           paused={view.status === "paused"}

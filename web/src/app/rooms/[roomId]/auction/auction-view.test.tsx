@@ -17,6 +17,8 @@ vi.mock("../../../../api/client", async (importOriginal) => ({
   bid: vi.fn(),
   setReady: vi.fn(),
   scheduleAuction: vi.fn(),
+  sendControl: vi.fn(),
+  sendPicks: vi.fn(),
 }));
 // The live feed is replaced by a store the test drives; useLive is its only seam.
 const feed = vi.hoisted(() => {
@@ -48,7 +50,7 @@ vi.mock("../../../../auction/useLive", async () => {
   };
 });
 
-import { ApiError, bid, getMembers, getRoom, scheduleAuction, setReady, type AuctionState, type Member, type Room } from "../../../../api/client";
+import { ApiError, bid, getMembers, getRoom, scheduleAuction, sendControl, sendPicks, setReady, type AuctionState, type Member, type Room } from "../../../../api/client";
 import { AuctionView } from "./auction-view";
 
 const NOW = Date.parse("2030-03-01T10:00:00Z");
@@ -257,6 +259,101 @@ describe("AuctionView", () => {
     expect(await screen.findByTestId("notice-resume-lobby")).toBeTruthy();
     expect(screen.getByTestId("adjourned-card")).toBeTruthy();
     expect((screen.getByTestId("bid-button") as HTMLButtonElement).textContent).toContain("Resuming soon");
+  });
+
+  describe("end of the main pool and the accelerated round", () => {
+    const commishRoom = () => vi.mocked(getRoom).mockResolvedValue(room({ myRole: "commissioner", myFranchiseId: null }));
+    const unsoldCards = [
+      { ...lot, no: 4, name: "Zed Zero" },
+      { ...lot, no: 7, name: "Mo Most" },
+    ];
+    const done = (over: Partial<AuctionState> = {}) =>
+      live({ phase: "main_done", lotOpen: false, lot: undefined, nextBid: undefined, deadline: undefined, unsold: [4, 7], unsoldPool: unsoldCards, lotCount: 9, ...over });
+    const picking = (over: Partial<AuctionState> = {}) =>
+      done({ phase: "nominating", openSlots: 2, waiting: ["fa", "fb"], pickCounts: [{ lot: 7, count: 1 }], ...over });
+
+    it("shows a manager the main-done totals read-only, with no bid dock", async () => {
+      feed.set(snap(done({ standings: [{ franchiseId: "fa", purse: 1, squad: [{ lot: 1, playerId: "p", price: 1 }] }, { franchiseId: "fb", purse: 1, squad: [] }] })));
+      render(<AuctionView roomId="r1" />);
+      expect(await screen.findByTestId("main-done-waiting")).toBeTruthy();
+      expect(screen.getByTestId("main-done-sold").textContent).toBe("1");
+      expect(screen.getByTestId("main-done-unsold").textContent).toBe("2");
+      expect(screen.getAllByText("Main pool done")).toHaveLength(2);
+      expect(screen.queryByTestId("open-round")).toBeNull();
+      expect(screen.queryByTestId("bid-button")).toBeNull();
+    });
+
+    it("lets the Commissioner open the round or end the auction, and shows a refusal", async () => {
+      commishRoom();
+      feed.set(snap(done()));
+      vi.mocked(sendControl).mockResolvedValueOnce({ outcome: "accepted", lot: 0, serverNow: "x" }).mockResolvedValueOnce({ outcome: "rejected", reason: "wrong_phase", lot: 0, serverNow: "x" });
+      const user = userEvent.setup();
+      render(<AuctionView roomId="r1" />);
+      await user.click(await screen.findByTestId("open-round"));
+      expect(vi.mocked(sendControl).mock.calls[0].slice(0, 2)).toEqual(["r1", "open_round"]);
+      await waitFor(() => expect(feed.live.resync).toHaveBeenCalled());
+
+      await user.click(screen.getByTestId("end-auction"));
+      expect(vi.mocked(sendControl).mock.calls[1].slice(0, 2)).toEqual(["r1", "end_auction"]);
+      expect((await screen.findByTestId("notice-rejected")).textContent).toContain("The auction moved on before that landed. Nothing changed.");
+    });
+
+    it("lets a manager pick up to the open slots, send them once, and then waits read-only", async () => {
+      feed.set(snap(picking()));
+      vi.mocked(sendPicks).mockResolvedValue({ outcome: "accepted", lot: 0, serverNow: "x" });
+      const user = userEvent.setup();
+      render(<AuctionView roomId="r1" />);
+      const rows = await screen.findAllByTestId("pick-row");
+      expect(rows.map((r) => within(r).getByTestId("pick-name").textContent)).toEqual(["Mo Most", "Zed Zero"]);
+      expect(within(rows[0]).getByTestId("pick-count").textContent).toBe("1 pick");
+      expect((screen.getByTestId("send-picks") as HTMLButtonElement).disabled).toBe(true);
+
+      await user.click(rows[0]);
+      await user.click(rows[1]);
+      await user.click(screen.getByTestId("send-picks"));
+      expect(sendPicks).toHaveBeenCalledWith("r1", [7, 4]);
+
+      act(() => feed.set(snap(picking({ waiting: ["fb"], myPicks: [7, 4] }))));
+      expect((await screen.findByTestId("picks-in")).textContent).toContain("Waiting on 1 franchise.");
+      expect(screen.getAllByTestId("pick-row")[0].getAttribute("aria-pressed")).toBe("true");
+    });
+
+    it("restores my sent picks in a new tab and shows a refused send", async () => {
+      feed.set(snap(picking({ waiting: ["fb"], myPicks: [4] })));
+      render(<AuctionView roomId="r1" />);
+      expect((await screen.findByTestId("picks-in")).textContent).toContain("Waiting on 1 franchise.");
+      expect(screen.getByTestId("nom-mine").textContent).toBe("1 of 2");
+
+      cleanup();
+      feed.set(snap(picking({ openSlots: 1 })));
+      vi.mocked(sendPicks).mockResolvedValue({ outcome: "rejected", reason: "over_slots", lot: 0, serverNow: "x" });
+      const user = userEvent.setup();
+      render(<AuctionView roomId="r1" />);
+      await user.click((await screen.findAllByTestId("pick-row"))[0]);
+      await user.click(screen.getByTestId("send-picks"));
+      expect((await screen.findByTestId("notice-rejected")).textContent).toContain("more than your open squad slots");
+    });
+
+    it("gives the Commissioner without a franchise End round and no picking", async () => {
+      commishRoom();
+      feed.set(snap(picking({ openSlots: undefined, waiting: ["fb"] })));
+      vi.mocked(sendControl).mockResolvedValue({ outcome: "accepted", lot: 0, serverNow: "x" });
+      const user = userEvent.setup();
+      render(<AuctionView roomId="r1" />);
+      const end = await screen.findByTestId("end-round");
+      expect(end.textContent).toContain("End round · play 1 lot");
+      expect(screen.queryByTestId("send-picks")).toBeNull();
+      expect(screen.queryByTestId("picks-in")).toBeNull();
+      await user.click(end);
+      expect(vi.mocked(sendControl).mock.calls[0].slice(0, 2)).toEqual(["r1", "end_round"]);
+    });
+
+    it("runs an accelerated lot as a normal lot, named as the accelerated round", async () => {
+      feed.set(snap(live({ round: "accelerated", currentBid: 300_000, leaderFranchiseId: "fb", nextBid: 400_000, lot: { ...lot, no: 12 } })));
+      render(<AuctionView roomId="r1" />);
+      expect(await screen.findByText("Accelerated round · Lot 12")).toBeTruthy();
+      expect(screen.getByTestId("bid-button").textContent).toContain("€0.4 M");
+    });
   });
 
   it("shows no auction UI for an ended auction, only the way back, and the same for no auction", async () => {
