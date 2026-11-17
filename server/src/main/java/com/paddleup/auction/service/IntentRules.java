@@ -30,10 +30,10 @@ public final class IntentRules {
     if (phase.isPresent()) {
       return phase.get();
     }
-    if (intent.lot() < s.currentLot() || now.compareTo(s.deadline()) >= 0) {
+    if (s.closed(intent.lot()) || now.compareTo(s.deadline()) >= 0) {
       return new Decision.Rejected(Reason.LOT_CLOSED);
     }
-    if (intent.lot() > s.currentLot()) {
+    if (intent.lot() != s.currentLot()) {
       return new Decision.PhaseError(Reason.NO_OPEN_LOT);
     }
     if (intent.franchiseId() == null || !s.purses().containsKey(intent.franchiseId())) {
@@ -63,12 +63,13 @@ public final class IntentRules {
   /**
    * True when the intent names a lot that has already closed while the auction is live (in the gap)
    * or ended. It is too late for that lot, whether or not the tick has happened yet, so the answer
-   * is the same either way; only a lot that never opened is a phase error.
+   * is the same either way; only a lot that never opened is a phase error. Closed means played, by
+   * the play queue: lot numbers do not follow play order once a lot is re-opened or accelerated.
    */
   private static boolean namesClosedLot(AuctionState s, Intent intent) {
     return (s.phase() == Phase.LIVE || s.phase() == Phase.ENDED)
         && !s.lotOpen()
-        && intent.lot() <= s.currentLot();
+        && s.closed(intent.lot());
   }
 
   private static Optional<Decision> phase(AuctionState s) {

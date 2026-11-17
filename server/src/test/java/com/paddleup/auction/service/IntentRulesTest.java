@@ -236,4 +236,51 @@ class IntentRulesTest {
     assertRejected(bid(last, A, USER_A, 3, 20), Reason.LOT_CLOSED);
     assertRejected(bid(last, A, USER_A, 1, 20), Reason.LOT_CLOSED);
   }
+
+  /**
+   * Lot 1 closes unsold, lot 2 opens, then lot 1 is re-opened as lot 4 (queue 4, 3) and plays
+   * before lot 3, so lot numbers no longer follow play order.
+   */
+  private static AuctionState reopenedBeforeLotThree(boolean lotFourOpen) {
+    var events =
+        new java.util.ArrayList<>(
+            List.of(
+                AuctionFixtures.started(1),
+                com.paddleup.auction.model.Events.lotOpened(2, T0, 1, T0.plusSeconds(20)),
+                com.paddleup.auction.model.Events.lotUnsold(3, T0.plusSeconds(20), 1),
+                com.paddleup.auction.model.Events.lotOpened(
+                    4, T0.plusSeconds(25), 2, T0.plusSeconds(45)),
+                com.paddleup.auction.model.Events.lotReopened(
+                    5, T0.plusSeconds(30), 1, 4, "Nobody was ready", null, 0, USER_A, null),
+                com.paddleup.auction.model.Events.lotUnsold(6, T0.plusSeconds(45), 2),
+                com.paddleup.auction.model.Events.lotOpened(
+                    7, T0.plusSeconds(50), 4, T0.plusSeconds(70))));
+    if (!lotFourOpen) {
+      events.add(com.paddleup.auction.model.Events.lotUnsold(8, T0.plusSeconds(70), 4));
+    }
+    return AuctionReducer.replay(
+        AuctionState.initial(AuctionFixtures.ROOM, AuctionFixtures.catalog()), events);
+  }
+
+  @Test
+  void aLotThatHasNotPlayedYetIsNotOpenEvenWhenItsNumberIsBelowTheCurrentLot() {
+    for (boolean lotFourOpen : new boolean[] {true, false}) {
+      var s = reopenedBeforeLotThree(lotFourOpen);
+      assertThat(s.queue()).containsExactly(3);
+      var at = T0.plusSeconds(lotFourOpen ? 55 : 71);
+
+      var bid3 = IntentRules.decide(s, Intent.bid(UUID.randomUUID(), USER_A, A, 3, 20), at, GUARDS);
+      var pass3 = IntentRules.decide(s, Intent.pass(UUID.randomUUID(), USER_A, A, 3), at, GUARDS);
+      // Lots that did play are closed, however their numbers compare with the current lot.
+      var bid1 = IntentRules.decide(s, Intent.bid(UUID.randomUUID(), USER_A, A, 1, 20), at, GUARDS);
+      var bid2 = IntentRules.decide(s, Intent.bid(UUID.randomUUID(), USER_A, A, 2, 20), at, GUARDS);
+
+      assertThat(bid3)
+          .as("bid on queued lot 3, lot 4 open=%s", lotFourOpen)
+          .isEqualTo(new Decision.PhaseError(Reason.NO_OPEN_LOT));
+      assertThat(pass3).isEqualTo(new Decision.PhaseError(Reason.NO_OPEN_LOT));
+      assertRejected(bid1, Reason.LOT_CLOSED);
+      assertRejected(bid2, Reason.LOT_CLOSED);
+    }
+  }
 }

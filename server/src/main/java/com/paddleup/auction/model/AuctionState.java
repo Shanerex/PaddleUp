@@ -138,6 +138,15 @@ public record AuctionState(
     return inGap && !queue.isEmpty() ? lots.get(queue.get(0) - 1) : null;
   }
 
+  /**
+   * True when lot {@code no} has been played and is no longer open: it exists, has left the play
+   * queue and is not the lot open now. Decided by the queue, never by comparing lot numbers, since
+   * a re-opened or accelerated lot is numbered after lots that play later.
+   */
+  public boolean closed(int no) {
+    return no >= 1 && no <= lots.size() && !queue.contains(no) && !(lotOpen && no == currentLot);
+  }
+
   public boolean hasMoreLots() {
     return !queue.isEmpty();
   }
