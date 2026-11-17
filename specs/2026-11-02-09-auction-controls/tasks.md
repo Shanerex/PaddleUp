@@ -18,8 +18,8 @@ Design refs for every UI task: docs/design/README.md plus the screens named in t
 - [x] T-11 (AC-10): unsold pool holds no-bid lots and never sold ones; PUT .../auction/picks within open slots accepted, beyond rejected, nominating only.
 - [x] T-12 (AC-11): unsoldPool, pickCounts, myPicks, openSlots and waiting in AuctionStateDto for every member; end_round runs picked lots most-picked first (tie: original lot no).
 - [x] T-13 (AC-11): a won accelerated lot still fails the eligibility guard when FR-44 is breached.
-- [ ] T-14 (AC-1, AC-9): restart test in scheduled, live, paused, adjourned, resume lobby, main_done and nominating: phase, lot, deadline or heldMs and picks equal; adjourned stays locked.
-- [ ] T-15 (AC-2): for every control kind the event is stored before broadcast; a forced log-write failure broadcasts nothing and leaves state unchanged.
+- [x] T-14 (AC-1, AC-9): restart test in scheduled, live, paused, adjourned, resume lobby, main_done and nominating: phase, lot, deadline or heldMs and picks equal; adjourned stays locked.
+- [x] T-15 (AC-2): for every control kind the event is stored before broadcast; a forced log-write failure broadcasts nothing and leaves state unchanged.
 - [ ] T-16 (AC-13): GET .../auction/audit: filters, time order, lifeline entries hold type, lot and time only, non-member 404, empty page; OpenAPI regenerated into web/src/api.
 - [ ] T-17 (AC-11, AC-14, AC-15): BLOCKING, design source only, no code: edit 3w/3x (open-slots wording, pick counts shown to all, 3x buttons reconciled with the matrix's End round) and draw the main-done Commissioner choice; get the human's approval; T-27, T-28 and T-29 wait on it.
 - [ ] T-18 (AC-14): web/src/auction/view.ts reads the real phases and drops the fixture mapping; resume_lobby, main_done and nominating handled; unknown phases still lock; view tests.

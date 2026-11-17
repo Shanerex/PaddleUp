@@ -3,13 +3,19 @@ package com.paddleup.auction.service;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.clearInvocations;
+import static org.mockito.Mockito.doAnswer;
+import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.paddleup.auction.AbstractAuctionIT;
+import com.paddleup.auction.repository.AuctionEventRepository;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.UUID;
 import org.junit.jupiter.api.Test;
+import org.springframework.dao.DataAccessResourceFailureException;
 import org.springframework.http.HttpStatus;
 import org.springframework.test.context.bean.override.mockito.MockitoSpyBean;
 
@@ -17,6 +23,7 @@ import org.springframework.test.context.bean.override.mockito.MockitoSpyBean;
 class AuctionControlsIT extends AbstractAuctionIT {
 
   @MockitoSpyBean AuctionBroadcaster broadcaster;
+  @MockitoSpyBean AuctionEventRepository eventLog;
 
   private String phase(Room room) {
     return state(room, room.commissioner()).get("phase").asText();
@@ -400,5 +407,95 @@ class AuctionControlsIT extends AbstractAuctionIT {
       }
     }
     throw new AssertionError("no standing");
+  }
+
+  // ---- T-15: persisted before broadcast, nothing broadcast on a failed write ----
+
+  @Test
+  void everyControlIsInTheLogWhenItIsBroadcast() {
+    Room room = room(2, 4);
+    goLive(room);
+    UUID roomId = UUID.fromString(room.id());
+    List<String> problems = new ArrayList<>();
+    List<String> seen = new ArrayList<>();
+    doAnswer(
+            call -> {
+              List<com.paddleup.auction.model.AuctionEvent> sent = call.getArgument(1);
+              long stored = lastSeq(room);
+              for (var e : sent) {
+                seen.add(e.kind().value());
+                if (e.seq() > stored) {
+                  problems.add(e.kind().value() + " broadcast before it was stored");
+                }
+              }
+              return call.callRealMethod();
+            })
+        .when(broadcaster)
+        .events(any(), any(), any());
+
+    assertThat(roomId).isNotNull();
+    control(room, "pause");
+    control(room, "resume");
+    control(room, "skip");
+    control(room, "reopen", "lot", 1, "reason", "Skipped by mistake");
+    control(room, "adjourn", "resumeAt", clock.instant().plusSeconds(3600).toString());
+    control(room, "change_time", "resumeAt", clock.instant().plusSeconds(7200).toString());
+    control(room, "resume_now");
+    control(room, "start_now");
+    org.mockito.Mockito.reset(broadcaster);
+
+    assertThat(problems).isEmpty();
+    assertThat(seen)
+        .containsExactly(
+            "paused",
+            "resumed",
+            "lot_skipped",
+            "lot_reopened",
+            "adjourned",
+            "resume_time_changed",
+            "resume_lobby_opened",
+            "start_now",
+            "resumed");
+  }
+
+  @Test
+  void aForcedLogWriteFailureOnAControlBroadcastsNothingAndLeavesStateUnchanged() {
+    Room room = room(2, 4);
+    goLive(room);
+    Object[][] atOpenLot = {
+      {"pause"}, {"skip"}, {"adjourn", "resumeAt", clock.instant().plusSeconds(3600).toString()}
+    };
+    for (Object[] c : atOpenLot) {
+      assertFailsCleanly(room, (String) c[0], java.util.Arrays.copyOfRange(c, 1, c.length));
+    }
+    advance(20);
+    tick();
+    assertFailsCleanly(room, "reopen", new Object[] {"lot", 1, "reason", "Nobody was ready"});
+    // Nothing was lost: the same controls work once the log is back.
+    assertThat(outcome(control(room, "reopen", "lot", 1, "reason", "Nobody was ready")))
+        .isEqualTo("accepted");
+  }
+
+  private void assertFailsCleanly(Room room, String action, Object[] extra) {
+    long seq = lastSeq(room);
+    JsonNode before = withoutNow(state(room, room.commissioner()));
+    clearInvocations(broadcaster);
+    doThrow(new DataAccessResourceFailureException("disk gone"))
+        .when(eventLog)
+        .append(any(), any());
+    var failed = control(room, action, extra);
+    org.mockito.Mockito.reset(eventLog);
+
+    assertThat(failed.getStatusCode()).as(action).isEqualTo(HttpStatus.SERVICE_UNAVAILABLE);
+    assertThat(body(failed).get("error").asText()).isEqualTo("log_unavailable");
+    verify(broadcaster, never()).events(any(), any(), any());
+    assertThat(lastSeq(room)).as(action).isEqualTo(seq);
+    assertThat(withoutNow(state(room, room.commissioner()))).as(action).isEqualTo(before);
+  }
+
+  private static JsonNode withoutNow(JsonNode state) {
+    var copy = (com.fasterxml.jackson.databind.node.ObjectNode) state.deepCopy();
+    copy.remove("serverNow");
+    return copy;
   }
 }

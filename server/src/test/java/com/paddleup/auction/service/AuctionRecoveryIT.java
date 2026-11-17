@@ -92,6 +92,15 @@ class AuctionRecoveryIT extends AbstractAuctionIT {
       ctx.getBean(AuctionTicker.class).tickAll();
     }
 
+    ResponseEntity<String> control(Room room, UUID intent, String action) {
+      return call(
+          HttpMethod.POST,
+          room,
+          "/controls",
+          room.commissioner(),
+          Map.of("intentId", intent.toString(), "action", action));
+    }
+
     private ResponseEntity<String> call(
         HttpMethod method, Room room, String path, Person who, Object payload) {
       var headers = new HttpHeaders();
@@ -353,6 +362,101 @@ class AuctionRecoveryIT extends AbstractAuctionIT {
     try (Server restarted = new Server(clock.instant())) {
       var again = restarted.bid(room, room.manager(0), UUID.randomUUID(), 1, 20);
       assertThat(outcome(again)).isEqualTo("rejected:reserve");
+    }
+  }
+
+  // ---- AC-1: the control phases come back from the log ----
+
+  /** Puts a fresh room in the named phase and returns it. */
+  private Room inPhase(String phase) {
+    Room room = room(2, 3);
+    if (phase.equals("scheduled")) {
+      clock.freeze(T0.minusSeconds(60));
+      schedule(room, T0);
+      return room;
+    }
+    goLive(room);
+    if (phase.equals("live")) {
+      bid(room, room.manager(0), 1, 20);
+      advance(3);
+      return room;
+    }
+    if (phase.equals("main_done") || phase.equals("nominating")) {
+      for (int lot = 1; lot <= 3; lot++) {
+        advance(20);
+        tick();
+        advance(5);
+        tick();
+      }
+      if (phase.equals("nominating")) {
+        control(room, "open_round");
+        picks(room, room.manager(0), java.util.List.of(2, 3));
+        picks(room, room.manager(1), java.util.List.of(3));
+      }
+      return room;
+    }
+    bid(room, room.manager(0), 1, 20);
+    advance(3);
+    if (phase.equals("paused")) {
+      control(room, "pause");
+      return room;
+    }
+    control(room, "adjourn", "resumeAt", clock.instant().plusSeconds(3600).toString());
+    if (phase.equals("resume_lobby")) {
+      control(room, "resume_now");
+    }
+    return room;
+  }
+
+  @Test
+  void aRestartInEveryControlPhaseKeepsPhaseLotTimeOrHeldTimeAndPicks() {
+    for (String phase :
+        new String[] {
+          "scheduled", "live", "paused", "adjourned", "resume_lobby", "main_done", "nominating"
+        }) {
+      Room room = inPhase(phase);
+      JsonNode before = state(room, room.commissioner());
+      long seq = lastSeq(room);
+      assertThat(before.get("phase").asText()).as(phase).isEqualTo(phase);
+
+      try (Server restarted = new Server(clock.instant())) {
+        JsonNode after = restarted.state(room, room.commissioner());
+
+        assertThat(withoutNow(after)).as(phase).isEqualTo(withoutNow(before));
+        assertThat(lastSeq(room)).as(phase).isEqualTo(seq);
+        if (phase.equals("paused") || phase.equals("adjourned")) {
+          assertThat(after.get("heldMs").asLong()).as(phase).isEqualTo(7000);
+        }
+        if (phase.equals("nominating")) {
+          assertThat(after.get("pickCounts")).as(phase).hasSize(2);
+        }
+      }
+    }
+  }
+
+  @Test
+  void anAdjournedAuctionStaysLockedAcrossARestartAndItsTimePassingOpensOnlyTheLobby() {
+    Room room = inPhase("adjourned");
+
+    try (Server restarted = new Server(clock.instant())) {
+      var refused = restarted.bid(room, room.manager(1), UUID.randomUUID(), 1, 25);
+      assertThat(refused.getStatusCode()).isEqualTo(HttpStatus.CONFLICT);
+      assertThat(body(refused).get("error").asText()).isEqualTo("adjourned");
+      restarted.tick();
+      assertThat(restarted.state(room, room.commissioner()).get("phase").asText())
+          .isEqualTo("adjourned");
+      assertThat(eventCount(room, "resumed")).isZero();
+    }
+
+    // The server was down past the resume time: the lobby opens, the lot does not.
+    try (Server late = new Server(clock.instant().plusSeconds(86_400))) {
+      late.tick();
+      JsonNode lobby = late.state(room, room.commissioner());
+      assertThat(lobby.get("phase").asText()).isEqualTo("resume_lobby");
+      assertThat(lobby.get("heldMs").asLong()).isEqualTo(7000);
+      assertThat(eventCount(room, "resumed")).isZero();
+      assertThat(late.control(room, UUID.randomUUID(), "pause").getStatusCode())
+          .isEqualTo(HttpStatus.OK);
     }
   }
 }
