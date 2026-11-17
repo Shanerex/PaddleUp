@@ -2,6 +2,7 @@ package com.paddleup.auction.controller;
 
 import com.paddleup.accounts.service.CurrentUser;
 import com.paddleup.auction.dto.AuctionStateDto;
+import com.paddleup.auction.dto.AuditDto;
 import com.paddleup.auction.dto.BidRequest;
 import com.paddleup.auction.dto.ControlRequest;
 import com.paddleup.auction.dto.EventsDto;
@@ -56,6 +57,15 @@ class AuctionController {
       @RequestParam(defaultValue = "0") long after,
       @RequestParam(required = false) Integer limit) {
     return auction.events(currentUser.require(), roomId, after, limit);
+  }
+
+  @GetMapping("/audit")
+  AuditDto audit(
+      @PathVariable UUID roomId,
+      @RequestParam(defaultValue = "all") String kind,
+      @RequestParam(defaultValue = "0") long after,
+      @RequestParam(required = false) Integer limit) {
+    return auction.audit(currentUser.require(), roomId, kind, after, limit);
   }
 
   @PostMapping(value = "/bids", consumes = MediaType.APPLICATION_JSON_VALUE)

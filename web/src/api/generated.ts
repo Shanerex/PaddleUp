@@ -52,6 +52,22 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/rooms/{roomId}/auction/picks": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put: operations["picks"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/rooms/{id}/pool/sets": {
         parameters: {
             query?: never;
@@ -174,6 +190,22 @@ export interface paths {
         get?: never;
         put?: never;
         post: operations["pass"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/rooms/{roomId}/auction/controls": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["control"];
         delete?: never;
         options?: never;
         head?: never;
@@ -468,6 +500,22 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/rooms/{roomId}/auction/audit": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["audit"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/rooms/{id}": {
         parameters: {
             query?: never;
@@ -699,6 +747,19 @@ export interface components {
             /** Format: int64 */
             nextBid?: number;
             bidLimits: components["schemas"]["BidLockDto"][];
+            /** Format: int64 */
+            heldMs: number;
+            /** Format: date-time */
+            resumeAt?: string;
+            /** Format: date-time */
+            liveAt?: string;
+            round: string;
+            unsoldPool: components["schemas"]["LotDto"][];
+            pickCounts: components["schemas"]["PickCountDto"][];
+            myPicks: number[];
+            /** Format: int32 */
+            openSlots?: number;
+            waiting: string[];
         };
         BidLockDto: {
             reason: string;
@@ -733,6 +794,12 @@ export interface components {
             /** Format: int64 */
             basePrice: number;
         };
+        PickCountDto: {
+            /** Format: int32 */
+            lot: number;
+            /** Format: int32 */
+            count: number;
+        };
         SquadEntryDto: {
             /** Format: int32 */
             lot?: number;
@@ -760,6 +827,25 @@ export interface components {
         PresenceDto: {
             connected: string[];
             ready: string[];
+        };
+        PicksRequest: {
+            /** Format: uuid */
+            intentId: string;
+            lots: number[];
+        };
+        IntentResultDto: {
+            outcome: string;
+            reason?: string;
+            /** Format: int64 */
+            seq?: number;
+            /** Format: int32 */
+            lot: number;
+            /** Format: int64 */
+            amount?: number;
+            /** Format: date-time */
+            deadline?: string;
+            /** Format: date-time */
+            serverNow: string;
         };
         PoolSetsRequest: {
             /** Format: int32 */
@@ -996,19 +1082,15 @@ export interface components {
             /** Format: int32 */
             lot: number;
         };
-        IntentResultDto: {
-            outcome: string;
-            reason?: string;
-            /** Format: int64 */
-            seq?: number;
+        ControlRequest: {
+            /** Format: uuid */
+            intentId: string;
+            action: string;
             /** Format: int32 */
-            lot: number;
-            /** Format: int64 */
-            amount?: number;
+            lot?: number;
+            reason?: string;
             /** Format: date-time */
-            deadline?: string;
-            /** Format: date-time */
-            serverNow: string;
+            resumeAt?: string;
         };
         BidRequest: {
             /** Format: uuid */
@@ -1219,6 +1301,29 @@ export interface components {
             /** Format: date-time */
             serverNow: string;
         };
+        AuditDto: {
+            entries: components["schemas"]["AuditEntryDto"][];
+            /** Format: int64 */
+            lastSeq: number;
+            more: boolean;
+            /** Format: date-time */
+            serverNow: string;
+        };
+        AuditEntryDto: {
+            /** Format: int64 */
+            seq: number;
+            /** Format: date-time */
+            at: string;
+            category: string;
+            kind: string;
+            /** Format: uuid */
+            franchiseId?: string;
+            /** Format: int32 */
+            lot?: number;
+            detail: {
+                [key: string]: unknown;
+            };
+        };
         MemberDto: {
             /** Format: uuid */
             userId: string;
@@ -1369,6 +1474,32 @@ export interface operations {
                 };
                 content: {
                     "*/*": components["schemas"]["PresenceDto"];
+                };
+            };
+        };
+    };
+    picks: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                roomId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PicksRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["IntentResultDto"];
                 };
             };
         };
@@ -1607,6 +1738,32 @@ export interface operations {
         requestBody: {
             content: {
                 "application/json": components["schemas"]["PassRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["IntentResultDto"];
+                };
+            };
+        };
+    };
+    control: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                roomId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ControlRequest"];
             };
         };
         responses: {
@@ -2190,6 +2347,32 @@ export interface operations {
                 };
                 content: {
                     "*/*": components["schemas"]["EventsDto"];
+                };
+            };
+        };
+    };
+    audit: {
+        parameters: {
+            query?: {
+                kind?: string;
+                after?: number;
+                limit?: number;
+            };
+            header?: never;
+            path: {
+                roomId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["AuditDto"];
                 };
             };
         };

@@ -20,7 +20,7 @@ Design refs for every UI task: docs/design/README.md plus the screens named in t
 - [x] T-13 (AC-11): a won accelerated lot still fails the eligibility guard when FR-44 is breached.
 - [x] T-14 (AC-1, AC-9): restart test in scheduled, live, paused, adjourned, resume lobby, main_done and nominating: phase, lot, deadline or heldMs and picks equal; adjourned stays locked.
 - [x] T-15 (AC-2): for every control kind the event is stored before broadcast; a forced log-write failure broadcasts nothing and leaves state unchanged.
-- [ ] T-16 (AC-13): GET .../auction/audit: filters, time order, lifeline entries hold type, lot and time only, non-member 404, empty page; OpenAPI regenerated into web/src/api.
+- [x] T-16 (AC-13): GET .../auction/audit: filters, time order, lifeline entries hold type, lot and time only, non-member 404, empty page; OpenAPI regenerated into web/src/api.
 - [ ] T-17 (AC-11, AC-14, AC-15): BLOCKING, design source only, no code: edit 3w/3x (open-slots wording, pick counts shown to all, 3x buttons reconciled with the matrix's End round) and draw the main-done Commissioner choice; get the human's approval; T-27, T-28 and T-29 wait on it.
 - [ ] T-18 (AC-14): web/src/auction/view.ts reads the real phases and drops the fixture mapping; resume_lobby, main_done and nominating handled; unknown phases still lock; view tests.
 - [ ] T-19 (AC-4, AC-14): notices.tsx paused and adjourned notices from state (heldMs, resumeAt), resume lobby countdown. Design refs: AuctionNotices paused notice and replay toast; Auction A paused, adjourned.

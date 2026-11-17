@@ -71,6 +71,18 @@ public class AuctionEventRepository {
         .list();
   }
 
+  /**
+   * Events of the given kinds with a seq above {@code seq}, oldest first, at most {@code limit}.
+   */
+  public List<AuctionEvent> afterOfKinds(UUID roomId, List<String> kinds, long seq, int limit) {
+    return jdbc.sql(
+            "SELECT * FROM auction_events WHERE room_id = ? AND seq > ? AND kind = ANY(?)"
+                + " ORDER BY seq LIMIT ?")
+        .params(roomId, seq, kinds.toArray(String[]::new), limit)
+        .query(mapper)
+        .list();
+  }
+
   /** The whole log, oldest first, for replay on boot. */
   public List<AuctionEvent> all(UUID roomId) {
     return jdbc.sql("SELECT * FROM auction_events WHERE room_id = ? ORDER BY seq")

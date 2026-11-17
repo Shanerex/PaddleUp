@@ -4,6 +4,8 @@ import com.paddleup.accounts.dto.UserId;
 import com.paddleup.auction.config.AuctionProperties;
 import com.paddleup.auction.dto.AuctionEventDto;
 import com.paddleup.auction.dto.AuctionStateDto;
+import com.paddleup.auction.dto.AuditDto;
+import com.paddleup.auction.dto.AuditEntryDto;
 import com.paddleup.auction.dto.BidLockDto;
 import com.paddleup.auction.dto.BidRequest;
 import com.paddleup.auction.dto.ControlRequest;
@@ -149,6 +151,29 @@ public class AuctionService {
         found.stream().limit(page).map(e -> AuctionViews.event(e, state, null)).toList();
     long last = dtos.isEmpty() ? Math.max(after, 0) : dtos.get(dtos.size() - 1).seq();
     return new EventsDto(dtos, last, more, now);
+  }
+
+  /**
+   * The audit log for any room member (a non-member gets 404): bids, passes, lifelines, RTM and
+   * admin actions in time order, filtered by {@code kind}. Empty before there is anything to show.
+   */
+  public AuditDto audit(UserId caller, UUID roomId, String kind, long after, Integer limit) {
+    port.access(roomId, caller);
+    AuditViews.Filter filter =
+        AuditViews.Filter.fromValue(kind == null ? "all" : kind)
+            .orElseThrow(() -> new AuctionRequestException("kind", "Unknown filter"));
+    if (after < 0) {
+      throw new AuctionRequestException("after", "Must be 0 or more");
+    }
+    int max = props.eventsPageMax();
+    int page = limit == null ? max : Math.max(1, Math.min(limit, max));
+    List<String> kinds = AuditViews.kinds(filter);
+    List<AuctionEvent> found =
+        kinds.isEmpty() ? List.of() : events.afterOfKinds(roomId, kinds, after, page + 1);
+    boolean more = found.size() > page;
+    List<AuditEntryDto> entries = found.stream().limit(page).map(AuditViews::entry).toList();
+    long last = entries.isEmpty() ? after : entries.get(entries.size() - 1).seq();
+    return new AuditDto(entries, last, more, clock.instant());
   }
 
   public IntentResultDto bid(UserId caller, UUID roomId, BidRequest request) {
