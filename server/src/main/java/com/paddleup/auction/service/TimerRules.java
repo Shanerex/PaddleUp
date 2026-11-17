@@ -43,7 +43,7 @@ public final class TimerRules {
         && s.hasMoreLots()) {
       return List.of(
           Events.lotOpened(
-              seq, now, s.currentLot() + 1, now.plus(Duration.ofSeconds(s.openSeconds()))));
+              seq, now, s.queue().get(0), now.plus(Duration.ofSeconds(s.openSeconds()))));
     }
     return List.of();
   }

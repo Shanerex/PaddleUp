@@ -20,6 +20,14 @@ import java.util.UUID;
  * gap, when {@code nextOpenAt} says when the next lot opens, and {@code lastResult} says how the
  * last one closed. {@code lotsByPrice} holds the same lots by base price, then lot number, sorted
  * once at go-live so the squad reserve never sorts on the bid path.
+ *
+ * <p>{@code queue} holds the lot numbers still to be played, in play order; the lot after the
+ * current one is its head. A re-opened or accelerated lot is a new lot number (the next one, built
+ * from the original card) put in the queue, so a lot number in the log never changes meaning.
+ * {@code heldMs} is the time frozen by pause or adjourn (the open lot's remaining time, or the rest
+ * of the gap), {@code resumeAt} the adjourn time, {@code liveAt} the end of the resume lobby.
+ * {@code round} is {@code main} or {@code accelerated}; {@code picks} are the accelerated-round
+ * nominations by franchise, in lot numbers.
  */
 public record AuctionState(
     UUID roomId,
@@ -45,7 +53,16 @@ public record AuctionState(
     List<Integer> unsold,
     Instant nextOpenAt,
     LastResult lastResult,
-    long lastSeq) {
+    long lastSeq,
+    List<Integer> queue,
+    long heldMs,
+    Instant resumeAt,
+    Instant liveAt,
+    String round,
+    Map<UUID, List<Integer>> picks) {
+
+  public static final String MAIN = "main";
+  public static final String ACCELERATED = "accelerated";
 
   public AuctionState {
     ladder = List.copyOf(ladder);
@@ -58,6 +75,10 @@ public record AuctionState(
     squads.forEach((id, entries) -> copy.put(id, List.copyOf(entries)));
     squads = Collections.unmodifiableMap(copy);
     unsold = List.copyOf(unsold);
+    queue = List.copyOf(queue);
+    var pickCopy = new LinkedHashMap<UUID, List<Integer>>();
+    picks.forEach((id, nos) -> pickCopy.put(id, List.copyOf(nos)));
+    picks = Collections.unmodifiableMap(pickCopy);
   }
 
   /** A room with no auction yet. {@code catalog} may be empty until the lots are frozen. */
@@ -86,7 +107,13 @@ public record AuctionState(
         List.of(),
         null,
         null,
-        0);
+        0,
+        List.of(),
+        0,
+        null,
+        null,
+        MAIN,
+        Map.of());
   }
 
   /** The lot being auctioned now, or the one that just closed; null before lot 1 opens. */
@@ -94,14 +121,18 @@ public record AuctionState(
     return currentLot >= 1 && currentLot <= lots.size() ? lots.get(currentLot - 1) : null;
   }
 
-  /** The lot that opens after the gap; null unless the auction is in a gap with a lot to come. */
+  /**
+   * The lot that opens after the gap; null unless the auction is in a gap (held or not) with a lot
+   * to come.
+   */
   public Lot nextLot() {
-    boolean inGap = phase == Phase.LIVE && !lotOpen && nextOpenAt != null;
-    return inGap && currentLot < lots.size() ? lots.get(currentLot) : null;
+    boolean held = phase == Phase.PAUSED || phase == Phase.ADJOURNED || phase == Phase.RESUME_LOBBY;
+    boolean inGap = (phase == Phase.LIVE || held) && !lotOpen && currentLot >= 1;
+    return inGap && !queue.isEmpty() ? lots.get(queue.get(0) - 1) : null;
   }
 
   public boolean hasMoreLots() {
-    return currentLot < lots.size();
+    return !queue.isEmpty();
   }
 
   public Builder edit() {
@@ -134,6 +165,12 @@ public record AuctionState(
     public Instant nextOpenAt;
     public LastResult lastResult;
     public long lastSeq;
+    public List<Integer> queue;
+    public long heldMs;
+    public Instant resumeAt;
+    public Instant liveAt;
+    public String round;
+    public Map<UUID, List<Integer>> picks;
 
     private Builder(AuctionState s) {
       roomId = s.roomId;
@@ -160,6 +197,12 @@ public record AuctionState(
       nextOpenAt = s.nextOpenAt;
       lastResult = s.lastResult;
       lastSeq = s.lastSeq;
+      queue = new ArrayList<>(s.queue);
+      heldMs = s.heldMs;
+      resumeAt = s.resumeAt;
+      liveAt = s.liveAt;
+      round = s.round;
+      picks = new LinkedHashMap<>(s.picks);
     }
 
     public AuctionState build() {
@@ -187,7 +230,13 @@ public record AuctionState(
           unsold,
           nextOpenAt,
           lastResult,
-          lastSeq);
+          lastSeq,
+          queue,
+          heldMs,
+          resumeAt,
+          liveAt,
+          round,
+          picks);
     }
   }
 }

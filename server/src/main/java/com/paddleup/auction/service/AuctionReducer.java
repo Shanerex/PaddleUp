@@ -59,6 +59,7 @@ public final class AuctionReducer {
       case LOT_OPENED -> {
         clearLot(b);
         b.currentLot = e.lot();
+        b.queue.remove(Integer.valueOf(e.lot()));
         b.lotOpen = true;
         b.deadline = e.instant("deadline");
         b.nextOpenAt = null;
@@ -134,6 +135,7 @@ public final class AuctionReducer {
             .toList();
     b.currentLot = 0;
     b.lotOpen = false;
+    b.queue = new ArrayList<>(lots.stream().map(Lot::no).toList());
     b.unsold = new ArrayList<>();
     b.nextOpenAt = null;
     b.lastResult = null;

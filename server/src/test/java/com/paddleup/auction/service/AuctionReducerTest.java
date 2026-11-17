@@ -143,6 +143,31 @@ class AuctionReducerTest {
   }
 
   @Test
+  void thePlayQueueHoldsTheLotsStillToComeAndOpeningALotTakesItOut() {
+    var live = AuctionReducer.replay(AuctionState.initial(ROOM, catalog()), List.of(started(1)));
+    assertThat(live.queue()).containsExactly(1, 2, 3);
+    assertThat(live.hasMoreLots()).isTrue();
+
+    var open = AuctionReducer.apply(live, Events.lotOpened(2, T0, 1, T0.plusSeconds(20)));
+    assertThat(open.queue()).containsExactly(2, 3);
+    assertThat(open.lot().no()).isEqualTo(1);
+    assertThat(open.nextLot()).isNull();
+
+    var gap = AuctionReducer.apply(open, Events.lotUnsold(3, T0.plusSeconds(20), 1));
+    assertThat(gap.nextLot().no()).isEqualTo(2);
+
+    var last = gap;
+    long seq = 4;
+    for (int lot = 2; lot <= 3; lot++) {
+      last = AuctionReducer.apply(last, Events.lotOpened(seq++, T0, lot, T0.plusSeconds(20)));
+      last = AuctionReducer.apply(last, Events.lotUnsold(seq++, T0.plusSeconds(20), lot));
+    }
+    assertThat(last.queue()).isEmpty();
+    assertThat(last.hasMoreLots()).isFalse();
+    assertThat(last.nextLot()).isNull();
+  }
+
+  @Test
   void aStartRefusalIsKeptUntilARescheduleClearsIt() {
     var empty = AuctionState.initial(ROOM, Map.of());
     AuctionState refused =

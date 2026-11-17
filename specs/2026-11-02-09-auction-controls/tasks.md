@@ -6,7 +6,7 @@ status: final
 ## Tasks
 Design refs for every UI task: docs/design/README.md plus the screens named in the task; 3n-3y are Auction Explorations scenes drawn in Auction A Spotlight.dc.html.
 - [x] T-1 (AC-1): V11__auction_controls.sql widens auctions_phase_valid; Phase gains PAUSED, ADJOURNED, RESUME_LOBBY, MAIN_DONE, NOMINATING; IntentRules rejects bids and passes in every non-live phase; migration and rules tests.
-- [ ] T-2 (AC-8, AC-11): AuctionState play queue of lot nos (lot, nextLot, hasMoreLots read it); SquadReserve takes the upcoming lot set; existing engine and guard suites stay green; add out-of-order reserve cases.
+- [x] T-2 (AC-8, AC-11): AuctionState play queue of lot nos (lot, nextLot, hasMoreLots read it); SquadReserve takes the upcoming lot set; existing engine and guard suites stay green; add out-of-order reserve cases.
 - [ ] T-3 (AC-8, AC-15): after the last main lot the gapSeconds gap runs, then main_done if unsold lots exist, else auction_ended; existing end-of-auction tests updated.
 - [ ] T-4 (AC-2, AC-3): ControlRequest, ControlRules skeleton, POST .../auction/controls; non-Commissioner gets 403, no event, no broadcast; one intent id replayed adds one event; refusals stored in auction_rejections.
 - [ ] T-5 (AC-4): pause and resume: heldMs from the deadline or gap; no expiry while paused; bids and passes rejected; resumed restores the exact remaining time.

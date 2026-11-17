@@ -7,6 +7,7 @@ import com.paddleup.auction.model.Reason;
 import com.paddleup.auction.model.SquadEntry;
 import com.paddleup.auction.model.SquadRules;
 import com.paddleup.auction.util.SquadReserve;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -40,7 +41,8 @@ public class SquadGuard implements BidGuard {
         return Optional.of(BidLock.any(Reason.QUOTA, null, quota.category(), quota.max()));
       }
     }
-    SquadReserve.Result reserve = SquadReserve.of(rules, held, lot, state.lotsByPrice());
+    SquadReserve.Result reserve =
+        SquadReserve.of(rules, held, lot, state.lotsByPrice(), new HashSet<>(state.queue()));
     if (reserve.blocked()) {
       return Optional.of(BidLock.any(Reason.NO_ROOM, reserve.role(), null, null));
     }
