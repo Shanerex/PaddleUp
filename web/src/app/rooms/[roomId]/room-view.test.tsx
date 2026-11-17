@@ -462,6 +462,8 @@ describe("RoomView auction controls card and audit link (Room commish, commishLi
     const card = await screen.findByTestId("commish-controls");
     expect(await within(card).findByText("Lot 42 · Jaden Okoro")).toBeTruthy();
     expect(within(card).getByRole("link", { name: /Go to auction/ }).getAttribute("href")).toBe("/rooms/room-1/auction");
+    // A price that changes live is set in DM Mono tabular (the global .num class).
+    expect(card.querySelector(".num")?.textContent).toMatch(/\d/);
     expect(card.querySelector('[data-on="true"]')).toBeTruthy();
     expect(within(card).getByText("Accelerated round").closest("span")?.getAttribute("data-on")).toBe("false");
     expect(screen.getByTestId("audit-link").getAttribute("href")).toBe("/rooms/room-1/audit");

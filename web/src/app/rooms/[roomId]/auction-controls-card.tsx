@@ -60,7 +60,7 @@ export function AuctionControlsCard({ room, members }: { room: Room; members: Me
               Lot {lot.no} · {lot.name}
             </span>
             <span className={s.note}>
-              {formatMoney(state!.currentBid > 0 ? state!.currentBid : lot.basePrice, room.config)}
+              <span className="num">{formatMoney(state!.currentBid > 0 ? state!.currentBid : lot.basePrice, room.config)}</span>
               {leader ? ` · ${leader.name} lead` : " · no bids yet"}
             </span>
           </div>

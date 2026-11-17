@@ -119,6 +119,8 @@
 }
 
 .badge {
+  font-family: var(--font-num);
+  font-variant-numeric: tabular-nums;
   padding: 3px 7px;
   border-radius: 6px;
   background: var(--warn-tint);
@@ -298,6 +300,8 @@
 }
 
 .count {
+  font-family: var(--font-num);
+  font-variant-numeric: tabular-nums;
   font-size: 12px;
   font-weight: 700;
   color: var(--ink-3);
