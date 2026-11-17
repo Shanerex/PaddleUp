@@ -18,3 +18,4 @@ next: when deps are merged: git switch -c feature/2026-11-02-19-auction-summary 
 - 2026-11-02 intake: why: auction close needs a validation report, and the Report Card hangs off it.
 - 2026-11-02 intake: who: Commissioner (resolves flags); all Managers.
 - 2026-11-02 intake: done-when: at close a summary shows every squad, spend and purse left, and flags any franchise below the squad or a role minimum for Commissioner resolution.
+- 2026-11-17 intake: design refs drawn (P-1, approved 2026-11-17 by Shanerex): App Screens 9k-9n (Room `summary`, `summaryResolve`, `summaryManager`, `summaryClear`). Open: 19 ships before 25-report-card, so the Report Card link on the summary needs hiding until 25.
