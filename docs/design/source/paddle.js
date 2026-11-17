@@ -109,9 +109,10 @@
     { name: 'Owen Parry', role: 'WK', tags: 'Overseas', base: 100, picks: 1 }, { name: 'Ishan Bhatt', role: 'WK', tags: 'Uncapped', base: 30, picks: 1 },
     { name: 'Hugo Wells', role: 'AR', tags: 'Overseas', base: 75, picks: 0 }, { name: 'Nikhil Sharma', role: 'BOWL', tags: 'Uncapped', base: 30, picks: 0 }
   ];
-  const PICK_MAX = 3;
+  // A manager's open slots: squad maximum minus players held. Picks are capped by it, not by a fixed number.
+  const OPEN_SLOTS = 3;
   // Scenes where the viewer is the Commissioner (with a franchise): the Controls chip shows and pause/adjourn notices get actions.
-  const COMMISH = ['controls', 'pausedCommish', 'skip', 'reopen', 'adjourn', 'adjournedCommish', 'controlRefused', 'accelCommish'];
+  const COMMISH = ['controls', 'pausedCommish', 'skip', 'reopen', 'adjourn', 'adjournedCommish', 'controlRefused', 'accelCommish', 'mainDoneCommish'];
   const VERDICT_BG = { ok: 'var(--ok)', warn: 'var(--warn)', bad: 'var(--bad)' };
   const VERDICT_INK = { ok: '#fff', warn: 'oklch(0.25 0.05 70)', bad: '#fff' };
 
@@ -195,6 +196,8 @@
     if (scene === 'skipped') { s.lotIdx = 2; s.lotN = 43; s.frozenLeft = 27000; toast('admin', 'Lot 42 skipped', 'The Commissioner skipped Jaden Okoro. He heads to the unsold pool.', true); }
     if (scene === 'adjournedCommish') { s.phase = 'adjourned'; s.lotN = 87; s.frozenLeft = 30000; }
     if (scene === 'accelNominate' || scene === 'accelCommish') { s.phase = 'nominate'; s.lotN = 120; s.frozenLeft = 102000; s.picks = [0, 2]; }
+    // Main pool done (R-14, R-15): the Commissioner chooses; managers wait.
+    if (scene === 'mainDoneCommish' || scene === 'mainDone') { s.phase = 'mainDone'; s.lotN = 119; }
     if (scene === 'accelLive') { s.lotIdx = 2; s.lotN = 123; s.accel = { n: 3, of: 11, picks: 3 }; placeBid('KK', 210); s.frozenLeft = 8000; }
 
     function step() {
@@ -224,12 +227,12 @@
       const total = s.bid == null ? T_OPEN : T_BID;
       const secs = Math.ceil(left / 1000);
       const nxt = nextAmt(); const g = guard(nxt); const leaderT = s.leader ? team(s.leader) : null;
-      const blocked = !s.connected || s.phase === 'paused' || s.phase === 'adjourned' || s.phase === 'rtm' || s.phase === 'closed' || s.phase === 'nominate';
+      const blocked = !s.connected || s.phase === 'paused' || s.phase === 'adjourned' || s.phase === 'rtm' || s.phase === 'closed' || s.phase === 'nominate' || s.phase === 'mainDone';
       const resolved = s.phase === 'sold' || s.phase === 'unsold';
       let bidState = 'ready';
       if (resolved) bidState = 'resolved'; else if (s.observer) bidState = 'observer'; else if (blocked) bidState = 'blocked'; else if (s.pending) bidState = 'sending';
       else if (s.leader === 'MR') bidState = 'top'; else if (!g.ok) bidState = 'locked';
-      const blockLabel = !s.connected ? 'Reconnecting…' : s.phase === 'paused' ? 'Auction paused' : s.phase === 'adjourned' ? 'Adjourned' : s.phase === 'closed' ? 'Auction ended' : s.phase === 'rtm' ? 'RTM decision in progress' : s.phase === 'nominate' ? 'Nominations open' : '';
+      const blockLabel = !s.connected ? 'Reconnecting…' : s.phase === 'paused' ? 'Auction paused' : s.phase === 'adjourned' ? 'Adjourned' : s.phase === 'closed' ? 'Auction ended' : s.phase === 'rtm' ? 'RTM decision in progress' : s.phase === 'nominate' ? 'Nominations open' : s.phase === 'mainDone' ? 'Waiting for the Commissioner' : '';
       const spent = PURSE - me.purse; const reserve = Math.max(0, me.purse - Math.max(0, g.max));
       const roles = ROLES.map((r) => { const have = me.squad.filter((p) => p.role === r).length; const met = have >= MINS[r];
         return { label: r, have, min: MINS[r], met, text: have + '/' + MINS[r], short: !met, bg: met ? 'var(--ok-tint)' : have === 0 ? 'var(--bad-tint)' : 'var(--surface-2)', ink: met ? 'var(--ok)' : have === 0 ? 'var(--bad)' : 'var(--ink)' }; });
@@ -283,14 +286,13 @@
       ];
       const controls = ctlRaw.map((c, i) => Object.assign({}, c, { ink: c.on ? 'var(--ink)' : 'var(--ink-3)', tile: c.on ? 'var(--warn-tint)' : 'var(--surface-2)', tileInk: c.on ? 'var(--warn-ink)' : 'var(--ink-3)', cur: c.on ? 'pointer' : 'not-allowed', end: c.on ? 'chevron_right' : 'lock', sep: i ? '1px solid var(--line)' : '0' }));
       const lastLot = { n: lastN, name: LOTS[1].name, role: LOTS[1].role, roleBg: `var(--role${ROLE_SLOT[LOTS[1].role]}-bg)`, roleInk: `var(--role${ROLE_SLOT[LOTS[1].role]}-ink)`, to: lastTo.name, toId: lastTo.id, toBg: `oklch(0.56 0.15 ${lastTo.hue})`, amt: fmt(875), base: fmt(LOTS[1].base), at: '21:14' };
-      // Accelerated round nominations: a manager picks up to PICK_MAX; pick counts show to the Commissioner only.
-      const nomLeft = Math.ceil(left / 1000);
+      // Accelerated round nominations: a manager picks up to their open squad slots; pick counts show to every manager.
       const nomList = UNSOLD.map((p, i) => { const on = s.picks.includes(i);
         return { i, name: p.name, role: p.role, roleBg: `var(--role${ROLE_SLOT[p.role]}-bg)`, roleInk: `var(--role${ROLE_SLOT[p.role]}-ink)`, tags: p.tags, base: fmt(p.base), on,
           check: on ? 'check' : '', boxBg: on ? 'var(--team)' : 'transparent', boxBorder: on ? 'var(--team)' : 'var(--line)', rowBg: on ? 'var(--team-tint)' : 'transparent',
           picks: p.picks === 1 ? '1 pick' : p.picks + ' picks', picksInk: p.picks ? 'var(--ink)' : 'var(--ink-3)', cur: s.picksSent ? 'default' : 'pointer' }; });
       const doneIds = ['CC', 'BB', 'SS', 'KK', 'GG'];
-      const nom = { left: Math.floor(nomLeft / 60) + ':' + String(nomLeft % 60).padStart(2, '0'), picked: s.picks.length, max: PICK_MAX, list: nomList, pool: UNSOLD.length + 15,
+      const nom = { picked: s.picks.length, max: OPEN_SLOTS, list: nomList, pool: UNSOLD.length + 15,
         done: (doneIds.length + (s.picksSent ? 1 : 0)) + '/' + teams.length, waiting: teams.length - doneIds.length - (s.picksSent ? 1 : 0), sent: s.picksSent, canSend: !s.picksSent && s.picks.length > 0,
         sendLabel: s.picks.length ? `Send my ${s.picks.length} pick${s.picks.length > 1 ? 's' : ''}` : 'Pick at least one', queued: UNSOLD.filter((p) => p.picks > 0).length + 5,
         franchises: teams.map((x) => { const d = doneIds.includes(x.id) || (x.me && s.picksSent); return { id: x.id, bg: `oklch(0.56 0.15 ${x.hue})`, icon: d ? 'check_circle' : 'hourglass_top', ink: d ? 'var(--ok)' : 'var(--ink-3)', label: d ? 'Picked' : 'Picking' }; }) };
@@ -298,7 +300,7 @@
         lot: { n: s.lotN, name: l.name, country: l.country, style: l.style, role: l.role, roleBg: `var(--role${ROLE_SLOT[l.role]}-bg)`, roleInk: `var(--role${ROLE_SLOT[l.role]}-ink)`, tags: l.tags.map((x) => ({ t: x })).concat(s.accel ? [{ t: 'Picked by ' + s.accel.picks }] : []), base: fmt(l.base), last: l.last ? l.last + ' pts' : 'New', matches: l.m || '–', set: s.accel ? 'ACCELERATED ROUND' : l.set.toUpperCase(), setRaw: s.accel ? 'Accelerated round' : l.set },
         accelSub: s.accel ? `Accelerated round · ${s.accel.n} of ${s.accel.of}` : '', isAccel: !!s.accel,
         isCommish: s.commish, isPausedCommish: paused && s.commish, isPausedMgr: paused && !s.commish, isAdjournedCommish: s.phase === 'adjourned' && s.commish,
-        isNominate: s.phase === 'nominate', isNominateCommish: s.phase === 'nominate' && s.commish, controls, lastLot, nom,
+        isNominate: s.phase === 'nominate', isNominateCommish: s.phase === 'nominate' && s.commish, isMainDone: s.phase === 'mainDone', isMainDoneCommish: s.phase === 'mainDone' && s.commish, isMainDoneMgr: s.phase === 'mainDone' && !s.commish, main: { sold: 11, unsold: UNSOLD.length + 15, franchises: teams.length }, controls, lastLot, nom,
         hasBid: s.bid != null, bid: s.bid != null ? fmt(s.bid) : fmt(l.base), bidLabel: s.bid != null ? 'CURRENT BID' : 'OPENS AT',
         leaderName: leaderT ? (leaderT.me ? 'You' : leaderT.name) : 'No bids yet', leaderId: leaderT ? leaderT.id : '', leaderBg: leaderT ? `oklch(0.56 0.15 ${leaderT.hue})` : 'var(--surface-2)', leaderIsMe: s.leader === 'MR',
         next: fmt(nxt), incr: '+' + (s.bid == null ? 'base' : fmt(inc(s.bid))),
@@ -306,8 +308,8 @@
         timerColor: urgent ? 'var(--bad)' : blocked ? 'var(--ink-3)' : 'var(--ink)', barColor: urgent ? 'var(--bad)' : 'var(--team)', barTrack: urgent ? 'var(--bad-tint)' : 'var(--team-tint-2)',
         ring: `conic-gradient(${urgent ? 'var(--bad)' : blocked ? 'var(--ink-3)' : 'var(--team)'} ${Math.max(0, Math.min(100, (left / total) * 100)).toFixed(1)}%, ${urgent ? 'var(--bad-tint)' : 'var(--team-tint-2)'} 0)`,
         timerNote: blocked ? (s.phase === 'closed' ? 'ENDED' : s.phase === 'paused' ? 'PAUSED' : s.phase === 'rtm' ? 'RTM HOLD' : 'WAITING') : urgent ? 'GOING…' : s.bid == null ? 'opening clock' : 'resets to 15s',
-        isOpen: s.phase === 'open', isSold: s.phase === 'sold', isUnsold: s.phase === 'unsold', isResolved: resolved, isPaused: s.phase === 'paused', isRtm: s.phase === 'rtm', isAdjourned: s.phase === 'adjourned', isClosed: s.phase === 'closed' && !s.noAuction, isNoAuction: !!s.noAuction, isOffline: !s.connected, showLot: s.phase !== 'adjourned' && s.phase !== 'closed' && s.phase !== 'nominate',
-        isObserver: s.observer, hasFranchise: !s.observer, showPurse: !s.observer && s.phase !== 'closed', showDock: s.phase !== 'closed' && s.phase !== 'nominate', showChips: s.phase !== 'closed', pillLabel: s.phase === 'closed' ? (s.noAuction ? 'AUCTION NEXT' : 'ENDED') : 'LIVE', pillDot: s.phase === 'closed' ? 'none' : 'block',
+        isOpen: s.phase === 'open', isSold: s.phase === 'sold', isUnsold: s.phase === 'unsold', isResolved: resolved, isPaused: s.phase === 'paused', isRtm: s.phase === 'rtm', isAdjourned: s.phase === 'adjourned', isClosed: s.phase === 'closed' && !s.noAuction, isNoAuction: !!s.noAuction, isOffline: !s.connected, showLot: s.phase !== 'adjourned' && s.phase !== 'closed' && s.phase !== 'nominate' && s.phase !== 'mainDone',
+        isObserver: s.observer, hasFranchise: !s.observer, showPurse: !s.observer && s.phase !== 'closed', showDock: s.phase !== 'closed' && s.phase !== 'nominate' && s.phase !== 'mainDone', showChips: s.phase !== 'closed', pillLabel: s.phase === 'closed' ? (s.noAuction ? 'AUCTION NEXT' : 'ENDED') : 'LIVE', pillDot: s.phase === 'closed' ? 'none' : 'block',
         soldTo: leaderT ? (leaderT.me ? 'You' : leaderT.name) : '', soldBg: leaderT ? `oklch(0.56 0.15 ${leaderT.hue})` : '', soldId: leaderT ? leaderT.id : '',
         bidReady: bidState === 'ready', bidTop: bidState === 'top', bidSending: bidState === 'sending', bidLocked: bidState === 'locked', bidBlocked: bidState === 'blocked', bidResolved: bidState === 'resolved', bidObserver: bidState === 'observer',
         lockReason: g.reason || '', blockLabel,
@@ -351,7 +353,7 @@
       // auction-controls P-1: Commissioner pause/resume and accelerated-round picks (prototype only).
       pause() { if (!s.commish || s.phase !== 'open') return; s.frozenLeft = Math.max(0, s.frozenLeft != null ? s.frozenLeft : s.endsAt - now()); s.phase = 'paused'; onChange(view()); },
       resume() { if (!s.commish || s.phase !== 'paused') return; s.phase = 'open'; if (!frozen) { s.endsAt = now() + s.frozenLeft; s.frozenLeft = null; } onChange(view()); },
-      togglePick(i) { if (s.picksSent || s.phase !== 'nominate') return; const on = s.picks.includes(i); if (!on && s.picks.length >= PICK_MAX) return; s.picks = on ? s.picks.filter((x) => x !== i) : s.picks.concat([i]); onChange(view()); },
+      togglePick(i) { if (s.picksSent || s.phase !== 'nominate') return; const on = s.picks.includes(i); if (!on && s.picks.length >= OPEN_SLOTS) return; s.picks = on ? s.picks.filter((x) => x !== i) : s.picks.concat([i]); onChange(view()); },
       sendPicks() { if (s.picksSent || !s.picks.length) return; s.picksSent = true; onChange(view()); },
       destroy() { clearInterval(iv); }
     };
