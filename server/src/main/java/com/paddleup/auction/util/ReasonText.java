@@ -13,16 +13,32 @@ import org.jsoup.safety.Safelist;
  */
 public final class ReasonText {
 
-  public static final int MAX_LENGTH = 500;
+  public static final int MAX_LENGTH = 140;
 
   /** Input larger than this is refused before parsing. */
-  private static final int MAX_INPUT = 4000;
+  public static final int MAX_INPUT = 4000;
 
   private ReasonText() {}
 
   /**
+   * True when the reason is longer than the cap once cleaned, counted in code points as the form
+   * counts characters, or too long to be parsed at all. Missing or blank is not too long.
+   */
+  public static boolean tooLong(String raw) {
+    if (raw == null) {
+      return false;
+    }
+    if (raw.length() > MAX_INPUT) {
+      return true;
+    }
+    String text = sanitise(raw);
+    return text.codePointCount(0, text.length()) > MAX_LENGTH;
+  }
+
+  /**
    * The reason without markup, control characters or repeated spaces; empty when it is missing or
-   * far too long to be a reason. The caller checks the length of the result.
+   * far too long to be a reason. The caller asks {@link #tooLong} first, so over-long input is
+   * never taken for a missing reason.
    */
   public static String sanitise(String raw) {
     if (raw == null || raw.length() > MAX_INPUT) {

@@ -99,12 +99,12 @@ public final class ControlRules {
     if (s.phase() != Phase.LIVE) {
       return reject(Reason.WRONG_PHASE);
     }
+    if (ReasonText.tooLong(c.reason())) {
+      return reject(Reason.REASON_TOO_LONG);
+    }
     String reason = ReasonText.sanitise(c.reason());
     if (reason.isEmpty()) {
       return reject(Reason.REASON_REQUIRED);
-    }
-    if (reason.length() > ReasonText.MAX_LENGTH) {
-      return reject(Reason.REASON_TOO_LONG);
     }
     int of = c.lot();
     boolean played = of >= 1 && of <= s.lots().size() && !s.queue().contains(of);

@@ -250,7 +250,16 @@ class AuctionControlsIT extends AbstractAuctionIT {
     assertThat(outcome(control(room, "reopen", "lot", 1))).isEqualTo("rejected:reason_required");
     assertThat(outcome(control(room, "reopen", "lot", 1, "reason", "   <i></i> ")))
         .isEqualTo("rejected:reason_required");
+    // The cap is 140 code points, as the form's; over-long input is too long, never missing.
+    assertThat(outcome(control(room, "reopen", "lot", 1, "reason", "x".repeat(141))))
+        .isEqualTo("rejected:reason_too_long");
     assertThat(outcome(control(room, "reopen", "lot", 1, "reason", "x".repeat(501))))
+        .isEqualTo("rejected:reason_too_long");
+    assertThat(outcome(control(room, "reopen", "lot", 1, "reason", "x".repeat(4001))))
+        .isEqualTo("rejected:reason_too_long");
+    assertThat(outcome(control(room, "reopen", "lot", 1, "reason", "x".repeat(9000))))
+        .isEqualTo("rejected:reason_too_long");
+    assertThat(outcome(control(room, "reopen", "lot", 1, "reason", "\uD83C\uDFD3".repeat(141))))
         .isEqualTo("rejected:reason_too_long");
     assertThat(eventCount(room, "lot_reopened")).isZero();
 
