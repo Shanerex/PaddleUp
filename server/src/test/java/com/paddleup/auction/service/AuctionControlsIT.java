@@ -182,4 +182,223 @@ class AuctionControlsIT extends AbstractAuctionIT {
         .isEqualTo("rejected:wrong_phase");
     assertThat(eventCount(room, "paused")).isEqualTo(1);
   }
+
+  // ---- T-6: skip ----
+
+  @Test
+  void skippingALotWithNoBidClosesItUnsoldAndLogsIt() {
+    Room room = room(2, 6);
+    goLive(room);
+    pass(room, room.manager(0), 1);
+
+    assertThat(outcome(control(room, "skip", "lot", 1))).isEqualTo("accepted");
+
+    JsonNode after = state(room, room.commissioner());
+    assertThat(after.get("lotOpen").asBoolean()).isFalse();
+    assertThat(after.get("unsold")).hasSize(1);
+    assertThat(after.get("lastResult").get("sold").asBoolean()).isFalse();
+    assertThat(eventCount(room, "lot_skipped")).isEqualTo(1);
+    assertThat(eventCount(room, "lot_unsold")).isZero();
+    advance(5);
+    tick();
+    assertThat(state(room, room.commissioner()).get("lot").get("no").asInt()).isEqualTo(2);
+  }
+
+  @Test
+  void skippingALotWithABidIsRefusedWithAReasonAndWritesNoEvent() {
+    Room room = room(2, 6);
+    goLive(room);
+    bid(room, room.manager(0), 1, 20);
+    long seq = lastSeq(room);
+
+    assertThat(outcome(control(room, "skip"))).isEqualTo("rejected:has_bid");
+
+    assertThat(lastSeq(room)).isEqualTo(seq);
+    assertThat(eventCount(room, "lot_skipped")).isZero();
+    assertThat(state(room, room.commissioner()).get("lotOpen").asBoolean()).isTrue();
+  }
+
+  @Test
+  void skipNeedsAnOpenLotAndTheLotItNames() {
+    Room room = room(2, 6);
+    goLive(room);
+
+    assertThat(outcome(control(room, "skip", "lot", 3))).isEqualTo("rejected:lot_closed");
+    advance(20);
+    tick();
+    assertThat(outcome(control(room, "skip"))).isEqualTo("rejected:no_open_lot");
+    assertThat(eventCount(room, "lot_skipped")).isZero();
+  }
+
+  // ---- T-7: re-open ----
+
+  @Test
+  void reopenWithoutAReasonIsRejectedAndTheReasonIsCleanedAndCapped() {
+    Room room = room(2, 6);
+    goLive(room);
+    bid(room, room.manager(0), 1, 20);
+    advance(10);
+    tick();
+
+    assertThat(outcome(control(room, "reopen", "lot", 1))).isEqualTo("rejected:reason_required");
+    assertThat(outcome(control(room, "reopen", "lot", 1, "reason", "   <i></i> ")))
+        .isEqualTo("rejected:reason_required");
+    assertThat(outcome(control(room, "reopen", "lot", 1, "reason", "x".repeat(501))))
+        .isEqualTo("rejected:reason_too_long");
+    assertThat(eventCount(room, "lot_reopened")).isZero();
+
+    assertThat(
+            outcome(
+                control(
+                    room, "reopen", "lot", 1, "reason", "<b>Wrong</b>  paddle <script>x</script>")))
+        .isEqualTo("accepted");
+    String reason =
+        jdbc.queryForObject(
+            "SELECT payload->>'reason' FROM auction_events WHERE room_id = ?"
+                + " AND kind = 'lot_reopened'",
+            String.class,
+            UUID.fromString(room.id()));
+    assertThat(reason).isEqualTo("Wrong paddle");
+  }
+
+  @Test
+  void reopeningASoldLotReversesPurseAndSquadAndReplaysItNextFromBase() {
+    Room room = room(2, 6);
+    goLive(room);
+    bid(room, room.manager(0), 1, 20);
+    bid(room, room.manager(1), 1, 25);
+    advance(10);
+    tick();
+    advance(5);
+    tick();
+    // Lot 2 is open; lot 1 was sold to franchise 1 at 25.
+    assertThat(standing(room, 1).get("purse").asLong()).isEqualTo(975);
+
+    assertThat(outcome(control(room, "reopen", "lot", 1, "reason", "Bid on the wrong player")))
+        .isEqualTo("accepted");
+
+    assertThat(standing(room, 1).get("purse").asLong()).isEqualTo(1000);
+    assertThat(standing(room, 1).get("squad")).isEmpty();
+    JsonNode reopened = event(room, "lot_reopened");
+    assertThat(reopened.get("payload").get("reason").asText()).isEqualTo("Bid on the wrong player");
+    assertThat(reopened.get("lot").asInt()).isEqualTo(1);
+    assertThat(reopened.get("payload").get("newLot").asInt()).isEqualTo(7);
+    // The current lot carries on; the re-opened one is next, from base, with no earlier bids.
+    assertThat(state(room, room.commissioner()).get("lot").get("no").asInt()).isEqualTo(2);
+    advance(20);
+    tick();
+    JsonNode gap = state(room, room.commissioner());
+    assertThat(gap.get("nextLot").get("no").asInt()).isEqualTo(7);
+    assertThat(gap.get("nextLot").get("name").asText()).isEqualTo("Player 1");
+    advance(5);
+    tick();
+    JsonNode again = state(room, room.commissioner());
+    assertThat(again.get("lot").get("no").asInt()).isEqualTo(7);
+    assertThat(again.get("currentBid").asLong()).isZero();
+    assertThat(again.has("leaderFranchiseId")).isFalse();
+    assertThat(again.get("nextBid").asLong()).isEqualTo(20);
+    assertThat(outcome(bid(room, room.manager(0), 7, 20))).isEqualTo("accepted");
+  }
+
+  @Test
+  void reopeningAnUnsoldLotRemovesItFromTheUnsoldList() {
+    Room room = room(2, 6);
+    goLive(room);
+    advance(20);
+    tick();
+    assertThat(state(room, room.commissioner()).get("unsold")).hasSize(1);
+
+    assertThat(outcome(control(room, "reopen", "lot", 1, "reason", "Nobody was ready")))
+        .isEqualTo("accepted");
+
+    assertThat(state(room, room.commissioner()).get("unsold")).isEmpty();
+  }
+
+  @Test
+  void aLotThatIsOpenQueuedOrAlreadyReopenedCannotBeReopened() {
+    Room room = room(2, 6);
+    goLive(room);
+
+    assertThat(outcome(control(room, "reopen", "lot", 1, "reason", "r")))
+        .isEqualTo("rejected:not_closed");
+    assertThat(outcome(control(room, "reopen", "lot", 4, "reason", "r")))
+        .isEqualTo("rejected:not_closed");
+    assertThat(outcome(control(room, "reopen", "lot", 99, "reason", "r")))
+        .isEqualTo("rejected:not_closed");
+    advance(20);
+    tick();
+    assertThat(outcome(control(room, "reopen", "lot", 1, "reason", "first"))).isEqualTo("accepted");
+    assertThat(outcome(control(room, "reopen", "lot", 1, "reason", "again")))
+        .isEqualTo("rejected:superseded");
+    assertThat(eventCount(room, "lot_reopened")).isEqualTo(1);
+  }
+
+  @Test
+  void theLastLotCanBeReopenedDuringItsGapAndThePhaseChangesOnlyAfterTheGap() {
+    Room room = room(2, 2);
+    goLive(room);
+    for (int lot = 1; lot <= 2; lot++) {
+      bid(room, room.manager(0), lot, 20);
+      advance(10);
+      tick();
+      if (lot == 1) {
+        advance(5);
+        tick();
+      }
+    }
+    // Lot 2 sold, gap running: still live, and re-opening is allowed.
+    assertThat(phase(room)).isEqualTo("live");
+    advance(2);
+    tick();
+    assertThat(outcome(control(room, "reopen", "lot", 2, "reason", "Wrong last lot")))
+        .isEqualTo("accepted");
+    advance(3);
+    tick();
+    JsonNode open = state(room, room.commissioner());
+    assertThat(open.get("phase").asText()).isEqualTo("live");
+    assertThat(open.get("lot").get("no").asInt()).isEqualTo(3);
+    assertThat(open.get("lotOpen").asBoolean()).isTrue();
+    // Nobody bids: lot 3 closes unsold, its gap runs, then the pool is done with lot 3 in it.
+    advance(20);
+    tick();
+    assertThat(phase(room)).isEqualTo("live");
+    advance(5);
+    tick();
+    assertThat(phase(room)).isEqualTo("main_done");
+    assertThat(state(room, room.commissioner()).get("unsold").get(0).asInt()).isEqualTo(3);
+  }
+
+  @Test
+  void withAGapOfZeroThereIsNoWindowToReopenTheLastLot() {
+    Room room = room(2, 2, 20, 10, 0);
+    goLive(room);
+    bid(room, room.manager(0), 1, 20);
+    advance(10);
+    tick();
+    bid(room, room.manager(0), 2, 20);
+    advance(10);
+    tick();
+
+    assertThat(phase(room)).isEqualTo("ended");
+    assertThat(outcome(control(room, "reopen", "lot", 1, "reason", "Too late")))
+        .isEqualTo("rejected:wrong_phase");
+  }
+
+  private JsonNode event(Room room, String kind) {
+    for (JsonNode e : events(room, room.commissioner(), 0).get("events")) {
+      if (e.get("kind").asText().equals(kind)) {
+        return e;
+      }
+    }
+    throw new AssertionError("no " + kind + " event");
+  }
+
+  private JsonNode standing(Room room, int franchise) {
+    for (JsonNode standing : state(room, room.commissioner()).get("standings")) {
+      if (standing.get("franchiseId").asText().equals(room.franchise(franchise).toString())) {
+        return standing;
+      }
+    }
+    throw new AssertionError("no standing");
+  }
 }
