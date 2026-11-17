@@ -42,6 +42,8 @@ import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executor;
+import java.util.function.BiConsumer;
+import java.util.function.BiFunction;
 import java.util.function.Consumer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -194,24 +196,12 @@ final class AuctionRunner {
   // ---- everything below happens on the serial queue ----
 
   private Outcome handle(Intent intent) {
-    Instant now = now();
-    resumeIfPending(now);
-    Outcome prior = prior(intent.actor(), intent.intentId());
-    if (prior != null) {
-      return prior;
-    }
-    advanceTimers(now);
-    Decision decision = IntentRules.decide(state, intent, now, d.guards());
-    return switch (decision) {
-      case Decision.Accepted accepted -> {
-        commit(accepted.events(), scheduledBy, null);
-        yield outcome(accepted.events().get(0));
-      }
-      case Decision.Rejected rejected ->
-          reject(intent.actor(), intent.intentId(), intent.lot(), now, rejected.reason());
-      case Decision.PhaseError phase ->
-          throw new AuctionConflictException(phase.code(), phase.code());
-    };
+    return decideAndCommit(
+        intent.actor(),
+        intent.intentId(),
+        intent.lot(),
+        (state, now) -> IntentRules.decide(state, intent, now, d.guards()),
+        null);
   }
 
   /**
@@ -220,47 +210,56 @@ final class AuctionRunner {
    * go-live still logs {@code start_refused} after it.
    */
   private Outcome handleControl(Control control) {
-    Instant now = now();
-    resumeIfPending(now);
-    Outcome prior = prior(control.actor(), control.intentId());
-    if (prior != null) {
-      return prior;
-    }
-    advanceTimers(now);
-    Decision decision = ControlRules.decide(state, control, now, d.props().resumeLobby());
-    return switch (decision) {
-      case Decision.Accepted accepted -> {
-        boolean lobbyStart =
-            control.action() == Control.Action.START_NOW && state.phase() == Phase.SCHEDULED;
-        commit(accepted.events(), scheduledBy, null);
-        if (lobbyStart) {
-          goLive(now);
-        }
-        yield outcome(accepted.events().get(0));
-      }
-      case Decision.Rejected rejected ->
-          reject(control.actor(), control.intentId(), control.lot(), now, rejected.reason());
-      case Decision.PhaseError phase ->
-          throw new AuctionConflictException(phase.code(), phase.code());
-    };
+    return decideAndCommit(
+        control.actor(),
+        control.intentId(),
+        control.lot(),
+        (state, now) -> ControlRules.decide(state, control, now, d.props().resumeLobby()),
+        (before, now) -> {
+          if (control.action() == Control.Action.START_NOW && before.phase() == Phase.SCHEDULED) {
+            goLive(now);
+          }
+        });
   }
 
   private Outcome handlePicks(Picks picks) {
+    return decideAndCommit(
+        picks.actor(),
+        picks.intentId(),
+        0,
+        (state, now) -> ControlRules.decidePicks(state, picks, now),
+        null);
+  }
+
+  /**
+   * The one path every intent takes: answer a repeated intent id with its first answer, bring the
+   * timers up to date, decide with the pure {@code rule}, then store and apply the events (and only
+   * then {@code afterCommit}, given the state the rule saw) or store the refusal. A phase error is
+   * thrown and stores nothing.
+   */
+  private Outcome decideAndCommit(
+      UUID actor,
+      UUID intentId,
+      int lot,
+      BiFunction<AuctionState, Instant, Decision> rule,
+      BiConsumer<AuctionState, Instant> afterCommit) {
     Instant now = now();
     resumeIfPending(now);
-    Outcome prior = prior(picks.actor(), picks.intentId());
+    Outcome prior = prior(actor, intentId);
     if (prior != null) {
       return prior;
     }
     advanceTimers(now);
-    Decision decision = ControlRules.decidePicks(state, picks, now);
-    return switch (decision) {
+    AuctionState before = state;
+    return switch (rule.apply(before, now)) {
       case Decision.Accepted accepted -> {
         commit(accepted.events(), scheduledBy, null);
+        if (afterCommit != null) {
+          afterCommit.accept(before, now);
+        }
         yield outcome(accepted.events().get(0));
       }
-      case Decision.Rejected rejected ->
-          reject(picks.actor(), picks.intentId(), 0, now, rejected.reason());
+      case Decision.Rejected rejected -> reject(actor, intentId, lot, now, rejected.reason());
       case Decision.PhaseError phase ->
           throw new AuctionConflictException(phase.code(), phase.code());
     };
