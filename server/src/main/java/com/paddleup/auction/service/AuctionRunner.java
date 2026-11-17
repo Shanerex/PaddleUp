@@ -271,7 +271,7 @@ final class AuctionRunner {
           goLive(now);
         }
       }
-      case LIVE -> advanceTimers(now);
+      case LIVE, ADJOURNED, RESUME_LOBBY -> advanceTimers(now);
       default -> {}
     }
   }
@@ -290,7 +290,7 @@ final class AuctionRunner {
 
   private void advanceTimers(Instant now) {
     for (int i = 0; i < MAX_STEPS; i++) {
-      List<AuctionEvent> due = TimerRules.due(state, now);
+      List<AuctionEvent> due = TimerRules.due(state, now, d.props().resumeLobby());
       if (due.isEmpty()) {
         return;
       }

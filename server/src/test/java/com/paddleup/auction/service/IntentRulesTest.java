@@ -187,6 +187,13 @@ class IntentRulesTest {
         last = AuctionReducer.replay(last, TimerRules.due(last, last.nextOpenAt()));
       }
     }
+    // The last gap runs first, then the pool is done: bids wait for the Commissioner's choice.
+    var done = AuctionReducer.replay(last, TimerRules.due(last, last.nextOpenAt()));
+    assertThat(done.phase().value()).isEqualTo("main_done");
+    assertThat(bid(done, A, USER_A, 4, 20)).isEqualTo(new Decision.PhaseError(Reason.MAIN_DONE));
+    last =
+        AuctionReducer.apply(
+            done, com.paddleup.auction.model.Events.auctionEnded(done.lastSeq() + 1, T0));
     assertThat(last.phase().value()).isEqualTo("ended");
     assertThat(bid(last, A, USER_A, 4, 20)).isEqualTo(new Decision.PhaseError(Reason.ENDED));
   }

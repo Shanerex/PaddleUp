@@ -4,8 +4,8 @@ import java.util.Arrays;
 import java.util.Locale;
 
 /**
- * Every kind of change an auction can log. Lifeline kinds (FR-48) are reserved for a later spec and
- * will carry type, lot and time only.
+ * Every kind of change an auction can log. The lifeline kinds (FR-48) are reserved for the advisor
+ * spec: they carry type, lot and time only, and nothing here writes them yet.
  */
 public enum EventKind {
   SCHEDULED,
@@ -18,7 +18,21 @@ public enum EventKind {
   LOT_SOLD,
   LOT_UNSOLD,
   LOT_RESUMED,
-  AUCTION_ENDED;
+  AUCTION_ENDED,
+  START_NOW,
+  PAUSED,
+  RESUMED,
+  LOT_SKIPPED,
+  LOT_REOPENED,
+  ADJOURNED,
+  RESUME_TIME_CHANGED,
+  RESUME_LOBBY_OPENED,
+  MAIN_DONE,
+  NOMINATING_OPENED,
+  PICKS_SUBMITTED,
+  ROUND_STARTED,
+  LIFELINE_SPENT,
+  LIFELINE_REFUNDED;
 
   /** The wire and database form, such as {@code bid_accepted}. */
   public String value() {

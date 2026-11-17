@@ -13,6 +13,7 @@ import org.springframework.boot.context.properties.bind.DefaultValue;
  * @param recovery whether boot rebuilds every unended auction from its log
  * @param intentTimeout how long a request waits for the auction to answer
  * @param eventsPageMax most events one log read returns
+ * @param resumeLobby how long the resume lobby lasts after an adjourned auction resumes
  */
 @ConfigurationProperties("paddleup.auction")
 public record AuctionProperties(
@@ -20,11 +21,15 @@ public record AuctionProperties(
     @DefaultValue("30s") Duration ticketTtl,
     @DefaultValue("true") boolean recovery,
     @DefaultValue("10s") Duration intentTimeout,
-    @DefaultValue("500") int eventsPageMax) {
+    @DefaultValue("500") int eventsPageMax,
+    @DefaultValue("2m") Duration resumeLobby) {
 
   public AuctionProperties {
     if (eventsPageMax < 1) {
       throw new IllegalArgumentException("paddleup.auction eventsPageMax must be at least 1");
+    }
+    if (resumeLobby.isNegative() || resumeLobby.isZero()) {
+      throw new IllegalArgumentException("paddleup.auction resumeLobby must be positive");
     }
   }
 }

@@ -147,4 +147,134 @@ public final class Events {
   public static AuctionEvent auctionEnded(long seq, Instant at) {
     return new AuctionEvent(seq, at, EventKind.AUCTION_ENDED, null, null, null, null, Map.of());
   }
+
+  /** The Commissioner ended the auction from main-done or by closing an empty accelerated round. */
+  public static AuctionEvent auctionEnded(long seq, Instant at, UUID actor, UUID intentId) {
+    return new AuctionEvent(
+        seq, at, EventKind.AUCTION_ENDED, null, null, actor, intentId, Map.of());
+  }
+
+  public static AuctionEvent startNow(long seq, Instant at, UUID actor, UUID intentId) {
+    return new AuctionEvent(seq, at, EventKind.START_NOW, null, null, actor, intentId, Map.of());
+  }
+
+  /** {@code heldMs} is the time frozen by the pause: the open lot's remaining time or the gap. */
+  public static AuctionEvent paused(
+      long seq, Instant at, UUID actor, UUID intentId, int lot, long heldMs) {
+    return new AuctionEvent(
+        seq, at, EventKind.PAUSED, null, lot, actor, intentId, Map.of("heldMs", heldMs));
+  }
+
+  /** Resumes a pause (actor set) or ends the resume lobby on its own (actor null). */
+  public static AuctionEvent resumed(long seq, Instant at, UUID actor, UUID intentId) {
+    return new AuctionEvent(seq, at, EventKind.RESUMED, null, null, actor, intentId, Map.of());
+  }
+
+  public static AuctionEvent lotSkipped(long seq, Instant at, int lot, UUID actor, UUID intentId) {
+    return new AuctionEvent(seq, at, EventKind.LOT_SKIPPED, null, lot, actor, intentId, Map.of());
+  }
+
+  /**
+   * Closed lot {@code of} is played again as the new lot {@code newLot}. {@code franchise} and
+   * {@code amount} describe the sale being reversed (franchise null when it went unsold).
+   */
+  public static AuctionEvent lotReopened(
+      long seq,
+      Instant at,
+      int of,
+      int newLot,
+      String reason,
+      UUID franchise,
+      long amount,
+      UUID actor,
+      UUID intentId) {
+    return new AuctionEvent(
+        seq,
+        at,
+        EventKind.LOT_REOPENED,
+        franchise,
+        of,
+        actor,
+        intentId,
+        Map.of("newLot", newLot, "reason", reason, "amount", amount));
+  }
+
+  public static AuctionEvent adjourned(
+      long seq, Instant at, UUID actor, UUID intentId, Instant resumeAt, long heldMs) {
+    return new AuctionEvent(
+        seq,
+        at,
+        EventKind.ADJOURNED,
+        null,
+        null,
+        actor,
+        intentId,
+        Map.of("resumeAt", resumeAt.toString(), "heldMs", heldMs));
+  }
+
+  /** {@code from} is null when there was no stored time to change. */
+  public static AuctionEvent resumeTimeChanged(
+      long seq, Instant at, UUID actor, UUID intentId, Instant from, Instant to) {
+    var payload = new LinkedHashMap<String, Object>();
+    if (from != null) {
+      payload.put("from", from.toString());
+    }
+    payload.put("to", to.toString());
+    return new AuctionEvent(
+        seq, at, EventKind.RESUME_TIME_CHANGED, null, null, actor, intentId, payload);
+  }
+
+  /** Opens the resume lobby on Resume now (actor set) or at the stored time (actor null). */
+  public static AuctionEvent resumeLobbyOpened(
+      long seq, Instant at, UUID actor, UUID intentId, Instant liveAt) {
+    return new AuctionEvent(
+        seq,
+        at,
+        EventKind.RESUME_LOBBY_OPENED,
+        null,
+        null,
+        actor,
+        intentId,
+        Map.of("liveAt", liveAt.toString()));
+  }
+
+  /** The main pool is done; {@code pool} holds the unsold lot numbers. */
+  public static AuctionEvent mainDone(long seq, Instant at, List<Integer> pool) {
+    return new AuctionEvent(
+        seq, at, EventKind.MAIN_DONE, null, null, null, null, Map.of("pool", List.copyOf(pool)));
+  }
+
+  public static AuctionEvent nominatingOpened(long seq, Instant at, UUID actor, UUID intentId) {
+    return new AuctionEvent(
+        seq, at, EventKind.NOMINATING_OPENED, null, null, actor, intentId, Map.of());
+  }
+
+  public static AuctionEvent picksSubmitted(
+      long seq, Instant at, UUID franchise, UUID actor, UUID intentId, List<Integer> lots) {
+    return new AuctionEvent(
+        seq,
+        at,
+        EventKind.PICKS_SUBMITTED,
+        franchise,
+        null,
+        actor,
+        intentId,
+        Map.of("lots", List.copyOf(lots)));
+  }
+
+  /**
+   * The accelerated round plays {@code order}: original unsold lot numbers, first to play first.
+   */
+  public static AuctionEvent roundStarted(
+      long seq, Instant at, UUID actor, UUID intentId, List<Integer> order) {
+    return new AuctionEvent(
+        seq,
+        at,
+        EventKind.ROUND_STARTED,
+        null,
+        null,
+        actor,
+        intentId,
+        Map.of("order", List.copyOf(order)));
+  }
 }

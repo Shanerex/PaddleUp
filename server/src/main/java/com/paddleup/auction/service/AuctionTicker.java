@@ -48,7 +48,10 @@ public class AuctionTicker implements SmartLifecycle {
     List<CompletableFuture<Void>> pending = new ArrayList<>();
     for (AuctionRunner runner : registry.all()) {
       Phase phase = runner.state().phase();
-      if (phase == Phase.SCHEDULED || phase == Phase.LIVE) {
+      if (phase == Phase.SCHEDULED
+          || phase == Phase.LIVE
+          || phase == Phase.ADJOURNED
+          || phase == Phase.RESUME_LOBBY) {
         pending.add(runner.tick().exceptionally(AuctionTicker::failed));
       }
     }
