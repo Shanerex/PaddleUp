@@ -145,9 +145,13 @@ final class AuctionViews {
 
   /**
    * An event as members see it. A lot_opened event also carries the lot's card, so a client needs
-   * nothing else to show the lot. {@code state} is any state at or after the event.
+   * nothing else to show the lot. {@code state} is any state at or after the event. A franchise's
+   * picks are private: only the viewer who is that franchise sees the lot list ({@code
+   * viewerFranchise} is null for a broadcast to the whole room, which never carries it); the stored
+   * event keeps the lots for replay.
    */
-  static AuctionEventDto event(AuctionEvent e, AuctionState state, Instant serverNow) {
+  static AuctionEventDto event(
+      AuctionEvent e, AuctionState state, Instant serverNow, UUID viewerFranchise) {
     Map<String, Object> payload = e.payload();
     boolean opened =
         e.kind() == EventKind.LOT_OPENED && e.lot() != null && e.lot() <= state.lots().size();
@@ -159,9 +163,16 @@ final class AuctionViews {
     } else if (e.kind() == EventKind.BID_ACCEPTED) {
       payload = new LinkedHashMap<>(payload);
       payload.put("nextBid", Ladder.next(state.ladder(), e.number("amount")));
+    } else if (e.kind() == EventKind.PICKS_SUBMITTED && !isOwn(e, viewerFranchise)) {
+      payload = Map.of();
     }
     return new AuctionEventDto(
         e.seq(), e.at(), e.kind().value(), e.franchiseId(), e.lot(), payload, serverNow);
+  }
+
+  /** True when the viewer is the franchise the event belongs to. */
+  static boolean isOwn(AuctionEvent e, UUID viewerFranchise) {
+    return viewerFranchise != null && viewerFranchise.equals(e.franchiseId());
   }
 
   static IntentResultDto result(Outcome o, Instant serverNow) {

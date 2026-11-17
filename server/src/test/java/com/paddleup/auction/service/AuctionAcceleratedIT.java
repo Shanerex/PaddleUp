@@ -183,6 +183,66 @@ class AuctionAcceleratedIT extends AbstractAuctionIT {
     assertThat(state(room, room.commissioner()).get("myPicks")).isEmpty();
   }
 
+  // ---- fix loop 1, CR-3 and S-2: a franchise's picks are private to it ----
+
+  private static List<JsonNode> ofKind(JsonNode entries, String kind) {
+    List<JsonNode> out = new ArrayList<>();
+    entries.forEach(
+        e -> {
+          if (e.get("kind").asText().equals(kind)) {
+            out.add(e);
+          }
+        });
+    return out;
+  }
+
+  @Test
+  void aFranchisesPicksReachOnlyThatFranchiseOverEventsAndTheAuditLogButTheStoredEventKeepsThem() {
+    Room room = mainDone(6, 3);
+    control(room, "open_round");
+    picks(room, room.manager(0), List.of(4));
+    picks(room, room.manager(1), List.of(5, 6));
+    String first = room.franchise(0).toString();
+
+    for (Person who : List.of(room.manager(0), room.manager(1), room.commissioner())) {
+      boolean owner0 = who == room.manager(0);
+      boolean owner1 = who == room.manager(1);
+      List<JsonNode> events = ofKind(events(room, who, 0).get("events"), "picks_submitted");
+      assertThat(events).hasSize(2);
+      for (JsonNode e : events) {
+        boolean mine = e.get("franchiseId").asText().equals(first) ? owner0 : owner1;
+        assertThat(e.get("payload").has("lots")).as("events lots for %s", who).isEqualTo(mine);
+      }
+
+      JsonNode all = state(room, who);
+      assertThat(all.get("pickCounts")).hasSize(3);
+      List<JsonNode> rows = ofKind(audit(room, who, ""), "picks_submitted");
+      assertThat(rows).hasSize(2);
+      for (JsonNode row : rows) {
+        boolean mine = row.get("franchiseId").asText().equals(first) ? owner0 : owner1;
+        assertThat(row.get("category").asText()).isEqualTo("admin");
+        assertThat(row.get("detail").has("lots")).as("audit lots for %s", who).isEqualTo(mine);
+      }
+      assertThat(audit(room, who, "?kind=admin").toString()).contains("picks_submitted");
+      assertThat(audit(room, who, "").toString()).doesNotContain("\"other\"");
+    }
+
+    // Replay still needs the lots, so the stored event keeps them.
+    String stored =
+        jdbc.queryForObject(
+            "SELECT payload::text FROM auction_events WHERE room_id = ? AND kind = 'picks_submitted'"
+                + " ORDER BY seq LIMIT 1",
+            String.class,
+            UUID.fromString(room.id()));
+    assertThat(stored).contains("lots");
+  }
+
+  private JsonNode audit(Room room, Person who, String query) {
+    var response = get(who, auction(room, "/audit" + query));
+    assertThat(response.getStatusCode()).as(response.getBody()).isEqualTo(HttpStatus.OK);
+    return body(response).get("entries");
+  }
+
   @Test
   void waitingListsFranchisesThatHaveNotSentPicks() {
     Room room = mainDone(6, 2);

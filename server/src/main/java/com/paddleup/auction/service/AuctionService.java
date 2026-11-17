@@ -137,7 +137,7 @@ public class AuctionService {
 
   /** Events with a seq above {@code after}, at most {@code limit}. */
   public EventsDto events(UserId caller, UUID roomId, long after, Integer limit) {
-    port.access(roomId, caller);
+    UUID viewer = port.access(roomId, caller).franchiseId();
     int max = props.eventsPageMax();
     int page = limit == null ? max : Math.max(1, Math.min(limit, max));
     if (after < 0) {
@@ -148,7 +148,7 @@ public class AuctionService {
     boolean more = found.size() > page;
     var now = clock.instant();
     List<AuctionEventDto> dtos =
-        found.stream().limit(page).map(e -> AuctionViews.event(e, state, null)).toList();
+        found.stream().limit(page).map(e -> AuctionViews.event(e, state, null, viewer)).toList();
     long last = dtos.isEmpty() ? Math.max(after, 0) : dtos.get(dtos.size() - 1).seq();
     return new EventsDto(dtos, last, more, now);
   }
@@ -158,7 +158,7 @@ public class AuctionService {
    * admin actions in time order, filtered by {@code kind}. Empty before there is anything to show.
    */
   public AuditDto audit(UserId caller, UUID roomId, String kind, long after, Integer limit) {
-    port.access(roomId, caller);
+    UUID viewer = port.access(roomId, caller).franchiseId();
     AuditViews.Filter filter =
         AuditViews.Filter.fromValue(kind == null ? "all" : kind)
             .orElseThrow(() -> new AuctionRequestException("kind", "Unknown filter"));
@@ -173,7 +173,7 @@ public class AuctionService {
     boolean more = found.size() > page;
     AuctionState state = registry.runner(roomId).state();
     List<AuditEntryDto> entries =
-        found.stream().limit(page).map(e -> AuditViews.entry(e, state)).toList();
+        found.stream().limit(page).map(e -> AuditViews.entry(e, state, viewer)).toList();
     long last = entries.isEmpty() ? after : entries.get(entries.size() - 1).seq();
     return new AuditDto(entries, last, more, clock.instant());
   }

@@ -18,6 +18,12 @@ describe("audit text", () => {
     expect(auditText(entry({ kind: "lot_skipped", category: "admin", lot: 24, player: "Ann" }), names)).toBe("Commissioner skipped Lot 24 · Ann · no bids");
   });
 
+  it("says a franchise sent picks, never which lots or how many", () => {
+    const sent = entry({ kind: "picks_submitted", category: "admin", franchiseId: "fa" });
+    expect(auditText(sent, names)).toBe("Red FC sent picks for the accelerated round");
+    expect(auditText({ ...sent, detail: { lots: [4, 7] } }, names)).toBe("Red FC sent picks for the accelerated round");
+  });
+
   it("says only a lifeline's type and lot, never who used it", () => {
     const text = auditText(entry({ kind: "lifeline_spent", category: "lifelines", lot: 42, detail: { type: "fit" } }), names);
     expect(text).toBe("A lifeline was used (fit) · Lot 42");

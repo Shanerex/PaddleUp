@@ -9,12 +9,14 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.UUID;
 
 /**
  * Maps event kinds to the audit filters and says what each audit row may show. Only the fields
  * listed for a kind leave the server: a lifeline row carries its type and nothing else (the advice
- * stays private), and no actor id is ever included. Kinds that are plain clock steps (a lot opening
- * or resuming) are not audit entries.
+ * stays private), a picks row names the franchise but lists the lots only to that franchise, and no
+ * actor id is ever included. Kinds that are plain clock steps (a lot opening or resuming) are not
+ * audit entries.
  */
 final class AuditViews {
 
@@ -43,6 +45,12 @@ final class AuditViews {
   /** The fields of each kind's payload a member may see. */
   private static final Map<EventKind, List<String>> DETAIL = new LinkedHashMap<>();
 
+  /**
+   * Fields of a kind that only the franchise that owns the event may see: a franchise's picks are
+   * private, so everyone else sees only that it sent them.
+   */
+  private static final Map<EventKind, List<String>> PRIVATE = new LinkedHashMap<>();
+
   static {
     for (EventKind k : List.of(EventKind.BID_ACCEPTED, EventKind.LOT_SOLD, EventKind.LOT_UNSOLD)) {
       CATEGORY.put(k, Filter.BIDS);
@@ -66,6 +74,7 @@ final class AuditViews {
             EventKind.RESUME_LOBBY_OPENED,
             EventKind.MAIN_DONE,
             EventKind.NOMINATING_OPENED,
+            EventKind.PICKS_SUBMITTED,
             EventKind.ROUND_STARTED,
             EventKind.AUCTION_ENDED)) {
       CATEGORY.put(k, Filter.ADMIN);
@@ -86,12 +95,13 @@ final class AuditViews {
     DETAIL.put(EventKind.MAIN_DONE, List.of("pool"));
     DETAIL.put(EventKind.ROUND_STARTED, List.of("order"));
     DETAIL.put(EventKind.PICKS_SUBMITTED, List.of("lots"));
+    PRIVATE.put(EventKind.PICKS_SUBMITTED, List.of("lots"));
   }
 
   /** The event kinds a filter lists, as wire values; the rtm filter lists none until RTM exists. */
   static List<String> kinds(Filter filter) {
     return Arrays.stream(EventKind.values())
-        .filter(k -> CATEGORY.containsKey(k) || k == EventKind.PICKS_SUBMITTED)
+        .filter(CATEGORY::containsKey)
         .filter(k -> filter == Filter.ALL || CATEGORY.get(k) == filter)
         .map(EventKind::value)
         .toList();
@@ -104,11 +114,16 @@ final class AuditViews {
         : null;
   }
 
-  static AuditEntryDto entry(AuctionEvent e, AuctionState state) {
+  /** {@code viewerFranchise} is the franchise reading the log, or null if it has none. */
+  static AuditEntryDto entry(AuctionEvent e, AuctionState state, UUID viewerFranchise) {
     Filter category = CATEGORY.get(e.kind());
     boolean lifeline = category == Filter.LIFELINES;
+    boolean own = AuctionViews.isOwn(e, viewerFranchise);
     Map<String, Object> detail = new LinkedHashMap<>();
     for (String key : DETAIL.getOrDefault(e.kind(), List.of())) {
+      if (!own && PRIVATE.getOrDefault(e.kind(), List.of()).contains(key)) {
+        continue;
+      }
       if (e.payload().containsKey(key)) {
         detail.put(key, e.payload().get(key));
       }

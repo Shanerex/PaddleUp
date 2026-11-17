@@ -22,7 +22,6 @@ export const AUDIT_TAG: Record<string, string> = {
   rtm: "RTM",
   admin: "ADMIN",
   scoring: "SCORING",
-  other: "PICK",
 };
 
 /** Whether an entry belongs under a filter; `all` lists everything and `scoring` nothing yet. */
@@ -83,7 +82,7 @@ export function auditText(e: AuditEntry, n: Names): string {
     case "nominating_opened":
       return "Commissioner opened the accelerated round";
     case "picks_submitted":
-      return `${who} picked ${Array.isArray(d.lots) ? d.lots.length : 0} for the accelerated round`;
+      return `${who} sent picks for the accelerated round`;
     case "round_started":
       return `Accelerated round started · ${Array.isArray(d.order) ? d.order.length : 0} lots`;
     case "auction_ended":
