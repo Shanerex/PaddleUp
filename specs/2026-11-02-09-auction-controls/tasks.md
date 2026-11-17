@@ -35,4 +35,4 @@ Design refs for every UI task: docs/design/README.md plus the screens named in t
 - [ ] T-28 (AC-10, AC-11): accelerated round, a manager picks from the unsold pool up to open slots, pick counts shown. Design refs: Explorations 3w as edited in T-17.
 - [ ] T-29 (AC-11): accelerated round Commissioner view (pick counts, End round) and accelerated lot live. Design refs: Explorations 3x as edited in T-17, 3y.
 - [ ] T-30 (AC-14): Playwright at 390 and 1440 beside the mocks: Start now, controls, adjourned button, end-of-main choice, paused and adjourned notices from real phases, new tab and stale state; stub pack and check-agnostic pass unchanged.
-- [ ] T-31 (AC-2, AC-8): decision entries in docs/knowledge/decisions: controls as runner intents in the one log; play queue with derived re-run lots.
+- [x] T-31 (AC-2, AC-8): decision entries in docs/knowledge/decisions: controls as runner intents in the one log; play queue with derived re-run lots.
