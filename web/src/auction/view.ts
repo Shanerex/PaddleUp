@@ -111,6 +111,15 @@ export function statusOf(state: AuctionState | null): Status {
 }
 
 /**
+ * How many lots have closed, sold or unsold: the squads' players plus the unsold pool. A lot number
+ * is no count: a re-opened or accelerated lot is numbered after lots that play later, and the open
+ * lot (or the one that just closed) carries its own number.
+ */
+export function lotsClosed(state: AuctionState): number {
+  return state.standings.reduce((n, x) => n + x.squad.length, 0) + state.unsold.length;
+}
+
+/**
  * The first of my bid limits that refuses `amount`, in the server's order, so it names the same
  * rule the server would refuse with. The limits hold for the whole lot, so a bid patch that only
  * raises the next bid still gets the right lock without a reread.

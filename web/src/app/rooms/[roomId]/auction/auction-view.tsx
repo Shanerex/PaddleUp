@@ -7,7 +7,7 @@ import { formatLotTime, pageClock } from "../../../../auction/clock";
 import { controlRefusal, reopenedNotice, skippedNotice, type Notice } from "../../../../auction/copy";
 import { useBid } from "../../../../auction/useBid";
 import { useLive, useTicker } from "../../../../auction/useLive";
-import { buildView } from "../../../../auction/view";
+import { buildView, lotsClosed } from "../../../../auction/view";
 import { HOME } from "../../../../auth/redirect";
 import { explainRoomError } from "../../../../rooms/errors";
 import { hueOf } from "../../../../rooms/hues";
@@ -432,7 +432,7 @@ function Auction({ roomId, data, reloadRoom }: { roomId: string; data: Data; rel
             />
           ) : view.status === "adjourned" || view.status === "resume_lobby" ? (
             <AdjournedCard
-              lotsDone={Math.max(0, (lot?.no ?? 1) - 1)}
+              lotsDone={lotsClosed(state)}
               squad={myStanding ? myStanding.squad.length : null}
               purse={view.purse !== null ? money(view.purse) : null}
               resumes={view.status === "adjourned" && state.resumeAt ? resumeLabel(state.resumeAt) : null}

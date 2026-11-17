@@ -240,6 +240,23 @@ describe("AuctionView", () => {
     expect((screen.getByTestId("bid-button") as HTMLButtonElement).textContent).toContain("Adjourned");
   });
 
+  it("counts the lots that closed for an adjourned auction, not the lot number on screen", async () => {
+    // A re-opened lot carries number 7 but only two lots have closed (one sold, one unsold).
+    feed.set(
+      snap(
+        live({
+          phase: "adjourned",
+          lotOpen: true,
+          lot: { ...live().lot!, no: 7 },
+          unsold: [2],
+          standings: [{ franchiseId: "fa", purse: 1, squad: [{ lot: 1, playerId: "p", price: 1 }] }, { franchiseId: "fb", purse: 1, squad: [] }],
+        }),
+      ),
+    );
+    render(<AuctionView roomId="r1" />);
+    expect((await screen.findByTestId("adjourned-card")).textContent).toContain("Adjourned after Lot 2.");
+  });
+
   it("shows the Controls chip to the Commissioner only, in the live phases", async () => {
     feed.set(snap(live()));
     const { unmount } = render(<AuctionView roomId="r1" />);
