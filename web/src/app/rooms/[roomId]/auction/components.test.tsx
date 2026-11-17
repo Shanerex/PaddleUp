@@ -100,6 +100,7 @@ function view(over: Partial<ViewInput> = {}, st: Record<string, unknown> = {}) {
       unsold: [],
       connected: [],
       ready: [],
+      bidLimits: [],
       nextBid: 400_000,
       deadline: "2030-01-01T00:00:10Z",
       config: { openSeconds: 30, bidSeconds: 15, gapSeconds: 5, ladder: [] },
@@ -165,12 +166,15 @@ describe("BidDock", () => {
 
   it.each([
     ["squad_full", { reason: "squad_full" }, "Your squad is full."],
-    ["quota", { reason: "quota", category: "foreign-cap" }, "You're at the cap of 4 for Foreign players."],
+    ["quota", { reason: "quota", category: "foreign-cap", cap: 4 }, "You're at the cap of 4 for Foreign players."],
     ["reserve with a role", { reason: "reserve", role: "gk" }, "short on purse to fill your Goalkeeper minimum at base price."],
     ["reserve for the squad minimum", { reason: "reserve" }, "short on purse to fill your squad minimum at base price."],
+    ["purse", { reason: "purse", above: 300_000 }, "more than your purse has left."],
+    ["no room with a role", { reason: "no_room", role: "gk" }, "leave no room for your Goalkeeper minimum."],
+    ["no room for the squad minimum", { reason: "no_room" }, "leave no room to reach your squad minimum."],
   ])("shows the locked box for %s: the next bid and the reason in the pack's words", async (_n, lock, words) => {
     const onBid = vi.fn();
-    render(<BidDock view={view({}, { bidLock: lock })} config={config} labels={labels} onBid={onBid} />);
+    render(<BidDock view={view({}, { bidLimits: [lock] })} config={config} labels={labels} onBid={onBid} />);
     const button = screen.getByTestId("bid-button") as HTMLButtonElement;
     expect(button.getAttribute("data-state")).toBe("bid_locked");
     expect(button.disabled).toBe(true);
@@ -183,7 +187,7 @@ describe("BidDock", () => {
   });
 
   it("names no sport in the locked reason", () => {
-    render(<BidDock view={view({}, { bidLock: { reason: "reserve", role: "def" } })} config={config} labels={labels} onBid={() => {}} />);
+    render(<BidDock view={view({}, { bidLimits: [{ reason: "reserve", role: "def" }] })} config={config} labels={labels} onBid={() => {}} />);
     expect(screen.getByTestId("bid-button").textContent).toContain("Defender");
     expect(screen.getByTestId("bid-button").textContent).not.toMatch(/bat|bowl|wicket|cricket|overseas|₹|cr\b/i);
   });

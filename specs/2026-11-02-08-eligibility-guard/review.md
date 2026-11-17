@@ -17,9 +17,9 @@ Ran `make test` (exit 0: server verify with Testcontainers, web vitest 397/397) 
 - T-4: pass (see AC-4). T-5: pass (AuctionViews and AuctionService compute `bidLock`, DTO and generated.ts updated). T-6, T-7: pass (component tests). T-8: pass (stub IT, check-agnostic).
 - Invariant, event log before broadcast: no new event kinds or broadcast paths; refusals use the existing intent path. Pass.
 - Invariant, server authority: `bidLock` is computed server-side from state; the client only renders it and resyncs after a refusal (auction-view.test). Pass.
-- Known limit (dev-reported), reserve with caps: greedy estimate, may refuse a bid a better squad could afford. Documented in SquadReserve javadoc. Not blocking.
-- Known limit, unfillable pool: surfaces as `reserve` (cost Long.MAX_VALUE, no overflow). Tested in SquadReserveTest; no IT through the guard. Not blocking.
-- Known limit, stale reserve lock: the lock can be stale until the next reread; client resyncs after a refusal. Server still decides every bid, so only the display lags. Not blocking.
+- Fixed in fix loop 1 (was a known limit), reserve with caps: SquadReserve is now an exact search.
+- Fixed in fix loop 1 (was a known limit), unfillable pool: best-effort reserve; only a win that makes the squad less completable is refused, as `no_room`.
+- Fixed in fix loop 1 (was a known limit), stale reserve lock: the state sends per-lot `bidLimits`, so a bid patch locks the dock with no reread (e2e eligibility.spec).
 
 ## Security
 not run, quick lane

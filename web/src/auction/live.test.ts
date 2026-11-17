@@ -22,6 +22,7 @@ function state(over: Partial<AuctionState> = {}): AuctionState {
     unsold: [],
     connected: [],
     ready: [],
+    bidLimits: [{ reason: "purse", above: 1000 }],
     nextBid: 20,
     deadline: "2030-03-01T10:00:20Z",
     ...over,
@@ -119,6 +120,8 @@ describe("createLive", () => {
 
     socket.send(topicOf(ROOM), bidEvent(4, 20));
     expect(t.live.snapshot().state).toMatchObject({ currentBid: 20, leaderFranchiseId: B, nextBid: 25, lastSeq: 4, deadline: "2030-03-01T10:00:30Z" });
+    // The bid limits hold for the whole lot, so the patch keeps them as read.
+    expect(t.live.snapshot().state?.bidLimits).toEqual(state().bidLimits);
 
     socket.send(topicOf(ROOM), bidEvent(4, 99, A));
     socket.send(topicOf(ROOM), bidEvent(3, 99, A));

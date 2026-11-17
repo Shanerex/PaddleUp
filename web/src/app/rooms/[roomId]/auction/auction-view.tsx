@@ -183,7 +183,7 @@ function Auction({ roomId, data, reloadRoom }: { roomId: string; data: Data; rel
     setOutbid(null);
     dismiss();
   }, [dismiss]);
-  // A refusal may mean the screen was behind (a squad lock the bid patch cannot know): read again.
+  // A refusal means the screen was behind the server (say a lot closed as the bid went): read again.
   const refused = outcome?.kind === "rejected";
   useEffect(() => {
     if (refused) live.resync();

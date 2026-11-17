@@ -39,8 +39,9 @@ test.describe("bidding", () => {
     expect(JSON.parse(bids[0]).amount).toBe((await auctionState(fx)).currentBid);
   });
 
-  test("a bid the purse cannot cover shows the server's reason and changes nothing", async ({ browser }) => {
-    const fx = await seedRoom({ managers: 2, startInSec: 600, purse: 350_000 });
+  test("once the next bid passes the purse the dock locks with the reason, and nothing changes", async ({ browser }) => {
+    // Squad minimum 1, so only the purse limits this manager.
+    const fx = await seedRoom({ managers: 2, startInSec: 600, purse: 350_000, squadMin: 1 });
     const page = await (await contextFor(browser, fx.managers[0].cookie)).newPage();
     await page.goto(auctionUrl(fx));
     await goLive(fx);
@@ -48,12 +49,13 @@ test.describe("bidding", () => {
     const first = await bidAs(fx, fx.managers[1], 1, 300_000);
     expect(first.body.outcome).toBe("accepted");
     await expect(page.getByTestId("leader")).toContainText("Club 2");
-    await expect(page.getByTestId("bid-button")).toContainText("€0.4 M");
     const before = { bid: await page.getByTestId("current-bid").innerText(), purse: await page.getByTestId("purse").innerText() };
 
-    await page.getByTestId("bid-button").click();
-
-    await expect(page.getByTestId("notice-rejected")).toContainText("more than your purse allows");
+    const button = page.getByTestId("bid-button");
+    await expect(button).toHaveAttribute("data-state", "bid_locked");
+    await expect(button).toBeDisabled();
+    await expect(button).toContainText("Can't bid €0.4 M");
+    await expect(button).toContainText("more than your purse has left");
     expect(await page.getByTestId("current-bid").innerText()).toBe(before.bid);
     expect(await page.getByTestId("purse").innerText()).toBe(before.purse);
     await expect(page.getByTestId("leader")).toContainText("Club 2");

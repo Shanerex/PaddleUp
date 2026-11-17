@@ -142,6 +142,23 @@ public abstract class AbstractAuctionIT extends AbstractRoomsIT {
         Map.of("intentId", UUID.randomUUID().toString(), "lot", lot));
   }
 
+  /**
+   * The lock the viewer's dock shows: the first bid limit that refuses the next bid, as the client
+   * reads it; null when none does.
+   */
+  protected static JsonNode lock(JsonNode state) {
+    if (!state.has("nextBid")) {
+      return null;
+    }
+    long next = state.get("nextBid").asLong();
+    for (JsonNode limit : state.get("bidLimits")) {
+      if (!limit.has("above") || next > limit.get("above").asLong()) {
+        return limit;
+      }
+    }
+    return null;
+  }
+
   protected JsonNode state(Room room, Person who) {
     var response = get(who, auction(room, ""));
     assertThat(response.getStatusCode()).as(response.getBody()).isEqualTo(HttpStatus.OK);

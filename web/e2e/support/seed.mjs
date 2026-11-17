@@ -99,11 +99,11 @@ async function ensureSeason(players) {
  * A room on the stub football pack with `managers` franchises, a Commissioner with no franchise, a
  * pool of 40 and the auction scheduled `startInSec` from now. Everyone is a fresh person.
  */
-export async function seedRoom({ managers = 2, startInSec = 60, open = 8, bid = 6, gap = 2, purse = 0, squadMin = 3, schedule = true, tag = Date.now().toString(36) } = {}) {
+export async function seedRoom({ managers = 2, startInSec = 60, open = 8, bid = 6, gap = 2, purse = 0, squadMin = 3, squadMax = Math.max(20, squadMin), roleMinimums = {}, schedule = true, tag = Date.now().toString(36) } = {}) {
   await ensureSeason(40);
   const commissioner = await signIn(`e2e-commish-${tag}@example.test`);
   const room = must(await call(commissioner, "POST", "/api/rooms", { packId: PACK, presetId: "standard", name: `E2E ${tag}` }), "create room");
-  const config = { ...room.config, ...(purse ? { purse } : {}), squadMin, squadMax: Math.max(20, squadMin), roleMinimums: {}, openSeconds: open, bidSeconds: bid, gapSeconds: gap };
+  const config = { ...room.config, ...(purse ? { purse } : {}), squadMin, squadMax, roleMinimums, openSeconds: open, bidSeconds: bid, gapSeconds: gap };
   must(await call(commissioner, "PUT", `/api/rooms/${room.id}/config`, { version: room.configVersion, config }), "save config");
   const pool = must(await call(commissioner, "GET", `/api/rooms/${room.id}/pool`), "read pool");
   must(await call(commissioner, "POST", `/api/rooms/${room.id}/pool/reset`, { version: pool.version }), "reset pool");

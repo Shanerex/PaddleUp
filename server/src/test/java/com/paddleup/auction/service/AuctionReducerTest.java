@@ -49,7 +49,8 @@ class AuctionReducerTest {
         10,
         5,
         Map.of(A, 1000L, B, 1000L),
-        List.of(P1, P2, P3));
+        List.of(P1, P2, P3),
+        null);
   }
 
   @Test
@@ -231,5 +232,62 @@ class AuctionReducerTest {
 
     assertThat(started(1).payload()).doesNotContainKey("squad");
     assertThat(s.squadRules()).isNull();
+  }
+
+  @Test
+  void badSquadEntriesInTheLogAreSkippedSoTheReplayStillRuns() {
+    AuctionEvent good =
+        Events.auctionStarted(
+            1,
+            T0,
+            List.of(new Step(0, 5)),
+            20,
+            10,
+            5,
+            Map.of(A, 1000L),
+            List.of(P1, P2, P3),
+            new SquadRules(3, 5, Map.of("r1", 1), List.of()));
+    Map<String, Object> minimums = new java.util.HashMap<>();
+    minimums.put("r1", null);
+    minimums.put("r2", "two");
+    minimums.put("r3", 1);
+    Map<String, Object> squad = new java.util.HashMap<>();
+    squad.put("min", 3);
+    squad.put("roleMinimums", minimums);
+    squad.put("quotas", List.of(Map.of("category", "cap", "tag", "t"), "junk"));
+    Map<String, Object> payload = new java.util.LinkedHashMap<>(good.payload());
+    payload.put("squad", squad);
+    var bad = new AuctionEvent(1, T0, good.kind(), null, null, null, null, payload);
+
+    AuctionState s = AuctionReducer.replay(AuctionState.initial(ROOM, catalog()), List.of(bad));
+
+    assertThat(s.squadRules().roleMinimums()).containsExactly(Map.entry("r3", 1));
+    assertThat(s.squadRules().quotas()).isEmpty();
+    assertThat(s.squadRules().min()).isEqualTo(3);
+    assertThat(s.squadRules().max()).isEqualTo(Integer.MAX_VALUE);
+  }
+
+  @Test
+  void squadRulesDropMalformedEntriesBeforeTheyAreFrozen() {
+    Map<String, Integer> minimums = new java.util.HashMap<>();
+    minimums.put("r1", null);
+    minimums.put("r2", 0);
+    minimums.put("r3", 2);
+
+    var rules = new SquadRules(3, 5, minimums, List.of(new SquadRules.Quota("cap", "t", -1)));
+
+    assertThat(rules.roleMinimums()).containsExactly(Map.entry("r3", 2));
+    assertThat(rules.quotas()).isEmpty();
+  }
+
+  @Test
+  void theLotsAreKeptInBasePriceOrderForTheSquadReserve() {
+    AuctionState s =
+        AuctionReducer.replay(AuctionState.initial(ROOM, catalog()), List.of(started(1)));
+
+    assertThat(s.lotsByPrice()).containsExactlyInAnyOrderElementsOf(s.lots());
+    assertThat(s.lotsByPrice())
+        .isSortedAccordingTo(
+            java.util.Comparator.comparingLong(Lot::basePrice).thenComparingInt(Lot::no));
   }
 }

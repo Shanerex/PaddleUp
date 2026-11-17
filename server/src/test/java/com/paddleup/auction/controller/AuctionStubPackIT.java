@@ -185,8 +185,9 @@ class AuctionStubPackIT extends AbstractAuctionIT {
     assertThat(state(room, room.manager(0)).get("lot").get("no").asInt()).isEqualTo(3);
     skipLot();
 
-    assertThat(state(room, room.manager(0)).get("bidLock").get("category").asText())
-        .isEqualTo("foreign-cap");
+    JsonNode quota = lock(state(room, room.manager(0)));
+    assertThat(quota.get("category").asText()).isEqualTo("foreign-cap");
+    assertThat(quota.get("cap").asInt()).isEqualTo(1);
     assertThat(outcome(bid(room, room.manager(0), 4, 600_000))).isEqualTo("rejected:quota");
     assertThat(outcome(bid(room, room.manager(1), 4, 600_000))).isEqualTo("accepted");
   }
@@ -201,8 +202,7 @@ class AuctionStubPackIT extends AbstractAuctionIT {
     Room tight = stubRoom(3, 20, 899_999, 4);
     goLive(tight);
     assertThat(outcome(bid(tight, tight.manager(0), 1, 300_000))).isEqualTo("rejected:reserve");
-    assertThat(state(tight, tight.manager(0)).get("bidLock").get("reason").asText())
-        .isEqualTo("reserve");
+    assertThat(lock(state(tight, tight.manager(0))).get("reason").asText()).isEqualTo("reserve");
 
     Room exact = stubRoom(3, 20, 900_000, 4);
     goLive(exact);

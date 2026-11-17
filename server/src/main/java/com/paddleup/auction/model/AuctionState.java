@@ -18,7 +18,8 @@ import java.util.UUID;
  * <p>{@code squadRules} is frozen at go-live; null for a log written before the squad guard, which
  * means no squad guard. {@code currentLot} is 0 until lot 1 opens. {@code lotOpen} is false in a
  * gap, when {@code nextOpenAt} says when the next lot opens, and {@code lastResult} says how the
- * last one closed.
+ * last one closed. {@code lotsByPrice} holds the same lots by base price, then lot number, sorted
+ * once at go-live so the squad reserve never sorts on the bid path.
  */
 public record AuctionState(
     UUID roomId,
@@ -32,6 +33,7 @@ public record AuctionState(
     SquadRules squadRules,
     Map<UUID, Lot> catalog,
     List<Lot> lots,
+    List<Lot> lotsByPrice,
     int currentLot,
     boolean lotOpen,
     long currentBid,
@@ -49,6 +51,7 @@ public record AuctionState(
     ladder = List.copyOf(ladder);
     catalog = Collections.unmodifiableMap(new LinkedHashMap<>(catalog));
     lots = List.copyOf(lots);
+    lotsByPrice = List.copyOf(lotsByPrice);
     passedBy = Collections.unmodifiableSet(new LinkedHashSet<>(passedBy));
     purses = Collections.unmodifiableMap(new LinkedHashMap<>(purses));
     var copy = new LinkedHashMap<UUID, List<SquadEntry>>();
@@ -70,6 +73,7 @@ public record AuctionState(
         0,
         null,
         catalog,
+        List.of(),
         List.of(),
         0,
         false,
@@ -117,6 +121,7 @@ public record AuctionState(
     public SquadRules squadRules;
     public Map<UUID, Lot> catalog;
     public List<Lot> lots;
+    public List<Lot> lotsByPrice;
     public int currentLot;
     public boolean lotOpen;
     public long currentBid;
@@ -142,6 +147,7 @@ public record AuctionState(
       squadRules = s.squadRules;
       catalog = s.catalog;
       lots = s.lots;
+      lotsByPrice = s.lotsByPrice;
       currentLot = s.currentLot;
       lotOpen = s.lotOpen;
       currentBid = s.currentBid;
@@ -169,6 +175,7 @@ public record AuctionState(
           squadRules,
           catalog,
           lots,
+          lotsByPrice,
           currentLot,
           lotOpen,
           currentBid,

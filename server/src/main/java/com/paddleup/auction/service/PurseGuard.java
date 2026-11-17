@@ -1,6 +1,7 @@
 package com.paddleup.auction.service;
 
 import com.paddleup.auction.model.AuctionState;
+import com.paddleup.auction.model.BidLock;
 import com.paddleup.auction.model.Reason;
 import java.util.Optional;
 import java.util.UUID;
@@ -13,8 +14,8 @@ import org.springframework.stereotype.Component;
 public class PurseGuard implements BidGuard {
 
   @Override
-  public Optional<String> check(AuctionState state, UUID franchiseId, long amount) {
+  public Optional<BidLock> limit(AuctionState state, UUID franchiseId) {
     long purse = state.purses().getOrDefault(franchiseId, 0L);
-    return amount > purse ? Optional.of(Reason.PURSE) : Optional.empty();
+    return Optional.of(new BidLock(Reason.PURSE, null, null, null, purse));
   }
 }

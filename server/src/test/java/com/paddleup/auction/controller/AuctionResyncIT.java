@@ -72,8 +72,14 @@ class AuctionResyncIT extends AbstractAuctionIT {
       assertEqualToLog(s, log);
       assertThat(s.get("serverNow").asText()).isEqualTo(clock.instant().toString());
     }
-    assertThat(newTab).isEqualTo(original);
-    assertThat(commissioner).isEqualTo(original);
+    // The shared state is the same for everyone; bid limits are each viewer's own.
+    assertThat(shared(reconnected)).isEqualTo(shared(original));
+    assertThat(shared(newTab)).isEqualTo(shared(original));
+    assertThat(shared(commissioner)).isEqualTo(shared(original));
+    assertThat(reconnected.get("bidLimits")).isEqualTo(original.get("bidLimits"));
+    assertThat(original.get("bidLimits").get(0).get("above").asLong()).isEqualTo(1000);
+    assertThat(newTab.get("bidLimits").get(0).get("above").asLong()).isEqualTo(975);
+    assertThat(commissioner.get("bidLimits")).isEmpty();
     // Lot 1 was sold to franchise 1 at 25.
     for (JsonNode standing : original.get("standings")) {
       if (standing.get("franchiseId").asText().equals(room.franchise(1).toString())) {
@@ -140,5 +146,12 @@ class AuctionResyncIT extends AbstractAuctionIT {
         .containsExactlyElementsOf(
             eventLog.all(UUID.fromString(room.id())).stream().map(e -> e.seq()).toList());
     assertEqualToLog(state(room, room.manager(0)), fromLog(room));
+  }
+
+  /** The state without the viewer's own bid limits. */
+  private static JsonNode shared(JsonNode state) {
+    var copy = state.deepCopy();
+    ((com.fasterxml.jackson.databind.node.ObjectNode) copy).remove("bidLimits");
+    return copy;
   }
 }

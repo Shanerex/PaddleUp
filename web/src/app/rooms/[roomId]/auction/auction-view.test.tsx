@@ -90,6 +90,7 @@ const live = (over: Partial<AuctionState> = {}): AuctionState => ({
   unsold: [],
   connected: [],
   ready: [],
+  bidLimits: [],
   nextBid: 300_000,
   deadline: "2030-03-01T10:00:30Z",
   ...over,
@@ -153,7 +154,7 @@ describe("AuctionView", () => {
     expect(screen.getByTestId("leader").textContent).toContain("Blue FC");
   });
 
-  it("rereads the state after a refusal, so a squad lock the patch could not know shows up", async () => {
+  it("rereads the state after a refusal, in case the screen was behind the server", async () => {
     feed.set(snap(live({ currentBid: 300_000, leaderFranchiseId: "fb", nextBid: 400_000 })));
     vi.mocked(bid).mockResolvedValue({ outcome: "rejected", reason: "reserve", lot: 1, serverNow: "x" });
     render(<AuctionView roomId="r1" />);
@@ -165,8 +166,8 @@ describe("AuctionView", () => {
   });
 
   it("shows the bidLocked dock with the reason when the server names a squad lock", async () => {
-    feed.set(snap(live({ currentBid: 300_000, leaderFranchiseId: "fb", nextBid: 400_000, bidLock: { reason: "reserve", role: "gk" } })));
-    vi.mocked(getRoom).mockResolvedValue(room({ packLabels: { ...labels, restrictedCategories: [] }, config: { ...config, categoryQuotas: {} } }));
+    feed.set(snap(live({ currentBid: 300_000, leaderFranchiseId: "fb", nextBid: 400_000, bidLimits: [{ reason: "reserve", role: "gk" }] })));
+    vi.mocked(getRoom).mockResolvedValue(room({ packLabels: { ...labels, restrictedCategories: [] } }));
     render(<AuctionView roomId="r1" />);
 
     const button = await screen.findByTestId("bid-button");
