@@ -49,6 +49,11 @@ const REJECTED: Record<string, Notice> = {
   not_live: { title: "Bidding's closed", body: "The auction isn't live. Nothing changed." },
   no_open_lot: { title: "Bidding's closed", body: "No lot is open right now. Nothing changed." },
   ended: { title: "Bidding's closed", body: "The auction has ended. Nothing changed." },
+  paused: { title: "Auction paused", body: "The Commissioner paused bidding. Nothing changed." },
+  adjourned: { title: "Adjourned", body: "The auction is adjourned until the Commissioner resumes it. Nothing changed." },
+  resume_lobby: { title: "Resuming soon", body: "Bidding stays locked until the lobby countdown ends. Nothing changed." },
+  main_done: { title: "Bidding's closed", body: "The main pool is done. The Commissioner decides what comes next. Nothing changed." },
+  nominating: { title: "Bidding's closed", body: "Managers are picking players for the accelerated round. Nothing changed." },
 };
 
 /** The notice for a refused bid; an unknown code still says that nothing changed. */

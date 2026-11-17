@@ -61,15 +61,14 @@ public final class IntentRules {
   }
 
   /**
-   * True when the intent names a lot that has already closed while the auction is live (in the gap)
-   * or ended. It is too late for that lot, whether or not the tick has happened yet, so the answer
-   * is the same either way; only a lot that never opened is a phase error. Closed means played, by
-   * the play queue: lot numbers do not follow play order once a lot is re-opened or accelerated.
+   * True when the intent names a lot that has already closed, in any phase after the lobby: it is
+   * too late for that lot whether the auction is live, in the gap, held, between rounds or ended,
+   * and whether or not the tick has happened yet, so the answer is the same everywhere; only a lot
+   * that never opened (or is open and held) is a phase error. Closed means played, by the play
+   * queue: lot numbers do not follow play order once a lot is re-opened or accelerated.
    */
   private static boolean namesClosedLot(AuctionState s, Intent intent) {
-    return (s.phase() == Phase.LIVE || s.phase() == Phase.ENDED)
-        && !s.lotOpen()
-        && s.closed(intent.lot());
+    return s.phase() != Phase.NONE && s.phase() != Phase.SCHEDULED && s.closed(intent.lot());
   }
 
   private static Optional<Decision> phase(AuctionState s) {

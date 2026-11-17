@@ -219,6 +219,34 @@ class IntentRulesTest {
   }
 
   @Test
+  void aLateIntentOnAClosedLotIsLotClosedInEveryHeldPhaseButAQueuedLotStaysAPhaseError() {
+    var open = AuctionFixtures.lotOneOpen();
+    var gap = AuctionReducer.replay(open, TimerRules.due(open, T0.plusSeconds(20)));
+    for (var phase :
+        List.of(
+            com.paddleup.auction.model.Phase.PAUSED,
+            com.paddleup.auction.model.Phase.ADJOURNED,
+            com.paddleup.auction.model.Phase.RESUME_LOBBY,
+            com.paddleup.auction.model.Phase.MAIN_DONE,
+            com.paddleup.auction.model.Phase.NOMINATING)) {
+      var edit = gap.edit();
+      edit.phase = phase;
+      var s = edit.build();
+
+      assertRejected(bid(s, A, USER_A, 1, 20), Reason.LOT_CLOSED);
+      assertRejected(pass(s, B, USER_B, 1), Reason.LOT_CLOSED);
+      assertThat(bid(s, A, USER_A, 2, 20))
+          .as("queued lot in %s", phase)
+          .isEqualTo(new Decision.PhaseError(phase.value()));
+    }
+    // A lot that is open while paused is not closed: the phase answers.
+    var edit = open.edit();
+    edit.phase = com.paddleup.auction.model.Phase.PAUSED;
+    assertThat(bid(edit.build(), A, USER_A, 1, 20))
+        .isEqualTo(new Decision.PhaseError(Reason.PAUSED));
+  }
+
+  @Test
   void anIntentNamingALotThatAlreadyClosedIsLotClosedInTheGapAndAfterTheEnd() {
     var open = AuctionFixtures.lotOneOpen();
     var gap = AuctionReducer.replay(open, TimerRules.due(open, T0.plusSeconds(20)));
