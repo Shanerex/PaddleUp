@@ -494,7 +494,7 @@ function Auction({ roomId, data, reloadRoom }: { roomId: string; data: Data; rel
         </div>
         {view.status === "nominating" ? (
           me !== null &&
-          state.openSlots !== undefined && <SendPicksBar picked={selected.length} sent={sentPicks} waiting={state.waiting.length} busy={picksBusy} onSend={() => void sendMyPicks()} />
+          state.openSlots !== undefined && <SendPicksBar picked={selected.length} sent={sentPicks} noSlots={state.openSlots === 0} waiting={state.waiting.length} busy={picksBusy} onSend={() => void sendMyPicks()} />
         ) : (
           view.status !== "main_done" && (
             <div className={s.dockBar}>

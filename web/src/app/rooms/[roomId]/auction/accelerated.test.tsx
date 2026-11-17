@@ -110,6 +110,12 @@ describe("NominatingPanel", () => {
     expect(onEndRound).toHaveBeenCalledTimes(1);
   });
 
+  it("says so when the viewer has no open slots", () => {
+    render(<NominatingPanel {...base} openSlots={0} selected={[]} sent />);
+    expect(screen.getByText(/Your squad is full/)).toBeTruthy();
+    expect(screen.queryByText(/pick up to 0/)).toBeNull();
+  });
+
   it("does not show Commissioner controls to a manager", () => {
     render(<NominatingPanel {...base} openSlots={3} selected={[]} sent={false} />);
     expect(screen.queryByTestId("end-round")).toBeNull();
@@ -133,5 +139,11 @@ describe("SendPicksBar", () => {
     render(<SendPicksBar picked={2} sent waiting={3} busy={false} onSend={vi.fn()} />);
     expect(screen.queryByTestId("send-picks")).toBeNull();
     expect(screen.getByTestId("picks-in").textContent).toContain("Picks in. Waiting on 3 franchises.");
+  });
+
+  it("tells a franchise with no open slots there is nothing to pick, instead of saying picks are in", () => {
+    render(<SendPicksBar picked={0} sent noSlots waiting={1} busy={false} onSend={vi.fn()} />);
+    expect(screen.queryByTestId("picks-in")).toBeNull();
+    expect(screen.getByTestId("no-slots").textContent).toContain("Your squad is full, so there is nothing to pick. Waiting on 1 franchise.");
   });
 });

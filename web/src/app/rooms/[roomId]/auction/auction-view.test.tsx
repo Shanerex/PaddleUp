@@ -318,6 +318,15 @@ describe("AuctionView", () => {
       expect(screen.getAllByTestId("pick-row")[0].getAttribute("aria-pressed")).toBe("true");
     });
 
+    it("shows a full squad as done with nothing to pick, not as picks sent", async () => {
+      feed.set(snap(picking({ openSlots: 0, waiting: ["fb"] })));
+      render(<AuctionView roomId="r1" />);
+      expect((await screen.findByTestId("no-slots")).textContent).toContain("Waiting on 1 franchise.");
+      expect(screen.queryByTestId("picks-in")).toBeNull();
+      expect(screen.queryByTestId("send-picks")).toBeNull();
+      expect(screen.getByTestId("nom-mine").textContent).toBe("0 of 0");
+    });
+
     it("restores my sent picks in a new tab and shows a refused send", async () => {
       feed.set(snap(picking({ waiting: ["fb"], myPicks: [4] })));
       render(<AuctionView roomId="r1" />);

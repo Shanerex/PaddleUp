@@ -127,7 +127,9 @@ export function NominatingPanel({
           <div className={s.headText}>
             <span className={s.title}>Accelerated round</span>
             <span className={s.lede}>
-              {mine
+              {mine && openSlots === 0
+                ? "The main pool is done. Your squad is full, so there is nothing for you to pick. The others are choosing."
+                : mine
                 ? `The main pool is done. You have ${openSlots} open squad ${openSlots === 1 ? "slot" : "slots"}, so pick up to ${openSlots} unsold ${openSlots === 1 ? "player" : "players"} to bring back. Anyone nobody picks stays unsold.`
                 : "The main pool is done. Managers pick unsold players to bring back, up to their open squad slots. Anyone nobody picks stays unsold."}
             </span>
@@ -216,11 +218,16 @@ export function NominatingPanel({
 }
 
 /** The bar under the picking list (Spotlight nominate dock): Send my picks, then "Picks in". */
-export function SendPicksBar({ picked, sent, waiting, busy, onSend }: { picked: number; sent: boolean; waiting: number; busy: boolean; onSend: () => void }) {
+export function SendPicksBar({ picked, sent, noSlots, waiting, busy, onSend }: { picked: number; sent: boolean; noSlots?: boolean; waiting: number; busy: boolean; onSend: () => void }) {
   return (
     <div className={s.bar}>
       <div className={s.barInner}>
-        {sent ? (
+        {noSlots ? (
+          <div className={s.sent} data-testid="no-slots">
+            <Icon name="check_circle" size={22} style={{ color: "var(--ok)" }} />
+            Your squad is full, so there is nothing to pick. Waiting on {waiting} {waiting === 1 ? "franchise" : "franchises"}.
+          </div>
+        ) : sent ? (
           <div className={s.sent} data-testid="picks-in">
             <Icon name="check_circle" size={22} style={{ color: "var(--ok)" }} />
             Picks in. Waiting on {waiting} {waiting === 1 ? "franchise" : "franchises"}.
