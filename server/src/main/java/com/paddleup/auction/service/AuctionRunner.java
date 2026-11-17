@@ -305,7 +305,7 @@ final class AuctionRunner {
       throw new AuctionRequestException("startsAt", "The start must be in the future");
     }
     Phase phase = state.phase();
-    if (phase == Phase.LIVE || phase == Phase.ENDED) {
+    if (phase != Phase.NONE && phase != Phase.SCHEDULED) {
       throw new AuctionConflictException(
           AuctionConflictException.LOCKED,
           "The auction is already live, so it cannot be scheduled");

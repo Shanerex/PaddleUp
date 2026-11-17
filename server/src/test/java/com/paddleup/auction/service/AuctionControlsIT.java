@@ -493,6 +493,45 @@ class AuctionControlsIT extends AbstractAuctionIT {
     assertThat(withoutNow(state(room, room.commissioner()))).as(action).isEqualTo(before);
   }
 
+  // ---- fix loop 1, CR-1: a schedule change is only for the lobby ----
+
+  private void assertScheduleRefused(Room room, String phase) {
+    long seq = lastSeq(room);
+    var response = schedule(room, clock.instant().plusSeconds(3600));
+
+    assertThat(response.getStatusCode()).as(phase).isEqualTo(HttpStatus.CONFLICT);
+    assertThat(body(response).get("error").asText()).as(phase).isEqualTo("locked");
+    assertThat(lastSeq(room)).as(phase).isEqualTo(seq);
+    assertThat(eventCount(room, "rescheduled")).as(phase).isZero();
+    assertThat(phase(room)).isEqualTo(phase);
+  }
+
+  @Test
+  void aScheduleChangeIsRefusedInEveryPhaseAfterGoLive() {
+    Room room = room(2, 2);
+    goLive(room);
+    control(room, "pause");
+    assertScheduleRefused(room, "paused");
+
+    control(room, "adjourn", "resumeAt", clock.instant().plusSeconds(3600).toString());
+    assertScheduleRefused(room, "adjourned");
+
+    control(room, "resume_now");
+    assertScheduleRefused(room, "resume_lobby");
+
+    control(room, "start_now");
+    for (int lot = 1; lot <= 2; lot++) {
+      advance(20);
+      tick();
+      advance(5);
+      tick();
+    }
+    assertScheduleRefused(room, "main_done");
+
+    control(room, "open_round");
+    assertScheduleRefused(room, "nominating");
+  }
+
   private static JsonNode withoutNow(JsonNode state) {
     var copy = (com.fasterxml.jackson.databind.node.ObjectNode) state.deepCopy();
     copy.remove("serverNow");
