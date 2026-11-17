@@ -6,7 +6,7 @@ g1: approved:Shanerex:2026-11-17
 g2: approved:Shanerex:2026-11-17
 g3: none
 bump: none
-next: human approves T-17 design edits (Auction A Spotlight.dc.html and paddle.js scenes accelNominate, accelCommish, mainDoneCommish, mainDone; Explorations 3w, 3x, 3z, 3aa), then /rx:next
+next: human runs `cd docs/design/source && python3 -m http.server 8099` (the mock server was denied), then `cd web && E2E_MOCKS=http://localhost:8099 npx playwright test e2e/controls.spec.ts` with make dev up (E2E_SERVER_LOG, E2E_SESSIONS as in e2e/support/seed.mjs); read pair-*.png in web/test-results/controls; then dev ticks T-30
 ---
 # State: 2026-11-02-09-auction-controls
 
@@ -21,3 +21,8 @@ next: human approves T-17 design edits (Auction A Spotlight.dc.html and paddle.j
 - 2026-11-17 build: deferred to 2026-11-02-17-retention-rtm: RTM audit entries (no rtm event kinds exist yet; the RTM filter returns none)
 - 2026-11-17 build: deferred to 2026-11-02-26-advisor-lifelines: lifeline_spent/refunded kinds are reserved and audited as type, lot and time only (no franchise shown, unlike the audit mock)
 - 2026-11-17 build: mock text differs from spec: adjourn sheet says bidding stops after the lot closes; the engine adjourns at once and keeps the lot, bids and time (plan Q-3); sheet copy follows the spec
+- 2026-11-17 build: T-1..T-16, T-18..T-26, T-31 done; T-17 design edits (3w, 3x, 3z, 3aa; commit 72427ec) approved by Shanerex
+- 2026-11-17 build: T-27, T-28, T-29 done (web accelerated.tsx: main-done choice, picking, Commissioner End round, accelerated lot header); make test and make lint green
+- 2026-11-17 build: T-30 e2e added and passing at 390 and 1440 (end of main, picks, End round, accelerated lots, End the auction, no-picks end, new tab, reload, manager 403); NOT ticked: beside-the-mock comparison, python3 -m http.server 8099 in docs/design/source was denied again, no workaround tried; pairing code is in e2e/support/mocks.ts (E2E_MOCKS opt-in)
+- 2026-11-17 build: mock differs from 3y: accelerated lot shows "Accelerated round · Lot N" with no "n of m" and no "Picked by N" tag; the state DTO has neither (pickCounts is empty once the round starts, the queue size is not sent); deferred: add the fields in a follow-up if the human wants them
+- 2026-11-17 build: mock differs from 3w/3x: the pool lists every unsold player (no "Showing 8 of N" line, no search or role filter, which the mock only names); role chip shows the pack label, not a short code; a Commissioner without a franchise (3x draws one with a franchise) sees a neutral intro and two stat cells, no picking

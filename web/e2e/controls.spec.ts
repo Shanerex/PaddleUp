@@ -1,14 +1,16 @@
-import { mkdirSync } from "node:fs";
 import { expect, test, type Page } from "@playwright/test";
 import { auctionState, bidAs, call, seedRoom } from "./support/seed.mjs";
 import { auctionUrl, contextFor, sleep, type Fixture } from "./support/helpers";
+import { MOCKS, ensureDir, mockShot, pair, type Frame } from "./support/mocks";
 
 // T-30 (AC-14): the Commissioner controls in a real browser against `make dev`: Start now, the
 // Controls sheet (pause, skip, re-open, adjourn), the adjourned card and the resume lobby, the paused
 // and adjourned notices from the real phases, and a new tab or stale tab after each. Pictures land
 // in test-results/controls at 390 and 1440, named <size>-<screen>.png, for the side-by-side with the
 // design source frames (Explorations 3n, 3o, 3p, 3r, 3u, 3v; Room lobbyAdmin; AuctionNotices).
-// The end-of-main choice and the accelerated round wait for the approved T-17 design edits.
+// The end-of-main choice and the accelerated round (approved T-17 frames 3w, 3x, 3y, 3z, 3aa) are at
+// the end. With E2E_MOCKS set (see support/mocks.ts) each picture also gets a pair-<size>-<screen>.png
+// beside its frame.
 
 const OUT = "test-results/controls";
 const SIZES = [
@@ -27,10 +29,31 @@ async function waitPhase(fx: Fixture, phase: string, ms = 8000) {
   throw new Error(`auction did not reach ${phase}`);
 }
 
+/** Where each picture is drawn in the design source (Explorations frames). */
+const FRAME: Record<string, Frame> = {
+  "controls-lot-has-bids": { page: "Auction Explorations", id: "3n" },
+  "skip-confirm": { page: "Auction Explorations", id: "3p" },
+  "reopen-sheet": { page: "Auction Explorations", id: "3r" },
+  "adjourned-commissioner": { page: "Auction Explorations", id: "3v" },
+  adjourned: { page: "Auction Explorations", id: "3e" },
+  "paused-notice": { page: "Auction Explorations", id: "3d" },
+  "main-done-commish": { page: "Auction Explorations", id: "3z" },
+  "main-done": { page: "Auction Explorations", id: "3aa" },
+  "accel-nominate": { page: "Auction Explorations", id: "3w" },
+  "accel-commish": { page: "Auction Explorations", id: "3x" },
+  "accel-live": { page: "Auction Explorations", id: "3y" },
+};
+
 async function shoot(page: Page, size: string, name: string) {
-  mkdirSync(OUT, { recursive: true });
+  ensureDir(OUT);
   await page.waitForTimeout(500); // sheets and notices fade in
-  await page.screenshot({ path: `${OUT}/${size}-${name}.png` });
+  const ours = `${OUT}/${size}-${name}.png`;
+  await page.screenshot({ path: ours });
+  const frame = FRAME[name];
+  if (MOCKS && frame) {
+    const mock = `${OUT}/mock-${size}-${name}.png`;
+    if (await mockShot(page.context().browser()!, frame, Number(size), mock)) await pair(page.context().browser()!, ours, mock, `${OUT}/pair-${size}-${name}.png`, Number(size));
+  }
 }
 
 test.describe("Commissioner controls", () => {
@@ -185,4 +208,143 @@ test.describe("Commissioner controls", () => {
       await shoot(boss, size.name, "controls-lot-has-bids");
     });
   }
+});
+
+// The end of the main pool and the accelerated round (AC-10, AC-11, AC-14, AC-15), at 390 and 1440.
+/** Lot 1 sold to the first manager, every other lot skipped as it opens, until the main pool is done. */
+async function toMainDone(fx: Fixture) {
+  let bid = false;
+  for (let i = 0; i < 600; i++) {
+    const s = await auctionState(fx);
+    if (s.phase === "main_done") return;
+    if (s.phase === "live" && s.lotOpen) {
+      if (s.lot.no === 1) {
+        if (!bid) {
+          await bidAs(fx, fx.managers[0], 1, s.nextBid);
+          bid = true;
+        }
+      } else if (s.currentBid === 0) {
+        await control(fx, "skip");
+      }
+    }
+    await sleep(100);
+  }
+  throw new Error("the main pool did not finish");
+}
+
+const eventCount = async (fx: Fixture) => (await call(fx.commissioner, "GET", `/api/rooms/${fx.roomId}/auction/events?after=0`)).body.events.length;
+
+for (const size of SIZES) {
+  test(`end of main, picks, End round and the accelerated lots at ${size.name}`, async ({ browser }) => {
+    test.setTimeout(240_000);
+    const fx = await seedRoom({ managers: 2, startInSec: 3600, open: 60, bid: 3, gap: 0 });
+    await control(fx, "start_now");
+    await waitPhase(fx, "live");
+    await toMainDone(fx);
+    const vp = { width: size.width, height: size.height };
+    const boss = await (await contextFor(browser, fx.commissioner, vp)).newPage();
+    const one = await (await contextFor(browser, fx.managers[0].cookie, vp)).newPage();
+    const two = await (await contextFor(browser, fx.managers[1].cookie, vp)).newPage();
+    for (const p of [boss, one, two]) await p.goto(auctionUrl(fx));
+
+    // Main done: managers read it, only the Commissioner chooses.
+    await expect(one.getByTestId("main-done-waiting")).toBeVisible();
+    await expect(one.getByTestId("main-done-sold")).toHaveText("1");
+    await expect(one.getByTestId("main-done-unsold")).toHaveText("39");
+    await expect(one.getByTestId("open-round")).toHaveCount(0);
+    await expect(one.getByTestId("bid-button")).toHaveCount(0);
+    await expect(boss.getByTestId("open-round")).toBeVisible();
+    await expect(boss.getByTestId("end-auction")).toBeVisible();
+    await shoot(one, size.name, "main-done");
+    await shoot(boss, size.name, "main-done-commish");
+    // A new tab and a reload show the same card; a manager's own request is refused and writes nothing.
+    const fresh = await (await contextFor(browser, fx.managers[1].cookie, vp)).newPage();
+    await fresh.goto(auctionUrl(fx));
+    await expect(fresh.getByTestId("main-done-waiting")).toBeVisible();
+    const before = await eventCount(fx);
+    expect((await call(fx.managers[0].cookie, "POST", `/api/rooms/${fx.roomId}/auction/controls`, { intentId: crypto.randomUUID(), action: "open_round" })).status).toBe(403);
+    expect(await eventCount(fx)).toBe(before);
+
+    // Open the round: every tab follows with no reload.
+    await boss.getByTestId("open-round").click();
+    await expect(one.getByTestId("nominating")).toBeVisible();
+    await expect(two.getByTestId("nominating")).toBeVisible();
+    await expect(fresh.getByTestId("nominating")).toBeVisible();
+    await expect(one.getByTestId("nom-pool")).toHaveText("39");
+    await expect(boss.getByTestId("end-round")).toContainText("End round · play 0 lots");
+    await shoot(boss, size.name, "accel-commish");
+    // Opening it again is refused: there is one accelerated round only.
+    expect((await control(fx, "open_round")).body).toMatchObject({ outcome: "rejected" });
+
+    // One picks the first two rows, the other the second and third; the counts reach every tab.
+    const rowsOne = one.getByTestId("pick-row");
+    await rowsOne.nth(0).click();
+    await rowsOne.nth(1).click();
+    await expect(one.getByTestId("nom-mine")).toHaveText("2 of 19");
+    await shoot(one, size.name, "accel-nominate");
+    await one.getByTestId("send-picks").click();
+    await expect(one.getByTestId("picks-in")).toContainText("Waiting on 1 franchise.");
+    const rowsTwo = two.getByTestId("pick-row");
+    await expect(rowsTwo.nth(0).getByTestId("pick-count")).toHaveText("1 pick");
+    await rowsTwo.nth(1).click();
+    await rowsTwo.nth(2).click();
+    await two.getByTestId("send-picks").click();
+    await expect(two.getByTestId("picks-in")).toBeVisible();
+    // Stale and new tabs: my picks come back from the server and the list is read-only.
+    await one.reload();
+    await expect(one.getByTestId("picks-in")).toBeVisible();
+    await expect(one.getByTestId("nom-mine")).toHaveText("2 of 19");
+    await expect(boss.getByTestId("end-round")).toContainText("End round · play 3 lots");
+    const picked = await auctionState(fx);
+    expect(picked.pickCounts.length).toBe(3);
+
+    // End round: picked lots run most-picked first, as new lot numbers.
+    await boss.getByTestId("end-round").click();
+    await expect(one.getByTestId("lot-card")).toBeVisible({ timeout: 6000 });
+    const first = await auctionState(fx);
+    const top = [...picked.pickCounts].sort((a: { count: number; lot: number }, b: { count: number; lot: number }) => b.count - a.count || a.lot - b.lot)[0];
+    expect(first.round).toBe("accelerated");
+    expect(first.lot.no).toBeGreaterThan(40);
+    expect(first.lot.name).toBe(`Fake ${top.lot}`);
+    await expect(one.getByText(`Accelerated round · Lot ${first.lot.no}`)).toBeVisible();
+    await expect(two.getByTestId("lot-name")).toHaveText(first.lot.name);
+    await shoot(one, size.name, "accel-live");
+
+    // Skip the three accelerated lots: the auction ends, never main-done again.
+    for (let i = 0; i < 300 && (await auctionState(fx)).phase !== "ended"; i++) {
+      const s = await auctionState(fx);
+      if (s.phase === "live" && s.lotOpen && s.currentBid === 0) await control(fx, "skip");
+      await sleep(100);
+    }
+    expect((await auctionState(fx)).phase).toBe("ended");
+    await expect(one.getByTestId("closed-card")).toBeVisible();
+    await expect(boss.getByTestId("closed-card")).toBeVisible();
+  });
+}
+
+test("End the auction from main done ends it; End round with no picks ends it too", async ({ browser }) => {
+  test.setTimeout(240_000);
+  const a = await seedRoom({ managers: 2, startInSec: 3600, open: 60, bid: 3, gap: 0 });
+  await control(a, "start_now");
+  await waitPhase(a, "live");
+  await toMainDone(a);
+  const bossA = await (await contextFor(browser, a.commissioner)).newPage();
+  const mgrA = await (await contextFor(browser, a.managers[1].cookie)).newPage();
+  await bossA.goto(auctionUrl(a));
+  await mgrA.goto(auctionUrl(a));
+  await bossA.getByTestId("end-auction").click();
+  await expect(mgrA.getByTestId("closed-card")).toBeVisible({ timeout: 6000 });
+  expect((await auctionState(a)).phase).toBe("ended");
+
+  const b = await seedRoom({ managers: 2, startInSec: 3600, open: 60, bid: 3, gap: 0 });
+  await control(b, "start_now");
+  await waitPhase(b, "live");
+  await toMainDone(b);
+  const bossB = await (await contextFor(browser, b.commissioner)).newPage();
+  await bossB.goto(auctionUrl(b));
+  await bossB.getByTestId("open-round").click();
+  await expect(bossB.getByTestId("end-round")).toContainText("play 0 lots");
+  await bossB.getByTestId("end-round").click();
+  await expect(bossB.getByTestId("closed-card")).toBeVisible({ timeout: 6000 });
+  expect((await auctionState(b)).phase).toBe("ended");
 });
