@@ -97,7 +97,8 @@ public class AuctionService {
         presence.connected(roomId),
         readiness.ready(roomId),
         List.of(),
-        access.franchiseId());
+        access.franchiseId(),
+        props.resumeLobby());
   }
 
   /** Full state for a member; 404 until an auction is scheduled. */
@@ -113,7 +114,8 @@ public class AuctionService {
         presence.connected(roomId),
         readiness.ready(roomId),
         bidLimits(state, access.franchiseId()),
-        access.franchiseId());
+        access.franchiseId(),
+        props.resumeLobby());
   }
 
   /**

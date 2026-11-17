@@ -16,14 +16,6 @@ public final class TimerRules {
 
   private TimerRules() {}
 
-  /** How long the resume lobby lasts when the caller does not say (R-7). */
-  public static final Duration RESUME_LOBBY = Duration.ofMinutes(2);
-
-  /** {@link #due(AuctionState, Instant, Duration)} with the default resume lobby. */
-  public static List<AuctionEvent> due(AuctionState s, Instant now) {
-    return due(s, now, RESUME_LOBBY);
-  }
-
   /**
    * The events due at {@code now}, empty when nothing is. One call covers one step; the caller
    * applies them and asks again until nothing is due. Paused, main-done and nominating never change

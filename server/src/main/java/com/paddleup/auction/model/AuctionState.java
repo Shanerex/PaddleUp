@@ -31,7 +31,8 @@ import java.util.UUID;
  * the accelerated-round nominations by franchise, in lot numbers. {@code accel} holds, by lot
  * number, the position and pick count of each lot the accelerated round plays (fixed when the round
  * starts; a re-opened lot keeps those of the lot it replays) and {@code accelSize} how many lots
- * the round has.
+ * the round has. {@code lotsClosed} counts every lot that has closed, sold, unsold or skipped (a
+ * main-round lot picked for the accelerated round stays counted; a re-opened lot is taken off).
  */
 public record AuctionState(
     UUID roomId,
@@ -65,7 +66,8 @@ public record AuctionState(
     String round,
     Map<UUID, List<Integer>> picks,
     Map<Integer, AccelSlot> accel,
-    int accelSize) {
+    int accelSize,
+    int lotsClosed) {
 
   public static final String MAIN = "main";
   public static final String ACCELERATED = "accelerated";
@@ -122,6 +124,7 @@ public record AuctionState(
         MAIN,
         Map.of(),
         Map.of(),
+        0,
         0);
   }
 
@@ -191,6 +194,7 @@ public record AuctionState(
     public Map<UUID, List<Integer>> picks;
     public Map<Integer, AccelSlot> accel;
     public int accelSize;
+    public int lotsClosed;
 
     private Builder(AuctionState s) {
       roomId = s.roomId;
@@ -225,6 +229,7 @@ public record AuctionState(
       picks = new LinkedHashMap<>(s.picks);
       accel = new LinkedHashMap<>(s.accel);
       accelSize = s.accelSize;
+      lotsClosed = s.lotsClosed;
     }
 
     public AuctionState build() {
@@ -260,7 +265,8 @@ public record AuctionState(
           round,
           picks,
           accel,
-          accelSize);
+          accelSize,
+          lotsClosed);
     }
   }
 }

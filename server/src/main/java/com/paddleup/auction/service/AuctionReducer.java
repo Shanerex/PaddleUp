@@ -157,6 +157,7 @@ public final class AuctionReducer {
    */
   private static void reopened(AuctionState.Builder b, AuctionEvent e) {
     int of = e.lot();
+    b.lotsClosed--;
     if (e.franchiseId() != null) {
       b.purses.merge(e.franchiseId(), e.number("amount"), Long::sum);
       List<SquadEntry> squad = new ArrayList<>(b.squads.getOrDefault(e.franchiseId(), List.of()));
@@ -352,6 +353,7 @@ public final class AuctionReducer {
   /** A lot closed: no bid is live, and the next lot opens after the gap. */
   private static void closed(AuctionState.Builder b, AuctionEvent e) {
     b.lotOpen = false;
+    b.lotsClosed++;
     clearLot(b);
     b.nextOpenAt = e.at().plus(Duration.ofSeconds(b.gapSeconds));
   }

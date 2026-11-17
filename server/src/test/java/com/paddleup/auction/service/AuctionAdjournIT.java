@@ -111,12 +111,15 @@ class AuctionAdjournIT extends AbstractAuctionIT {
     Room room = room(2, 6);
     goLive(room);
     control(room, "adjourn", "resumeAt", in(86_400).toString());
+    assertThat(view(room).get("resumeLobbySeconds").asLong()).isEqualTo(120);
 
     assertThat(outcome(control(room, "resume_now"))).isEqualTo("accepted");
 
     JsonNode lobby = view(room);
     assertThat(lobby.get("phase").asText()).isEqualTo("resume_lobby");
     assertThat(Instant.parse(lobby.get("liveAt").asText()))
+        .isEqualTo(
+            clock.instant().plus(Duration.ofSeconds(lobby.get("resumeLobbySeconds").asLong())))
         .isEqualTo(clock.instant().plus(Duration.ofMinutes(2)));
     assertThat(outcome(control(room, "resume_now"))).isEqualTo("rejected:wrong_phase");
   }

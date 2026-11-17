@@ -16,16 +16,18 @@ import java.util.UUID;
  * why the viewer cannot bid it. They hold for the whole lot, so a bid patch need not reread them.
  *
  * <p>{@code heldMs} is the time frozen by pause or adjourn (0 otherwise), {@code resumeAt} the
- * adjourn time and {@code liveAt} the end of the resume lobby. {@code round} is {@code main} or
- * {@code accelerated}. For the accelerated round every member sees {@code unsoldPool} (the cards),
- * {@code pickCounts} and {@code waiting} (franchises that have not sent picks); {@code myPicks} and
- * {@code openSlots} are the viewer's own, and {@code openSlots} is absent when the viewer owns no
+ * adjourn time and {@code liveAt} the end of the resume lobby and {@code resumeLobbySeconds} how
+ * long that lobby lasts (the room's setting, always sent). {@code round} is {@code main} or {@code
+ * accelerated}. For the accelerated round every member sees {@code unsoldPool} (the cards), {@code
+ * pickCounts} and {@code waiting} (franchises that have not sent picks); {@code myPicks} and {@code
+ * openSlots} are the viewer's own, and {@code openSlots} is absent when the viewer owns no
  * franchise.
  *
  * <p>Once the accelerated round has started, {@code accelSize} is how many lots it plays (absent
  * before), and for the lot shown {@code accelPosition} is its 1-based place in that order and
  * {@code lotPicks} how many franchises picked it (both absent for a main-round lot). They come from
- * the log, so a restart gives the same values.
+ * the log, so a restart gives the same values. {@code lotsClosed} counts every lot that has closed
+ * (sold, unsold or skipped), in either round.
  */
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public record AuctionStateDto(
@@ -62,4 +64,6 @@ public record AuctionStateDto(
     @Schema(requiredMode = Schema.RequiredMode.REQUIRED) List<UUID> waiting,
     Integer accelPosition,
     Integer accelSize,
-    Integer lotPicks) {}
+    Integer lotPicks,
+    @Schema(requiredMode = Schema.RequiredMode.REQUIRED) long resumeLobbySeconds,
+    @Schema(requiredMode = Schema.RequiredMode.REQUIRED) int lotsClosed) {}

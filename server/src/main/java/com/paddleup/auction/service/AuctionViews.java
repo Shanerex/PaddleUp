@@ -19,6 +19,7 @@ import com.paddleup.auction.model.Lot;
 import com.paddleup.auction.model.Outcome;
 import com.paddleup.auction.model.Phase;
 import com.paddleup.auction.util.Ladder;
+import java.time.Duration;
 import java.time.Instant;
 import java.util.Collection;
 import java.util.LinkedHashMap;
@@ -52,7 +53,8 @@ final class AuctionViews {
       Collection<UUID> connected,
       Collection<UUID> ready,
       List<BidLockDto> bidLimits,
-      UUID viewerFranchise) {
+      UUID viewerFranchise,
+      Duration resumeLobby) {
     boolean started = s.phase() != Phase.NONE && s.phase() != Phase.SCHEDULED;
     AuctionConfigDto config =
         started
@@ -119,7 +121,9 @@ final class AuctionViews {
         waiting(s),
         slot == null ? null : slot.position(),
         s.accelSize() > 0 ? s.accelSize() : null,
-        slot == null ? null : slot.picks());
+        slot == null ? null : slot.picks(),
+        resumeLobby.toSeconds(),
+        s.lotsClosed());
   }
 
   /**

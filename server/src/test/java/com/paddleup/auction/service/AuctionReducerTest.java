@@ -254,6 +254,34 @@ class AuctionReducerTest {
   }
 
   @Test
+  void lotsClosedCountsEveryClosedLotAndSurvivesTheAcceleratedRound() {
+    var picking = nominating();
+    // Three main lots closed unsold; none of them leaves the count when picked.
+    assertThat(picking.lotsClosed()).isEqualTo(3);
+
+    var live =
+        AuctionReducer.apply(
+            picking,
+            Events.roundStarted(
+                picking.lastSeq() + 1, T0, COMMISSIONER, UUID.randomUUID(), List.of(3, 1)));
+    assertThat(live.lotsClosed()).isEqualTo(3);
+
+    long seq = live.lastSeq() + 1;
+    var open = AuctionReducer.apply(live, Events.lotOpened(seq++, T0, 4, T0.plusSeconds(20)));
+    assertThat(open.lotsClosed()).isEqualTo(3);
+    var closed = AuctionReducer.apply(open, Events.lotUnsold(seq++, T0.plusSeconds(20), 4));
+    assertThat(closed.lotsClosed()).isEqualTo(4);
+
+    // Re-opening undoes that close.
+    var reopened =
+        AuctionReducer.apply(
+            closed,
+            Events.lotReopened(
+                seq, T0, 4, 6, "mis-click", null, 0, COMMISSIONER, UUID.randomUUID()));
+    assertThat(reopened.lotsClosed()).isEqualTo(3);
+  }
+
+  @Test
   void aMainRoundLotHasNoAcceleratedSlot() {
     var s = AuctionReducer.replay(AuctionState.initial(ROOM, catalog()), List.of(started(1)));
     s = AuctionReducer.apply(s, Events.lotOpened(2, T0, 1, T0.plusSeconds(20)));

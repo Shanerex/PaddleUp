@@ -108,7 +108,10 @@ class AuctionAcceleratedIT extends AbstractAuctionIT {
     assertThat(nominating.get("phase").asText()).isEqualTo("nominating");
     assertThat(nominating.get("round").asText()).isEqualTo("accelerated");
     assertThat(outcome(control(room, "open_round"))).isEqualTo("rejected:wrong_phase");
-    var bid = bid(room, room.manager(0), 2, 20);
+    // Lot 2 closed in the main round, so a late bid on it says so (CR2-5); a lot that never
+    // opened gets the phase error.
+    assertThat(outcome(bid(room, room.manager(0), 2, 20))).isEqualTo("rejected:lot_closed");
+    var bid = bid(room, room.manager(0), 4, 20);
     assertThat(bid.getStatusCode()).isEqualTo(HttpStatus.CONFLICT);
     assertThat(body(bid).get("error").asText()).isEqualTo("nominating");
   }
@@ -328,6 +331,8 @@ class AuctionAcceleratedIT extends AbstractAuctionIT {
       assertThat(first.get("accelPosition").asInt()).isEqualTo(1);
       assertThat(first.get("accelSize").asInt()).isEqualTo(3);
       assertThat(first.get("lotPicks").asInt()).isEqualTo(2);
+      // All seven main lots closed; the picked ones stay counted.
+      assertThat(first.get("lotsClosed").asInt()).isEqualTo(7);
     }
     // The counts stay after the round starts although the picked lots left the pool.
     assertThat(view(room).get("pickCounts")).isEmpty();
@@ -342,6 +347,7 @@ class AuctionAcceleratedIT extends AbstractAuctionIT {
     assertThat(second.get("accelPosition").asInt()).isEqualTo(2);
     assertThat(second.get("accelSize").asInt()).isEqualTo(3);
     assertThat(second.get("lotPicks").asInt()).isEqualTo(1);
+    assertThat(second.get("lotsClosed").asInt()).isEqualTo(8);
   }
 
   @Test

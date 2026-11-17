@@ -159,8 +159,9 @@ class AuctionLifecycleIT extends AbstractAuctionIT {
     assertThat(lastSeq(room)).isEqualTo(seq);
     // The room stays auction_live: season start belongs to a later spec.
     assertThat(roomState(room)).isEqualTo("auction_live");
-    // Bids wait for the Commissioner's choice: a 409 in main-done.
-    assertThat(bid(room, room.manager(0), 3, 20).getStatusCode().value()).isEqualTo(409);
+    // Lot 3 closed already, so a late bid on it says so; a lot that never opened is a phase error.
+    assertThat(outcome(bid(room, room.manager(0), 3, 20))).isEqualTo("rejected:lot_closed");
+    assertThat(bid(room, room.manager(0), 4, 20).getStatusCode().value()).isEqualTo(409);
   }
 
   @Test
