@@ -49,6 +49,23 @@ const open = async (c: ControlsContext) => {
   await userEvent.click(screen.getByTestId("controls-chip"));
 };
 
+describe("Controls sheets", () => {
+  it("draw a title row with a close button instead of the drag handle, and the X closes", async () => {
+    await open(ctx());
+    const dialog = screen.getByRole("dialog", { name: "Commissioner controls" });
+    expect(dialog.querySelector("h2")?.textContent).toBe("Commissioner controls");
+    await userEvent.click(screen.getByRole("button", { name: "Close" }));
+    expect(screen.queryByRole("dialog")).toBeNull();
+  });
+
+  it("skip, re-open and adjourn sheets use the same title row", async () => {
+    await open(ctx());
+    await userEvent.click(screen.getByTestId("control-skip"));
+    expect(screen.getByRole("dialog", { name: "Skip Lot 7?" }).querySelector("h2")?.textContent).toBe("Skip Lot 7?");
+    expect(screen.getByRole("button", { name: "Close" })).toBeTruthy();
+  });
+});
+
 describe("Controls", () => {
   it("lists the controls with Skip available only on a lot with no bid", async () => {
     await open(ctx());
@@ -137,6 +154,14 @@ describe("AdjournedCard", () => {
     render(<AdjournedCard lotsDone={86} squad={4} purse="€1 M" resumes="Sat 2 Nov, 8:00 PM" />);
     expect(screen.getByTestId("adjourned-card").textContent).toContain("Bidding resumes Sat 2 Nov, 8:00 PM your time.");
     expect(screen.queryByTestId("resume-now")).toBeNull();
+    expect(screen.getByTestId("adjourned-card").textContent).toContain("Adjourned after Lot 86.");
+  });
+
+  it("does not claim a Lot 0 when adjourned before any lot closed", () => {
+    render(<AdjournedCard lotsDone={0} squad={null} purse={null} resumes={null} />);
+    const text = screen.getByTestId("adjourned-card").textContent ?? "";
+    expect(text).toContain("Adjourned before the first lot closed.");
+    expect(text).not.toContain("Lot 0");
   });
 
   it("gives the Commissioner Resume now and Change time, and names the 2-minute lobby", async () => {

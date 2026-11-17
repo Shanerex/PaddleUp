@@ -69,10 +69,13 @@ export function ScheduleSheet({
   onClose,
   onDone,
   send,
+  titleRow,
 }: {
   roomId: string;
   /** `new` sets the first start from the room; `move` changes it from the lobby. */
   mode: "new" | "move" | "adjourn" | "retime";
+  /** Auction sheets: the title and a close button in a title row, no tile or handle (Auction A Spotlight). */
+  titleRow?: boolean;
   /** The current start (ISO) to prefill when moving it. */
   startsAt?: string;
   /** The estimated server time in epoch ms, or null before the first sample. */
@@ -153,12 +156,14 @@ export function ScheduleSheet({
   const title =
     mode === "adjourn" ? "Adjourn the auction" : mode === "retime" ? "Change the resume time?" : move ? "Change the start time?" : "Schedule the auction";
   return (
-    <Sheet label={title} onClose={onClose}>
-      <span className={sheetStyles.tile} style={{ background: "var(--team-tint)", color: "var(--team-ink)" }}>
-        <Icon name={mode === "adjourn" ? "bedtime" : move || resume ? "edit_calendar" : "event"} size={28} />
-      </span>
+    <Sheet label={title} title={titleRow ? title : undefined} onClose={onClose}>
+      {!titleRow && (
+        <span className={sheetStyles.tile} style={{ background: "var(--team-tint)", color: "var(--team-ink)" }}>
+          <Icon name={mode === "adjourn" ? "bedtime" : move || resume ? "edit_calendar" : "event"} size={28} />
+        </span>
+      )}
       <div className={sheetStyles.text}>
-        <h2 className={sheetStyles.title}>{title}</h2>
+        {!titleRow && <h2 className={sheetStyles.title}>{title}</h2>}
         <p className={sheetStyles.body}>
           {mode === "adjourn"
             ? "Bidding stops now. The lot on the block keeps its bids and its remaining time, and squads and purses stay as they are until you resume."

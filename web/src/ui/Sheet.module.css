@@ -35,6 +35,36 @@
   background: var(--line);
 }
 
+/* Auction sheets (Auction A Spotlight): title row, 800/18px title left, 36px close right. */
+.head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin: -4px 0 -8px;
+}
+
+.headTitle {
+  font-size: 18px;
+  line-height: 24px;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+}
+
+.close {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 36px;
+  height: 36px;
+  border: 0;
+  border-radius: 12px;
+  background: var(--surface-2);
+  color: var(--ink);
+  cursor: pointer;
+}
+
 @media (min-width: 640px) {
   .scrim {
     align-items: center;

@@ -1,12 +1,12 @@
 ---
 feature: 2026-11-02-09-auction-controls
 phase: build
-status: blocked
+status: draft
 g1: approved:Shanerex:2026-11-17
 g2: approved:Shanerex:2026-11-17
 g3: none
 bump: none
-next: human runs the mock server on 8099 for the T-30 side-by-side (commands in the T-30 log line), then dev ticks T-30
+next: all tasks ticked; run /rx:next for verify
 ---
 # State: 2026-11-02-09-auction-controls
 
@@ -27,3 +27,4 @@ next: human runs the mock server on 8099 for the T-30 side-by-side (commands in 
 - 2026-11-17 build: human chose to fix the 3y gap now: T-32 added (accelerated queue position/size and pick count in the state DTO, header "n of m" and "Picked by N")
 - 2026-11-17 build: deferred to a new spec (not yet on roadmap): 3w/3x pool "Showing 8 of N" cap, search and role filter; human approved the deferral
 - 2026-11-17 build: T-32 done (reducer accel slots, state DTO accelPosition/accelSize/lotPicks, header "n of m" and Picked by tag; e2e asserts both at 390 and 1440; make test and make lint green); T-30 still not ticked
+- 2026-11-17 build: T-30 done: side-by-side at 390 and 1440 reviewed; auction Commissioner sheets now draw the mock title row with a close button (Sheet title prop, adjourn via ScheduleSheet titleRow); adjourned before any lot says so instead of Lot 0 (copy.ts adjournedLine); e2e 10/10, make test and make lint green

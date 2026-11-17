@@ -67,6 +67,11 @@ export const UNREACHED: Notice = {
   body: "Your bid may not have gone through. Tap again; it won't be counted twice.",
 };
 
+/** The adjourned card's first sentence; no lot has a number 0, so zero lots done reads differently. */
+export function adjournedLine(lotsDone: number): string {
+  return lotsDone > 0 ? `Adjourned after Lot ${lotsDone}.` : "Adjourned before the first lot closed.";
+}
+
 export const OUTBID_TITLE = "Outbid!";
 
 /** "{Name} went {amount}. Rude." */

@@ -9,7 +9,7 @@ import { explainRoomError } from "../../../../rooms/errors";
 import { ScheduleSheet } from "../../../../rooms/schedule-sheet";
 import { Button } from "../../../../ui/Button";
 import { Icon } from "../../../../ui/Icon";
-import { Sheet, sheetStyles } from "../../../../ui/Sheet";
+import { Sheet } from "../../../../ui/Sheet";
 import s from "./controls.module.css";
 
 /** What the Commissioner's controls need from the auction screen. */
@@ -126,8 +126,7 @@ export function Controls({ ctx }: { ctx: ControlsContext }) {
         </button>
       </div>
       {mode === "list" && (
-        <Sheet label="Commissioner controls" onClose={closeAll}>
-          <h2 className={sheetStyles.title}>Commissioner controls</h2>
+        <Sheet label="Commissioner controls" title="Commissioner controls" onClose={closeAll}>
           <div className={s.body} data-testid="controls-sheet">
             <div className={s.block}>
               <div className={s.blockText}>
@@ -165,8 +164,7 @@ export function Controls({ ctx }: { ctx: ControlsContext }) {
         </Sheet>
       )}
       {mode === "skip" && lot && (
-        <Sheet label={`Skip Lot ${lot.no}?`} onClose={closeAll}>
-          <h2 className={sheetStyles.title}>Skip Lot {lot.no}?</h2>
+        <Sheet label={`Skip Lot ${lot.no}?`} title={`Skip Lot ${lot.no}?`} onClose={closeAll}>
           <div className={s.body} data-testid="skip-sheet">
             <p className={s.lede}>{lot.name} leaves the block with no hammer and goes to the unsold pool. Managers can pick them for the accelerated round.</p>
             <div className={s.lotRow}>
@@ -185,8 +183,7 @@ export function Controls({ ctx }: { ctx: ControlsContext }) {
         </Sheet>
       )}
       {mode === "reopen" && last && (
-        <Sheet label={`Re-open Lot ${last.lot}?`} onClose={closeAll}>
-          <h2 className={sheetStyles.title}>Re-open Lot {last.lot}?</h2>
+        <Sheet label={`Re-open Lot ${last.lot}?`} title={`Re-open Lot ${last.lot}?`} onClose={closeAll}>
           <div className={s.body} data-testid="reopen-sheet">
             <p className={s.lede}>Closed by mistake? Re-opening undoes the sale and puts the lot back up. Use it for real mistakes only.</p>
             <div className={s.lotRow}>
@@ -248,6 +245,7 @@ export function Controls({ ctx }: { ctx: ControlsContext }) {
           <ScheduleSheet
             roomId={ctx.roomId}
             mode="adjourn"
+            titleRow
             serverNow={ctx.serverNow}
             poolHref={`/rooms/${ctx.roomId}/pool`}
             send={(iso): Promise<IntentResult> => sendControl(ctx.roomId, "adjourn", { resumeAt: iso })}

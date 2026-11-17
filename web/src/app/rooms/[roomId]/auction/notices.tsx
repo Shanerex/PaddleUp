@@ -3,7 +3,7 @@
 import Link from "next/link";
 import type { CSSProperties } from "react";
 import { Icon } from "../../../../ui/Icon";
-import { OUTBID_TITLE, outbidBody, type Notice } from "../../../../auction/copy";
+import { OUTBID_TITLE, adjournedLine, outbidBody, type Notice } from "../../../../auction/copy";
 import { formatLotTime } from "../../../../auction/clock";
 import { hueOf } from "../../../../rooms/hues";
 import s from "./auction.module.css";
@@ -199,7 +199,7 @@ export function AdjournedCard({
       </span>
       <div className={s.panelTitle}>See you soon</div>
       <div className={s.panelBody}>
-        Adjourned after Lot {lotsDone}.{" "}
+        {adjournedLine(lotsDone)}{" "}
         {resumes ? (
           <>
             Bidding resumes <b style={{ color: "var(--ink)" }}>{resumes}</b> your time.
