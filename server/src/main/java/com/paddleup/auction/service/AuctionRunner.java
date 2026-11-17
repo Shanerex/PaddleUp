@@ -8,6 +8,7 @@ import com.paddleup.auction.exception.LogWriteException;
 import com.paddleup.auction.model.AuctionEvent;
 import com.paddleup.auction.model.AuctionHeader;
 import com.paddleup.auction.model.AuctionState;
+import com.paddleup.auction.model.Control;
 import com.paddleup.auction.model.Decision;
 import com.paddleup.auction.model.EventKind;
 import com.paddleup.auction.model.Events;
@@ -15,6 +16,7 @@ import com.paddleup.auction.model.Intent;
 import com.paddleup.auction.model.Lot;
 import com.paddleup.auction.model.Outcome;
 import com.paddleup.auction.model.Phase;
+import com.paddleup.auction.model.Picks;
 import com.paddleup.auction.model.Reason;
 import com.paddleup.auction.model.SquadRules;
 import com.paddleup.auction.model.Step;
@@ -120,6 +122,16 @@ final class AuctionRunner {
     return serial.submit(() -> handle(intent));
   }
 
+  /** A Commissioner control; the caller has already checked the role. */
+  CompletableFuture<Outcome> control(Control control) {
+    return serial.submit(() -> handleControl(control));
+  }
+
+  /** A franchise's accelerated-round nominations. */
+  CompletableFuture<Outcome> picks(Picks picks) {
+    return serial.submit(() -> handlePicks(picks));
+  }
+
   /**
    * Marks a franchise ready or not ready, on the serial queue so it cannot interleave with the
    * start of the auction that clears readiness. {@code onChange} is called there too, only when the
@@ -184,7 +196,7 @@ final class AuctionRunner {
   private Outcome handle(Intent intent) {
     Instant now = now();
     resumeIfPending(now);
-    Outcome prior = prior(intent);
+    Outcome prior = prior(intent.actor(), intent.intentId());
     if (prior != null) {
       return prior;
     }
@@ -195,7 +207,60 @@ final class AuctionRunner {
         commit(accepted.events(), scheduledBy, null);
         yield outcome(accepted.events().get(0));
       }
-      case Decision.Rejected rejected -> reject(intent, now, rejected.reason());
+      case Decision.Rejected rejected ->
+          reject(intent.actor(), intent.intentId(), intent.lot(), now, rejected.reason());
+      case Decision.PhaseError phase ->
+          throw new AuctionConflictException(phase.code(), phase.code());
+    };
+  }
+
+  /**
+   * A control is decided like a bid: by the pure rules, stored once under its intent id, then
+   * broadcast. Start now in the lobby logs {@code start_now} first and then goes live, so a refused
+   * go-live still logs {@code start_refused} after it.
+   */
+  private Outcome handleControl(Control control) {
+    Instant now = now();
+    resumeIfPending(now);
+    Outcome prior = prior(control.actor(), control.intentId());
+    if (prior != null) {
+      return prior;
+    }
+    advanceTimers(now);
+    Decision decision = ControlRules.decide(state, control, now, d.props().resumeLobby());
+    return switch (decision) {
+      case Decision.Accepted accepted -> {
+        boolean lobbyStart =
+            control.action() == Control.Action.START_NOW && state.phase() == Phase.SCHEDULED;
+        commit(accepted.events(), scheduledBy, null);
+        if (lobbyStart) {
+          goLive(now);
+        }
+        yield outcome(accepted.events().get(0));
+      }
+      case Decision.Rejected rejected ->
+          reject(control.actor(), control.intentId(), control.lot(), now, rejected.reason());
+      case Decision.PhaseError phase ->
+          throw new AuctionConflictException(phase.code(), phase.code());
+    };
+  }
+
+  private Outcome handlePicks(Picks picks) {
+    Instant now = now();
+    resumeIfPending(now);
+    Outcome prior = prior(picks.actor(), picks.intentId());
+    if (prior != null) {
+      return prior;
+    }
+    advanceTimers(now);
+    Decision decision = ControlRules.decidePicks(state, picks, now);
+    return switch (decision) {
+      case Decision.Accepted accepted -> {
+        commit(accepted.events(), scheduledBy, null);
+        yield outcome(accepted.events().get(0));
+      }
+      case Decision.Rejected rejected ->
+          reject(picks.actor(), picks.intentId(), 0, now, rejected.reason());
       case Decision.PhaseError phase ->
           throw new AuctionConflictException(phase.code(), phase.code());
     };
@@ -205,10 +270,10 @@ final class AuctionRunner {
    * Stores the rejection, then answers with it, so a resend of this intent id gets the same answer
    * even after a restart. If it cannot be stored nothing is answered and the client may retry.
    */
-  private Outcome reject(Intent intent, Instant now, String reason) {
-    Outcome out = Outcome.rejected(intent.lot(), reason);
+  private Outcome reject(UUID actor, UUID intentId, int lot, Instant now, String reason) {
+    Outcome out = Outcome.rejected(lot, reason);
     try {
-      d.rejections().append(roomId, intent.actor(), intent.intentId(), out, now);
+      d.rejections().append(roomId, actor, intentId, out, now);
     } catch (DataAccessException e) {
       throw new LogWriteException(e);
     }
@@ -216,19 +281,22 @@ final class AuctionRunner {
   }
 
   /** The first answer to this intent id, if it was already decided. */
-  private Outcome prior(Intent intent) {
-    Optional<Outcome> rejected = d.rejections().find(roomId, intent.actor(), intent.intentId());
+  private Outcome prior(UUID actor, UUID intentId) {
+    Optional<Outcome> rejected = d.rejections().find(roomId, actor, intentId);
     if (rejected.isPresent()) {
       return rejected.get();
     }
-    Optional<AuctionEvent> logged = d.events().byIntent(roomId, intent.actor(), intent.intentId());
+    Optional<AuctionEvent> logged = d.events().byIntent(roomId, actor, intentId);
     return logged.map(AuctionRunner::outcome).orElse(null);
   }
 
   private static Outcome outcome(AuctionEvent e) {
     boolean bid = e.kind() == EventKind.BID_ACCEPTED;
     return Outcome.accepted(
-        e.lot(), e.seq(), bid ? e.number("amount") : null, bid ? e.instant("deadline") : null);
+        e.lot() == null ? 0 : e.lot(),
+        e.seq(),
+        bid ? e.number("amount") : null,
+        bid ? e.instant("deadline") : null);
   }
 
   private AuctionState doSchedule(UserId actor, Instant startsAt) {

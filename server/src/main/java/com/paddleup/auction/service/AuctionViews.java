@@ -7,6 +7,7 @@ import com.paddleup.auction.dto.BidLockDto;
 import com.paddleup.auction.dto.IntentResultDto;
 import com.paddleup.auction.dto.LastResultDto;
 import com.paddleup.auction.dto.LotDto;
+import com.paddleup.auction.dto.PickCountDto;
 import com.paddleup.auction.dto.SquadEntryDto;
 import com.paddleup.auction.dto.StandingDto;
 import com.paddleup.auction.dto.StepDto;
@@ -49,8 +50,9 @@ final class AuctionViews {
       Instant serverNow,
       Collection<UUID> connected,
       Collection<UUID> ready,
-      List<BidLockDto> bidLimits) {
-    boolean started = s.phase() == Phase.LIVE || s.phase() == Phase.ENDED;
+      List<BidLockDto> bidLimits,
+      UUID viewerFranchise) {
+    boolean started = s.phase() != Phase.NONE && s.phase() != Phase.SCHEDULED;
     AuctionConfigDto config =
         started
             ? new AuctionConfigDto(
@@ -98,7 +100,22 @@ final class AuctionViews {
         List.copyOf(connected),
         s.phase() == Phase.SCHEDULED ? List.copyOf(ready) : List.of(),
         nextBid(s),
-        bidLimits);
+        bidLimits,
+        s.heldMs(),
+        s.resumeAt(),
+        s.liveAt(),
+        s.round(),
+        s.unsold().stream().map(no -> lot(s.lots().get(no - 1))).toList(),
+        ControlRules.pickCounts(s).entrySet().stream()
+            .map(e -> new PickCountDto(e.getKey(), e.getValue()))
+            .toList(),
+        s.picks().getOrDefault(viewerFranchise, List.of()),
+        viewerFranchise != null && s.purses().containsKey(viewerFranchise)
+            ? ControlRules.openSlots(s, viewerFranchise)
+            : null,
+        s.phase() == Phase.NOMINATING
+            ? s.purses().keySet().stream().filter(f -> !s.picks().containsKey(f)).toList()
+            : List.of());
   }
 
   /** The only amount the next bid may have, or null when no lot is open. */

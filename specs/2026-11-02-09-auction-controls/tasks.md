@@ -8,8 +8,8 @@ Design refs for every UI task: docs/design/README.md plus the screens named in t
 - [x] T-1 (AC-1): V11__auction_controls.sql widens auctions_phase_valid; Phase gains PAUSED, ADJOURNED, RESUME_LOBBY, MAIN_DONE, NOMINATING; IntentRules rejects bids and passes in every non-live phase; migration and rules tests.
 - [x] T-2 (AC-8, AC-11): AuctionState play queue of lot nos (lot, nextLot, hasMoreLots read it); SquadReserve takes the upcoming lot set; existing engine and guard suites stay green; add out-of-order reserve cases.
 - [x] T-3 (AC-8, AC-15): after the last main lot the gapSeconds gap runs, then main_done if unsold lots exist, else auction_ended; existing end-of-auction tests updated.
-- [ ] T-4 (AC-2, AC-3): ControlRequest, ControlRules skeleton, POST .../auction/controls; non-Commissioner gets 403, no event, no broadcast; one intent id replayed adds one event; refusals stored in auction_rejections.
-- [ ] T-5 (AC-4): pause and resume: heldMs from the deadline or gap; no expiry while paused; bids and passes rejected; resumed restores the exact remaining time.
+- [x] T-4 (AC-2, AC-3): ControlRequest, ControlRules skeleton, POST .../auction/controls; non-Commissioner gets 403, no event, no broadcast; one intent id replayed adds one event; refusals stored in auction_rejections.
+- [x] T-5 (AC-4): pause and resume: heldMs from the deadline or gap; no expiry while paused; bids and passes rejected; resumed restores the exact remaining time.
 - [ ] T-6 (AC-6): skip on a lot with no bid closes it as unsold and logs lot_skipped; with a bid it is refused with a reason and writes no event.
 - [ ] T-7 (AC-7, AC-8): auction.util.ReasonText; re-open: no reason rejected; purse, squad and unsold reversed; new lot at the front of the queue at base price with no bids; last lot re-openable in its gap (phase changes only after; gapSeconds 0 case); reason in the event.
 - [ ] T-8 (AC-9): adjourn with a future resumeAt keeping the lot, bids and remaining time; Change time, Resume now, 2-minute resume lobby (paddleup.auction.resume-lobby) and scheduled resume in TimerRules; never auto-live from adjourned.

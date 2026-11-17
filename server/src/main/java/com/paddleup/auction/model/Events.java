@@ -162,7 +162,14 @@ public final class Events {
   public static AuctionEvent paused(
       long seq, Instant at, UUID actor, UUID intentId, int lot, long heldMs) {
     return new AuctionEvent(
-        seq, at, EventKind.PAUSED, null, lot, actor, intentId, Map.of("heldMs", heldMs));
+        seq,
+        at,
+        EventKind.PAUSED,
+        null,
+        lot > 0 ? lot : null,
+        actor,
+        intentId,
+        Map.of("heldMs", heldMs));
   }
 
   /** Resumes a pause (actor set) or ends the resume lobby on its own (actor null). */

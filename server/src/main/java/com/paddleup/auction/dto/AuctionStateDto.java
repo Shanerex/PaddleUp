@@ -14,6 +14,13 @@ import java.util.UUID;
  * on the open lot may have, from the increment ladder. {@code bidLimits} are the viewer's own bid
  * limits on the open lot, in the order the server checks them: the first that refuses an amount is
  * why the viewer cannot bid it. They hold for the whole lot, so a bid patch need not reread them.
+ *
+ * <p>{@code heldMs} is the time frozen by pause or adjourn (0 otherwise), {@code resumeAt} the
+ * adjourn time and {@code liveAt} the end of the resume lobby. {@code round} is {@code main} or
+ * {@code accelerated}. For the accelerated round every member sees {@code unsoldPool} (the cards),
+ * {@code pickCounts} and {@code waiting} (franchises that have not sent picks); {@code myPicks} and
+ * {@code openSlots} are the viewer's own, and {@code openSlots} is absent when the viewer owns no
+ * franchise.
  */
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public record AuctionStateDto(
@@ -38,4 +45,13 @@ public record AuctionStateDto(
     @Schema(requiredMode = Schema.RequiredMode.REQUIRED) List<UUID> connected,
     @Schema(requiredMode = Schema.RequiredMode.REQUIRED) List<UUID> ready,
     Long nextBid,
-    @Schema(requiredMode = Schema.RequiredMode.REQUIRED) List<BidLockDto> bidLimits) {}
+    @Schema(requiredMode = Schema.RequiredMode.REQUIRED) List<BidLockDto> bidLimits,
+    @Schema(requiredMode = Schema.RequiredMode.REQUIRED) long heldMs,
+    Instant resumeAt,
+    Instant liveAt,
+    @Schema(requiredMode = Schema.RequiredMode.REQUIRED) String round,
+    @Schema(requiredMode = Schema.RequiredMode.REQUIRED) List<LotDto> unsoldPool,
+    @Schema(requiredMode = Schema.RequiredMode.REQUIRED) List<PickCountDto> pickCounts,
+    @Schema(requiredMode = Schema.RequiredMode.REQUIRED) List<Integer> myPicks,
+    Integer openSlots,
+    @Schema(requiredMode = Schema.RequiredMode.REQUIRED) List<UUID> waiting) {}

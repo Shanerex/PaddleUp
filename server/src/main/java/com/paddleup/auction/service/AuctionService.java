@@ -6,9 +6,11 @@ import com.paddleup.auction.dto.AuctionEventDto;
 import com.paddleup.auction.dto.AuctionStateDto;
 import com.paddleup.auction.dto.BidLockDto;
 import com.paddleup.auction.dto.BidRequest;
+import com.paddleup.auction.dto.ControlRequest;
 import com.paddleup.auction.dto.EventsDto;
 import com.paddleup.auction.dto.IntentResultDto;
 import com.paddleup.auction.dto.PassRequest;
+import com.paddleup.auction.dto.PicksRequest;
 import com.paddleup.auction.dto.PresenceDto;
 import com.paddleup.auction.dto.ReadyRequest;
 import com.paddleup.auction.dto.ScheduleRequest;
@@ -18,8 +20,10 @@ import com.paddleup.auction.exception.AuctionNotFoundException;
 import com.paddleup.auction.exception.AuctionRequestException;
 import com.paddleup.auction.model.AuctionEvent;
 import com.paddleup.auction.model.AuctionState;
+import com.paddleup.auction.model.Control;
 import com.paddleup.auction.model.Intent;
 import com.paddleup.auction.model.Phase;
+import com.paddleup.auction.model.Picks;
 import com.paddleup.auction.repository.AuctionEventRepository;
 import com.paddleup.rooms.dto.RoomAccessDto;
 import com.paddleup.rooms.exception.RoomForbiddenException;
@@ -86,7 +90,12 @@ public class AuctionService {
     }
     AuctionState state = await(registry.runner(roomId).schedule(caller, request.startsAt()));
     return AuctionViews.state(
-        state, clock.instant(), presence.connected(roomId), readiness.ready(roomId), List.of());
+        state,
+        clock.instant(),
+        presence.connected(roomId),
+        readiness.ready(roomId),
+        List.of(),
+        access.franchiseId());
   }
 
   /** Full state for a member; 404 until an auction is scheduled. */
@@ -101,7 +110,8 @@ public class AuctionService {
         clock.instant(),
         presence.connected(roomId),
         readiness.ready(roomId),
-        bidLimits(state, access.franchiseId()));
+        bidLimits(state, access.franchiseId()),
+        access.franchiseId());
   }
 
   /**
@@ -160,6 +170,44 @@ public class AuctionService {
             request.lot(),
             request.amount());
     return AuctionViews.result(await(registry.runner(roomId).intent(intent)), clock.instant());
+  }
+
+  /**
+   * A Commissioner control. A manager is refused with 403 before anything reaches the runner, so no
+   * event is written and nothing is broadcast.
+   */
+  public IntentResultDto control(UserId caller, UUID roomId, ControlRequest request) {
+    if (request == null || request.intentId() == null || request.action() == null) {
+      throw new AuctionRequestException("body", "intentId and action are required");
+    }
+    Control.Action action =
+        Control.Action.fromValue(request.action())
+            .orElseThrow(() -> new AuctionRequestException("action", "Unknown action"));
+    int lot = request.lot() == null ? 0 : request.lot();
+    if (lot < 0) {
+      throw new AuctionRequestException("lot", "lot must be positive");
+    }
+    RoomAccessDto access = port.access(roomId, caller);
+    if (!access.commissioner()) {
+      throw new RoomForbiddenException("Only the Commissioner can do this");
+    }
+    var control =
+        new Control(
+            action, request.intentId(), caller.value(), lot, request.reason(), request.resumeAt());
+    return AuctionViews.result(await(registry.runner(roomId).control(control)), clock.instant());
+  }
+
+  /** A franchise's accelerated-round picks; only a franchise owner may send them. */
+  public IntentResultDto picks(UserId caller, UUID roomId, PicksRequest request) {
+    if (request == null || request.intentId() == null || request.lots() == null) {
+      throw new AuctionRequestException("body", "intentId and lots are required");
+    }
+    if (request.lots().stream().anyMatch(l -> l == null || l < 1)) {
+      throw new AuctionRequestException("lots", "lot numbers must be positive");
+    }
+    RoomAccessDto access = port.access(roomId, caller);
+    var picks = new Picks(request.intentId(), caller.value(), access.franchiseId(), request.lots());
+    return AuctionViews.result(await(registry.runner(roomId).picks(picks)), clock.instant());
   }
 
   public IntentResultDto pass(UserId caller, UUID roomId, PassRequest request) {
