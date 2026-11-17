@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-import { cleanup, render, screen, within } from "@testing-library/react";
+import { act, cleanup, render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
@@ -81,5 +81,34 @@ describe("AuditView", () => {
     vi.mocked(getRoom).mockRejectedValue(new ApiError(404, null));
     render(<AuditView roomId="r1" />);
     expect(within(await screen.findByRole("alert")).getByText("Can't find that room")).toBeTruthy();
+  });
+
+  it("lists an entry once when a poll starts while the first read is still waiting", async () => {
+    vi.useFakeTimers({ shouldAdvanceTime: true });
+    try {
+      const page = { entries: [entry(1, { franchiseId: "fa", lot: 1 })], lastSeq: 1, more: false, serverNow: "" };
+      const resolvers: Array<(p: typeof page) => void> = [];
+      vi.mocked(getAudit).mockImplementation(
+        () =>
+          new Promise((resolve) => {
+            resolvers.push(resolve);
+          }),
+      );
+      render(<AuditView roomId="r1" />);
+      await vi.waitFor(() => expect(resolvers.length).toBe(1));
+
+      // The five-second poll fires while the first read has not answered.
+      await act(async () => {
+        await vi.advanceTimersByTimeAsync(5100);
+      });
+      await act(async () => {
+        resolvers.forEach((resolve) => resolve(page));
+        await vi.advanceTimersByTimeAsync(0);
+      });
+
+      expect(await screen.findAllByTestId("audit-row")).toHaveLength(1);
+    } finally {
+      vi.useRealTimers();
+    }
   });
 });

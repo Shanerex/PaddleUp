@@ -35,18 +35,28 @@ export function AuditView({ roomId }: { roomId: string }) {
   const [failed, setFailed] = useState<string | null>(null);
   const last = useRef(0);
 
-  /** Reads every page after the last seq seen and appends it. */
-  const read = useCallback(async () => {
-    for (let guard = 0; guard < 100; guard++) {
-      const page = await getAudit(roomId, "all", last.current);
-      if (page.entries.length) {
-        last.current = page.lastSeq;
-        setEntries((prev) => [...(prev ?? []), ...page.entries]);
-      } else {
-        setEntries((prev) => prev ?? []);
+  /**
+   * Reads every page after the last seq seen and appends it. A read asked for while another is
+   * still running joins it (the poll, a retry and the first load can overlap), and rows are kept by
+   * seq, so a page can never be listed twice.
+   */
+  const reading = useRef<Promise<void> | null>(null);
+  const read = useCallback((): Promise<void> => {
+    reading.current ??= (async () => {
+      for (let guard = 0; guard < 100; guard++) {
+        const page = await getAudit(roomId, "all", last.current);
+        last.current = Math.max(last.current, page.lastSeq);
+        setEntries((prev) => {
+          const have = new Set((prev ?? []).map((e) => e.seq));
+          const fresh = page.entries.filter((e) => !have.has(e.seq));
+          return prev !== null && fresh.length === 0 ? prev : [...(prev ?? []), ...fresh];
+        });
+        if (!page.more) return;
       }
-      if (!page.more) return;
-    }
+    })().finally(() => {
+      reading.current = null;
+    });
+    return reading.current;
   }, [roomId]);
 
   const load = useCallback(
