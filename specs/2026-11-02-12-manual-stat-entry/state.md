@@ -18,3 +18,5 @@ next: when deps are merged: git switch -c feature/2026-11-02-12-manual-stat-entr
 - 2026-11-02 intake: why: manual entry is the MVP fallback when no provider data exists, and it must never be overwritten.
 - 2026-11-02 intake: who: Commissioner or app admin.
 - 2026-11-02 intake: done-when: a form generated from the pack stat schema enters or corrects a full match stat sheet; points recompute idempotently; manual entries beat provider data.
+- 2026-11-17 intake: deferred from 2026-11-02-11-scoring-engine (CR-4, CR-5): putOverride must check matchId when the room has no dataset; normalise the override scale; add a way to clear an override.
+- 2026-11-17 intake: design refs drawn (P-1, approved 2026-11-17 by Shanerex): App Screens 9f-9j (Room `statEntry`, `statEntryError`, `statEntryNoData`, `statEntrySaved`, `statEntryClear`) and the stat entry card on Room `commishLive` (9a).
