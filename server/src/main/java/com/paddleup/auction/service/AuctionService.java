@@ -171,7 +171,9 @@ public class AuctionService {
     List<AuctionEvent> found =
         kinds.isEmpty() ? List.of() : events.afterOfKinds(roomId, kinds, after, page + 1);
     boolean more = found.size() > page;
-    List<AuditEntryDto> entries = found.stream().limit(page).map(AuditViews::entry).toList();
+    AuctionState state = registry.runner(roomId).state();
+    List<AuditEntryDto> entries =
+        found.stream().limit(page).map(e -> AuditViews.entry(e, state)).toList();
     long last = entries.isEmpty() ? after : entries.get(entries.size() - 1).seq();
     return new AuditDto(entries, last, more, clock.instant());
   }

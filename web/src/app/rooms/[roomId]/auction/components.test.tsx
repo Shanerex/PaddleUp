@@ -278,6 +278,21 @@ function lobby(over: Partial<React.ComponentProps<typeof Lobby>> = {}) {
   );
 }
 
+describe("Lobby Start now", () => {
+  it("shows Start now to the Commissioner only, locks it offline and calls back", async () => {
+    const onStartNow = vi.fn();
+    const { unmount } = lobby();
+    expect(screen.queryByTestId("start-now")).toBeNull();
+    unmount();
+    const { unmount: again } = lobby({ onStartNow });
+    await userEvent.click(screen.getByTestId("start-now"));
+    expect(onStartNow).toHaveBeenCalledTimes(1);
+    again();
+    lobby({ onStartNow, offline: true });
+    expect((screen.getByTestId("start-now") as HTMLButtonElement).disabled).toBe(true);
+  });
+});
+
 describe("Lobby", () => {
   it("shows the timer rule from the server's auction config, and no invented numbers without it (review 7)", () => {
     const { unmount } = lobby({ timer: { openSeconds: 45, bidSeconds: 12 } });

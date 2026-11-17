@@ -82,7 +82,7 @@ export function BidDock({ view, config, labels, onBid }: { view: AuctionView; co
         <span className={s.dockTitle}>{LOCK_LINES.resolved.title}</span>
       </>
     );
-  } else if (view.cause === "paused" || view.cause === "adjourned" || view.cause === "ended" || view.cause === "locked") {
+  } else if (view.cause === "paused" || view.cause === "adjourned" || view.cause === "resume_lobby" || view.cause === "ended" || view.cause === "locked") {
     state = view.cause;
     body = (
       <>

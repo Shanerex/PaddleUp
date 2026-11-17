@@ -118,6 +118,7 @@ export const LOCK_LINES = {
   syncing: { title: "Syncing…", line: "Getting the latest from the auction." },
   paused: { title: "Auction paused", line: "" },
   adjourned: { title: "Adjourned", line: "" },
+  resume_lobby: { title: "Resuming soon", line: "" },
   ended: { title: "Auction ended", line: "" },
   locked: { title: "Bidding's locked", line: "" },
   resolved: { title: "Next lot coming up…", line: "" },
@@ -128,3 +129,44 @@ export const OBSERVER_LINE = {
   title: "Watching only",
   line: "You lead this room without a franchise. Franchises bid; you watch.",
 };
+
+/** What a refused Commissioner control says, by the server's reason code. Nothing changed in any case. */
+export function controlRefusal(action: string, reason: string | undefined, lotNo: number | null, leaderName: string | null): Notice {
+  const lot = lotNo ? ` Lot ${lotNo}` : "";
+  if (action === "skip" && reason === "has_bid") {
+    return {
+      title: `Couldn't skip${lot}`,
+      body: `${leaderName ?? "A manager"} bid first, and bids stand. Let the hammer fall, then re-open the lot if it was a mistake. Nothing changed.`,
+    };
+  }
+  const WHY: Record<string, string> = {
+    wrong_phase: "The auction moved on before that landed.",
+    no_open_lot: "No lot is open right now.",
+    lot_closed: "That lot has already closed.",
+    reason_required: "A reason is required.",
+    reason_too_long: "That reason is too long.",
+    not_closed: "That lot can't be re-opened.",
+    superseded: "That player has already been put back up.",
+    time_invalid: "That time has already gone. Pick a later one.",
+    round_done: "The accelerated round has already been played.",
+  };
+  return {
+    title: action === "reopen" ? `Couldn't re-open${lot}` : action === "skip" ? `Couldn't skip${lot}` : "Couldn't do that",
+    body: `${(reason && WHY[reason]) ?? `The server turned that down${reason ? ` (${reason})` : ""}.`} Nothing changed.`,
+  };
+}
+
+/** The notice every manager sees when the Commissioner skips a lot (3t). */
+export function skippedNotice(lot: number | null, playerName: string | null): Notice {
+  return {
+    title: lot ? `Lot ${lot} skipped` : "Lot skipped",
+    body: `The Commissioner skipped ${playerName ?? "the player"}. They head to the unsold pool.`,
+  };
+}
+
+/** The notice every manager sees when the Commissioner re-opens a lot (3s); the reason is user text. */
+export function reopenedNotice(lot: number | null, reason: string | null, refund: { name: string; amount: string } | null): Notice {
+  const why = reason ? ` "${reason}"` : "";
+  const back = refund ? ` ${refund.name} get ${refund.amount} back and bidding restarts at base.` : " Bidding restarts at base.";
+  return { title: lot ? `Lot ${lot} is back` : "A lot is back", body: `The Commissioner re-opened it:${why}.${back}` };
+}

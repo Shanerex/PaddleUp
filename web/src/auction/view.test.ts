@@ -61,6 +61,9 @@ describe("statusOf", () => {
     [{ lotOpen: false, lastResult: { lot: 1, sold: false } }, "unsold"],
     [{ phase: "paused" }, "paused"],
     [{ phase: "adjourned", lotOpen: false }, "adjourned"],
+    [{ phase: "resume_lobby" }, "resume_lobby"],
+    [{ phase: "main_done", lotOpen: false }, "main_done"],
+    [{ phase: "nominating", lotOpen: false }, "nominating"],
     [{ phase: "ended", lotOpen: false }, "ended"],
     [{ phase: "something_new" }, "locked"],
     [{ lotOpen: false }, "locked"],
@@ -169,11 +172,20 @@ describe("buildView", () => {
     expect(unsold).toMatchObject({ status: "unsold", cause: "resolved", result: { sold: false, franchiseId: null } });
   });
 
-  it("locks and states the cause for paused and adjourned fixtures", () => {
-    const paused = buildView(input({ frozenLeft: 9000 }, { phase: "paused" }));
+  it("locks and states the cause for the held phases, reading the frozen time from the server", () => {
+    const paused = buildView(input({}, { phase: "paused", heldMs: 9000, deadline: undefined }));
     expect(paused).toMatchObject({ status: "paused", canBid: false, cause: "paused", timerFrozen: true, timeLeftMs: 9000, timerNote: "PAUSED" });
-    const adjourned = buildView(input({}, { phase: "adjourned", lotOpen: false }));
-    expect(adjourned).toMatchObject({ status: "adjourned", canBid: false, cause: "adjourned" });
+    const adjourned = buildView(input({}, { phase: "adjourned", lotOpen: true, heldMs: 4000, deadline: undefined }));
+    expect(adjourned).toMatchObject({ status: "adjourned", canBid: false, cause: "adjourned", timeLeftMs: 4000 });
+    const lobby = buildView(input({}, { phase: "resume_lobby", heldMs: 4000, deadline: undefined, liveAt: "2030-03-01T10:02:00Z" }));
+    expect(lobby).toMatchObject({ status: "resume_lobby", canBid: false, cause: "resume_lobby", timeLeftMs: 4000 });
+  });
+
+  it("locks the bid button in main-done and nominating with the plain locked cause", () => {
+    for (const phase of ["main_done", "nominating"]) {
+      const v = buildView(input({}, { phase, lotOpen: false, nextBid: undefined }));
+      expect(v).toMatchObject({ canBid: false, cause: "locked", timerFrozen: true });
+    }
   });
 
   it("never takes a bid in an unknown phase", () => {

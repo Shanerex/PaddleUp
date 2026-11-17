@@ -778,6 +778,7 @@ export interface components {
             franchiseId?: string;
             /** Format: int64 */
             amount?: number;
+            card?: components["schemas"]["LotDto"];
         };
         LotDto: {
             /** Format: int32 */
@@ -1320,6 +1321,7 @@ export interface components {
             franchiseId?: string;
             /** Format: int32 */
             lot?: number;
+            player?: string;
             detail: {
                 [key: string]: unknown;
             };

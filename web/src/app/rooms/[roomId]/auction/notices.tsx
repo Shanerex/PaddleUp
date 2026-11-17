@@ -15,7 +15,8 @@ export const hueStyle = (colour: string) => ({ "--mh": hueOf(colour) }) as CSSPr
 
 export type Toast =
   | { kind: "outbid"; who: Who | null; amount: string }
-  | { kind: "rejected"; notice: Notice };
+  | { kind: "rejected"; notice: Notice }
+  | { kind: "admin"; notice: Notice };
 
 /**
  * The floating notices (AuctionNotices, scenes 3a outbid, 3b rejected, 3d paused, 3f reconnecting).
@@ -26,6 +27,8 @@ export function Notices({
   reconnecting,
   paused,
   pausedLeftMs,
+  onResume,
+  resumeLobby,
   toast,
   onRetry,
   onDismiss,
@@ -33,11 +36,15 @@ export function Notices({
   reconnecting: boolean;
   paused: boolean;
   pausedLeftMs: number | null;
+  /** Given to the Commissioner: the pause notice then carries Resume (AuctionNotices isPausedCommish). */
+  onResume?: () => void;
+  /** The resume lobby's countdown to the lot going live, from the server's `liveAt`. */
+  resumeLobby?: { lot: number | null; leftMs: number } | null;
   toast: Toast | null;
   onRetry: () => void;
   onDismiss: () => void;
 }) {
-  if (!reconnecting && !paused && !toast) return null;
+  if (!reconnecting && !paused && !toast && !resumeLobby) return null;
   return (
     <div className={s.notices}>
       <div className={s.noticeStack}>
@@ -57,9 +64,34 @@ export function Notices({
           <div className={`${s.notice} ${s.noticeWarn}`} role="status" data-testid="notice-paused">
             <Icon name="pause_circle" size={22} style={{ color: "var(--warn-ink)" }} />
             <div className={s.noticeText}>
-              <span className={s.noticeTitle}>Commish hit pause</span>
+              <span className={s.noticeTitle}>{onResume ? "You paused the auction" : "Commish hit pause"}</span>
               <span className={s.noticeBody}>
-                Timer frozen at <span className="num">{formatLotTime(pausedLeftMs ?? 0)}</span>. Stretch, hydrate, trash-talk.
+                {onResume ? (
+                  <>
+                    Timer frozen at <span className="num">{formatLotTime(pausedLeftMs ?? 0)}</span> for everyone.
+                  </>
+                ) : (
+                  <>
+                    Timer frozen at <span className="num">{formatLotTime(pausedLeftMs ?? 0)}</span>. Stretch, hydrate, trash-talk.
+                  </>
+                )}
+              </span>
+            </div>
+            {onResume && (
+              <button type="button" className={s.noticeResume} data-testid="notice-resume" onClick={onResume}>
+                <Icon name="play_arrow" size={18} />
+                Resume
+              </button>
+            )}
+          </div>
+        )}
+        {resumeLobby && !reconnecting && (
+          <div className={`${s.notice} ${s.noticeInverse}`} role="status" data-testid="notice-resume-lobby">
+            <Icon name="replay" size={22} style={{ color: "var(--ok)" }} />
+            <div className={s.noticeText}>
+              <span className={s.noticeTitle}>Lobby open</span>
+              <span className={s.noticeBody}>
+                {resumeLobby.lot ? `Lot ${resumeLobby.lot}` : "The lot"} goes live in <span className="num">{formatLotTime(resumeLobby.leftMs)}</span>. Bidding stays locked until then.
               </span>
             </div>
           </div>
@@ -72,6 +104,16 @@ export function Notices({
             <div className={s.noticeText}>
               <span className={s.noticeTitle}>{OUTBID_TITLE}</span>
               <span className={s.noticeBody}>{outbidBody(toast.who?.name ?? "Someone", toast.amount)}</span>
+            </div>
+            <DismissButton onClick={onDismiss} />
+          </div>
+        )}
+        {toast?.kind === "admin" && (
+          <div className={`${s.notice} ${s.noticeAdmin}`} role="status" data-testid="notice-admin">
+            <Icon name="shield_person" size={22} style={{ color: "var(--warn-ink)" }} />
+            <div className={s.noticeText}>
+              <span className={s.noticeTitle}>{toast.notice.title}</span>
+              <span className={s.noticeBody}>{toast.notice.body}</span>
             </div>
             <DismissButton onClick={onDismiss} />
           </div>
@@ -141,11 +183,14 @@ export function AdjournedCard({
   squad,
   purse,
   resumes,
+  commish,
 }: {
   lotsDone: number;
   squad: number | null;
   purse: string | null;
   resumes: string | null;
+  /** The Commissioner's actions (Auction A adjournedCommish): Resume now opens the 2-minute lobby. */
+  commish?: { onResumeNow: () => void; onChangeTime: () => void; busy: boolean; nextLot: number | null; lobbyMinutes: number };
 }) {
   return (
     <div className={s.panelCard} data-testid="adjourned-card">
@@ -183,6 +228,23 @@ export function AdjournedCard({
           </div>
         )}
       </div>
+      {commish && (
+        <>
+          <div className={s.panelActions}>
+            <button type="button" className={s.panelAction} data-testid="resume-now" disabled={commish.busy} onClick={commish.onResumeNow}>
+              <Icon name="play_arrow" size={20} />
+              Resume now
+            </button>
+            <button type="button" className={`${s.panelAction} ${s.panelActionSoft}`} data-testid="change-resume-time" disabled={commish.busy} onClick={commish.onChangeTime}>
+              <Icon name="edit_calendar" size={20} />
+              Change time
+            </button>
+          </div>
+          <span className={s.panelNote}>
+            Resume now opens the lobby for a {commish.lobbyMinutes}-minute countdown{commish.nextLot ? `, then Lot ${commish.nextLot}` : ""}.
+          </span>
+        </>
+      )}
     </div>
   );
 }

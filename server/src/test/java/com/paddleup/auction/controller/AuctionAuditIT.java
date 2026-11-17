@@ -76,6 +76,7 @@ class AuctionAuditIT extends AbstractAuctionIT {
     assertThat(bid.get("lot").asInt()).isEqualTo(1);
     assertThat(bid.get("franchiseId").asText()).isEqualTo(room.franchise(0).toString());
     assertThat(bid.get("detail").get("amount").asLong()).isEqualTo(20);
+    assertThat(bid.get("player").asText()).isEqualTo("Player 1");
     // No user or intent id is ever in the log a member reads.
     assertThat(audit(room, room.manager(1), "").toString()).doesNotContain("intentId", "actor");
   }
@@ -101,6 +102,7 @@ class AuctionAuditIT extends AbstractAuctionIT {
     assertThat(entry.get("at").asText()).endsWith("Z");
     assertThat(entry.get("detail").get("type").asText()).isEqualTo("analyst");
     assertThat(entry.has("franchiseId")).isFalse();
+    assertThat(entry.has("player")).isFalse();
     assertThat(entry.toString()).doesNotContain("advice", "prompt", "secret", "Stop at 9");
     assertThat(audit(room, room.manager(1), "").toString()).doesNotContain("secret");
   }

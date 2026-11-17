@@ -1,0 +1,149 @@
+/* The audit log (Room `audit`). Rows keep the mock's shape: time, mark, text, type tag. */
+.page {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.title {
+  margin: 0;
+  font-size: 24px;
+  font-weight: 800;
+  letter-spacing: -0.025em;
+}
+
+.lede {
+  margin: 4px 0 0;
+  font-size: 14px;
+  color: var(--ink-2);
+}
+
+.filters {
+  display: flex;
+  gap: 8px;
+  overflow-x: auto;
+}
+
+.filter {
+  flex-shrink: 0;
+  height: 36px;
+  padding: 0 14px;
+  border: 0;
+  border-radius: 12px;
+  background: var(--surface);
+  color: var(--ink);
+  font: inherit;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.filterOn {
+  background: var(--ink);
+  color: var(--bg);
+}
+
+.list {
+  margin: 0;
+  padding: 6px;
+  list-style: none;
+  border-radius: 24px;
+  background: var(--surface);
+  box-shadow: var(--shadow);
+}
+
+.row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px;
+  border-radius: 12px;
+  font-size: 13px;
+}
+
+.rowAdmin {
+  background: var(--warn-tint);
+}
+
+.time {
+  flex-shrink: 0;
+  width: 60px;
+  font-family: var(--font-mono, "DM Mono", monospace);
+  font-variant-numeric: tabular-nums;
+  font-size: 11px;
+  color: var(--ink-2);
+}
+
+.mark {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 24px;
+  height: 24px;
+  border-radius: 7px;
+  background: var(--inverse);
+  color: #fff;
+  font-weight: 800;
+  font-size: 9px;
+}
+
+.text {
+  flex: 1;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.tag {
+  font-size: 10px;
+  font-weight: 800;
+  color: var(--ink-2);
+}
+
+.tagAdmin,
+.tagRtm {
+  color: var(--warn-ink);
+}
+
+.tagLifelines {
+  color: var(--analyst, var(--ink-2));
+}
+
+.tagPasses {
+  color: var(--ink-3);
+}
+
+.empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  padding: 28px;
+  border-radius: 24px;
+  background: var(--surface);
+  box-shadow: var(--shadow);
+  text-align: center;
+}
+
+.emptyTile {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 56px;
+  height: 56px;
+  border-radius: 17px;
+  background: var(--surface-2);
+  color: var(--ink-2);
+}
+
+.emptyTitle {
+  font-size: 17px;
+  font-weight: 700;
+}
+
+.emptyBody {
+  max-width: 38ch;
+  font-size: 14px;
+  line-height: 1.5;
+  color: var(--ink-2);
+}

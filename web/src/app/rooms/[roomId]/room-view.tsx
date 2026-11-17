@@ -40,6 +40,7 @@ import { Button, ButtonLink } from "../../../ui/Button";
 import { Icon } from "../../../ui/Icon";
 import { Monogram } from "../../../ui/kit";
 import { ConfirmSheet, Sheet, sheetStyles, Toast } from "../../../ui/Sheet";
+import { AuctionControlsCard, AuditLink } from "./auction-controls-card";
 import { RoomFrame } from "./room-frame";
 import s from "./room.module.css";
 
@@ -606,6 +607,10 @@ export function RoomView({ roomId, note }: { roomId: string; note?: string }) {
                   </>
                 )}
               </section>
+
+              {commish && (room.state === "auction_live" || room.state === "auction_scheduled") && <AuctionControlsCard room={room} members={members} />}
+
+              {room.state === "auction_live" && <AuditLink roomId={roomId} />}
 
               {commish && !mine && pre && (
                 <div className={s.callout}>

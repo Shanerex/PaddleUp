@@ -2,9 +2,9 @@ import type { AuctionState, BidLock } from "../api/client";
 import type { Connection } from "./live";
 
 /**
- * What the screen shows, from the server state alone. `paused` and `adjourned` are not phases of the
- * engine yet (Commissioner controls, FR-47): they are mapped here so the notices can be built and
- * tested, and any phase this file does not know maps to `locked`, which never takes a bid.
+ * What the screen shows, from the server state alone. Every engine phase has a status of its own
+ * (the lobby is `scheduled`); any phase this file does not know maps to `locked`, which never takes
+ * a bid.
  */
 export type Status =
   | "scheduled"
@@ -14,6 +14,9 @@ export type Status =
   | "unsold"
   | "paused"
   | "adjourned"
+  | "resume_lobby"
+  | "main_done"
+  | "nominating"
   | "ended"
   | "locked";
 
@@ -26,6 +29,7 @@ export type Cause =
   | "syncing"
   | "paused"
   | "adjourned"
+  | "resume_lobby"
   | "ended"
   | "locked"
   | "resolved"
@@ -43,7 +47,7 @@ export type ViewInput = {
   iBidOnLot: boolean;
   /** Server time now, epoch ms; null before the first sample. */
   serverNow: number | null;
-  /** The lot clock held while the connection is down or bidding is paused; null when it ticks. */
+  /** The lot clock held while the connection is down; null when it ticks. */
   frozenLeft: number | null;
   /** A bid I sent is waiting for its answer. */
   sending: boolean;
@@ -89,6 +93,12 @@ export function statusOf(state: AuctionState | null): Status {
       return "paused";
     case "adjourned":
       return "adjourned";
+    case "resume_lobby":
+      return "resume_lobby";
+    case "main_done":
+      return "main_done";
+    case "nominating":
+      return "nominating";
     case "live": {
       if (state.lotOpen) return state.currentBid > 0 ? "bidding" : "open";
       const last = state.lastResult;
@@ -133,6 +143,7 @@ export function buildView(input: ViewInput): AuctionView {
   else if (!input.synced) cause = "syncing";
   else if (status === "paused") cause = "paused";
   else if (status === "adjourned") cause = "adjourned";
+  else if (status === "resume_lobby") cause = "resume_lobby";
   else if (status === "ended") cause = "ended";
   else if (status === "sold" || status === "unsold") cause = "resolved";
   else if (!biddable) cause = "locked";
@@ -143,7 +154,13 @@ export function buildView(input: ViewInput): AuctionView {
 
   const running = online && biddable;
   const live = state?.deadline && input.serverNow !== null ? Math.max(0, Date.parse(state.deadline) - input.serverNow) : null;
-  const timeLeftMs = running ? live : (input.frozenLeft ?? (status === "sold" || status === "unsold" || status === "ended" ? 0 : live));
+  // Paused, adjourned and the resume lobby hold the lot's time as the server froze it.
+  const held = status === "paused" || status === "adjourned" || status === "resume_lobby";
+  const timeLeftMs = held
+    ? (state?.heldMs ?? 0)
+    : running
+      ? live
+      : (input.frozenLeft ?? (status === "sold" || status === "unsold" || status === "ended" ? 0 : live));
   const total = (state?.currentBid ?? 0) > 0 ? (state?.config?.bidSeconds ?? 0) : (state?.config?.openSeconds ?? 0);
   const timePct = timeLeftMs !== null && total > 0 ? Math.max(0, Math.min(100, (timeLeftMs / (total * 1000)) * 100)) : 0;
   const urgent = running && input.synced && timeLeftMs !== null && Math.ceil(timeLeftMs / 1000) <= 5 && timeLeftMs >= 0;
@@ -153,8 +170,10 @@ export function buildView(input: ViewInput): AuctionView {
     ? "WAITING"
     : status === "paused"
       ? "PAUSED"
-      : status === "adjourned" || status === "ended"
-        ? "ENDED"
+      : status === "adjourned" || status === "resume_lobby" || status === "ended"
+        ? status === "resume_lobby"
+          ? "WAITING"
+          : "ENDED"
         : urgent
           ? "GOING…"
           : status === "open"

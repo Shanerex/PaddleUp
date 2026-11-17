@@ -2,6 +2,7 @@ package com.paddleup.auction.service;
 
 import com.paddleup.auction.dto.AuditEntryDto;
 import com.paddleup.auction.model.AuctionEvent;
+import com.paddleup.auction.model.AuctionState;
 import com.paddleup.auction.model.EventKind;
 import java.util.Arrays;
 import java.util.LinkedHashMap;
@@ -96,7 +97,14 @@ final class AuditViews {
         .toList();
   }
 
-  static AuditEntryDto entry(AuctionEvent e) {
+  private static String playerOf(AuctionEvent e, AuctionState state) {
+    Integer lot = e.lot();
+    return lot != null && lot >= 1 && lot <= state.lots().size()
+        ? state.lots().get(lot - 1).name()
+        : null;
+  }
+
+  static AuditEntryDto entry(AuctionEvent e, AuctionState state) {
     Filter category = CATEGORY.get(e.kind());
     boolean lifeline = category == Filter.LIFELINES;
     Map<String, Object> detail = new LinkedHashMap<>();
@@ -112,6 +120,7 @@ final class AuditViews {
         e.kind().value(),
         lifeline ? null : e.franchiseId(),
         e.lot(),
+        lifeline ? null : playerOf(e, state),
         detail);
   }
 }

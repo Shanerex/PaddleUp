@@ -22,15 +22,15 @@ Design refs for every UI task: docs/design/README.md plus the screens named in t
 - [x] T-15 (AC-2): for every control kind the event is stored before broadcast; a forced log-write failure broadcasts nothing and leaves state unchanged.
 - [x] T-16 (AC-13): GET .../auction/audit: filters, time order, lifeline entries hold type, lot and time only, non-member 404, empty page; OpenAPI regenerated into web/src/api.
 - [ ] T-17 (AC-11, AC-14, AC-15): BLOCKING, design source only, no code: edit 3w/3x (open-slots wording, pick counts shown to all, 3x buttons reconciled with the matrix's End round) and draw the main-done Commissioner choice; get the human's approval; T-27, T-28 and T-29 wait on it.
-- [ ] T-18 (AC-14): web/src/auction/view.ts reads the real phases and drops the fixture mapping; resume_lobby, main_done and nominating handled; unknown phases still lock; view tests.
-- [ ] T-19 (AC-4, AC-14): notices.tsx paused and adjourned notices from state (heldMs, resumeAt), resume lobby countdown. Design refs: AuctionNotices paused notice and replay toast; Auction A paused, adjourned.
-- [ ] T-20 (AC-14): lobby Start now for the Commissioner (audited). Design refs: Room lobby, lobbyReschedule.
-- [ ] T-21 (AC-4, AC-14): Controls chip (Commissioner only) and sheet with Pause and Resume. Design refs: Explorations 3n, 3o.
-- [ ] T-22 (AC-6, AC-14): skip confirm, skip refused and lot skipped states. Design refs: Explorations 3p, 3q, 3t; Auction A unsold.
-- [ ] T-23 (AC-7, AC-14): re-open with required reason, and the re-opened lot as managers see it. Design refs: Explorations 3r, 3s.
-- [ ] T-24 (AC-9, AC-14): adjourn time picker, adjourned Commissioner view (Resume now, Change time), auction-screen adjourned button. Design refs: Explorations 3u, 3v; Auction A adjourned.
-- [ ] T-25 (AC-14): Room commish AUCTION CONTROLS list. Design refs: Room commish; App Screens 9a commishLive.
-- [ ] T-26 (AC-13): audit screen, filters All/Bids/Passes/Lifelines/RTM/Admin (Scoring as drawn, empty), empty state. Design refs: Room audit; App Screens 9b audit, 9c auditEmpty.
+- [x] T-18 (AC-14): web/src/auction/view.ts reads the real phases and drops the fixture mapping; resume_lobby, main_done and nominating handled; unknown phases still lock; view tests.
+- [x] T-19 (AC-4, AC-14): notices.tsx paused and adjourned notices from state (heldMs, resumeAt), resume lobby countdown. Design refs: AuctionNotices paused notice and replay toast; Auction A paused, adjourned.
+- [x] T-20 (AC-14): lobby Start now for the Commissioner (audited). Design refs: Room lobby, lobbyReschedule.
+- [x] T-21 (AC-4, AC-14): Controls chip (Commissioner only) and sheet with Pause and Resume. Design refs: Explorations 3n, 3o.
+- [x] T-22 (AC-6, AC-14): skip confirm, skip refused and lot skipped states. Design refs: Explorations 3p, 3q, 3t; Auction A unsold.
+- [x] T-23 (AC-7, AC-14): re-open with required reason, and the re-opened lot as managers see it. Design refs: Explorations 3r, 3s.
+- [x] T-24 (AC-9, AC-14): adjourn time picker, adjourned Commissioner view (Resume now, Change time), auction-screen adjourned button. Design refs: Explorations 3u, 3v; Auction A adjourned.
+- [x] T-25 (AC-14): Room commish AUCTION CONTROLS list. Design refs: Room commish; App Screens 9a commishLive.
+- [x] T-26 (AC-13): audit screen, filters All/Bids/Passes/Lifelines/RTM/Admin (Scoring as drawn, empty), empty state. Design refs: Room audit; App Screens 9b audit, 9c auditEmpty.
 - [ ] T-27 (AC-14, AC-15): end-of-main choice: the Commissioner opens the accelerated round or ends the auction; managers see main-done read-only. Design refs: the main-done state drawn in T-17.
 - [ ] T-28 (AC-10, AC-11): accelerated round, a manager picks from the unsold pool up to open slots, pick counts shown. Design refs: Explorations 3w as edited in T-17.
 - [ ] T-29 (AC-11): accelerated round Commissioner view (pick counts, End round) and accelerated lot live. Design refs: Explorations 3x as edited in T-17, 3y.

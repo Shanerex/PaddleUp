@@ -227,8 +227,8 @@ describe("AuctionView", () => {
     expect(screen.getByTestId("current-bid").textContent).toBe("€0.3 M");
   });
 
-  it("shows a locked button and the pause notice for a paused fixture, and the adjourned card", async () => {
-    feed.set(snap(live({ phase: "paused" })));
+  it("shows a locked button and the pause notice for the paused phase, and the adjourned card", async () => {
+    feed.set(snap(live({ phase: "paused", heldMs: 9000, deadline: undefined })));
     render(<AuctionView roomId="r1" />);
     expect((await screen.findByTestId("notice-paused")).textContent).toContain("Commish hit pause");
     expect((screen.getByTestId("bid-button") as HTMLButtonElement).disabled).toBe(true);
@@ -236,6 +236,27 @@ describe("AuctionView", () => {
     act(() => feed.set(snap(live({ phase: "adjourned", lotOpen: false }))));
     expect(await screen.findByTestId("adjourned-card")).toBeTruthy();
     expect((screen.getByTestId("bid-button") as HTMLButtonElement).textContent).toContain("Adjourned");
+  });
+
+  it("shows the Controls chip to the Commissioner only, in the live phases", async () => {
+    feed.set(snap(live()));
+    const { unmount } = render(<AuctionView roomId="r1" />);
+    await screen.findByTestId("bid-button");
+    expect(screen.queryByTestId("controls-chip")).toBeNull();
+    unmount();
+
+    vi.mocked(getRoom).mockResolvedValue(room({ myRole: "commissioner", myFranchiseId: null }));
+    render(<AuctionView roomId="r1" />);
+    expect(await screen.findByTestId("controls-chip")).toBeTruthy();
+  });
+
+  it("counts down the resume lobby and keeps the lot locked, from the server's liveAt", async () => {
+    const liveAt = new Date(Date.parse("2030-03-01T10:00:20Z") + 102_000).toISOString();
+    feed.set(snap(live({ phase: "resume_lobby", heldMs: 9000, deadline: undefined, liveAt })));
+    render(<AuctionView roomId="r1" />);
+    expect(await screen.findByTestId("notice-resume-lobby")).toBeTruthy();
+    expect(screen.getByTestId("adjourned-card")).toBeTruthy();
+    expect((screen.getByTestId("bid-button") as HTMLButtonElement).textContent).toContain("Resuming soon");
   });
 
   it("shows no auction UI for an ended auction, only the way back, and the same for no auction", async () => {

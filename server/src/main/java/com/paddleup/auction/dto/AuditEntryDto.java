@@ -10,6 +10,7 @@ import java.util.UUID;
  * One audit row. {@code category} is the filter it belongs to (bids, passes, lifelines, rtm, admin
  * or other); {@code kind} is the event kind. {@code detail} holds only the fields a member may see
  * for that kind: a lifeline entry holds its type and nothing else, and no user id is ever shown.
+ * {@code player} names the lot's player for every kind but lifelines.
  */
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public record AuditEntryDto(
@@ -19,4 +20,5 @@ public record AuditEntryDto(
     @Schema(requiredMode = Schema.RequiredMode.REQUIRED) String kind,
     UUID franchiseId,
     Integer lot,
+    String player,
     @Schema(requiredMode = Schema.RequiredMode.REQUIRED) Map<String, Object> detail) {}
