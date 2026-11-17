@@ -180,6 +180,26 @@
   background: var(--surface-2);
 }
 
+.role {
+  flex-shrink: 0;
+  padding: 3px 6px;
+  border-radius: 6px;
+  font-size: 11px;
+  font-weight: 800;
+}
+
+.lotRowText {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.lotRowText .lotRowName {
+  flex: none;
+}
+
 .lotRowName {
   flex: 1;
   font-weight: 700;

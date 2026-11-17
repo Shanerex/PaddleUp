@@ -396,7 +396,12 @@ function Auction({ roomId, data, reloadRoom }: { roomId: string; data: Data; rel
               roomId,
               state,
               money,
+              labels: room.packLabels,
               nameOf: (id) => whoOf(id)?.name ?? null,
+              buyerOf: (id) => {
+                const who = whoOf(id);
+                return who ? { monogram: who.monogram, colour: who.colour } : null;
+              },
               timeLeftMs: view.timeLeftMs,
               serverNow: () => (clock.ready ? clock.now() : null),
               onNotice: setControlNotice,

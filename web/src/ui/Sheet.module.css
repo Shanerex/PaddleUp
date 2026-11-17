@@ -80,6 +80,29 @@
   }
 }
 
+/* Auction sheets at desktop (Explorations 3n-3v at 1440): a full-height panel on the right. */
+@media (min-width: 1024px) {
+  .scrimSide {
+    align-items: stretch;
+    justify-content: flex-end;
+    padding: 0;
+  }
+
+  .sheetSide {
+    width: 420px;
+    max-width: 420px;
+    border-radius: 0;
+    animation: slide 240ms ease-out;
+  }
+}
+
+@keyframes slide {
+  from {
+    transform: translateX(24px);
+    opacity: 0;
+  }
+}
+
 @keyframes fade {
   from {
     opacity: 0;
@@ -94,7 +117,8 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .sheet {
+  .sheet,
+  .sheetSide {
     animation: fade 240ms ease-out;
   }
 }

@@ -46,4 +46,21 @@ describe("Sheet", () => {
     await userEvent.keyboard("{Escape}");
     expect(onClose).toHaveBeenCalled();
   });
+
+  it("marks only titled (auction) sheets as the desktop side panel", () => {
+    const { unmount } = render(
+      <Sheet label="Plain" onClose={vi.fn()}>
+        <span>x</span>
+      </Sheet>,
+    );
+    expect(screen.getByRole("dialog").className).not.toContain(s.sheetSide);
+    unmount();
+    render(
+      <Sheet label="Titled" title="Titled" onClose={vi.fn()}>
+        <span>x</span>
+      </Sheet>,
+    );
+    expect(screen.getByRole("dialog").className).toContain(s.sheetSide);
+    expect(screen.getByRole("dialog").parentElement?.className).toContain(s.scrimSide);
+  });
 });

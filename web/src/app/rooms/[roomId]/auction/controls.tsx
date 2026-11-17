@@ -6,9 +6,11 @@ import { sendControl, type AuctionState, type ControlAction, type IntentResult }
 import { controlRefusal, type Notice } from "../../../../auction/copy";
 import { formatLotTime } from "../../../../auction/clock";
 import { explainRoomError } from "../../../../rooms/errors";
+import { roleLabel, roleSlot, type PackLabels } from "../../../../rooms/pool";
 import { ScheduleSheet } from "../../../../rooms/schedule-sheet";
 import { Button } from "../../../../ui/Button";
 import { Icon } from "../../../../ui/Icon";
+import { Monogram } from "../../../../ui/kit";
 import { Sheet } from "../../../../ui/Sheet";
 import s from "./controls.module.css";
 
@@ -18,8 +20,12 @@ export type ControlsContext = {
   state: AuctionState;
   /** Formats a price in the room's currency. */
   money: (n: number) => string;
+  /** The pack's role labels, for the role chip on a lot (Explorations 3p). */
+  labels: PackLabels;
   /** Name of a franchise by id, for the refusal text. */
   nameOf: (id: string | null | undefined) => string | null;
+  /** A franchise's monogram and colour, for the buyer on the re-open sheet (Explorations 3r). */
+  buyerOf?: (id: string | null | undefined) => { monogram: string; colour: string } | null;
   /** Lot clock left, in ms, for the sheet's header; null when no lot is open. */
   timeLeftMs: number | null;
   serverNow: () => number | null;
@@ -168,6 +174,9 @@ export function Controls({ ctx }: { ctx: ControlsContext }) {
           <div className={s.body} data-testid="skip-sheet">
             <p className={s.lede}>{lot.name} leaves the block with no hammer and goes to the unsold pool. Managers can pick them for the accelerated round.</p>
             <div className={s.lotRow}>
+              <span className={s.role} style={{ background: `var(--role${roleSlot(ctx.labels, lot.role)}-bg)`, color: `var(--role${roleSlot(ctx.labels, lot.role)}-ink)` }} data-testid="skip-role">
+                {roleLabel(ctx.labels, lot.role)}
+              </span>
               <span className={s.lotRowName}>{lot.name}</span>
               <span className={s.note}>No bids</span>
             </div>
@@ -187,8 +196,12 @@ export function Controls({ ctx }: { ctx: ControlsContext }) {
           <div className={s.body} data-testid="reopen-sheet">
             <p className={s.lede}>Closed by mistake? Re-opening undoes the sale and puts the lot back up. Use it for real mistakes only.</p>
             <div className={s.lotRow}>
-              <span className={s.lotRowName}>
-                Lot {last.lot} · {last.card?.name ?? "Player"}
+              {last.sold && ctx.buyerOf?.(last.franchiseId) && <Monogram text={ctx.buyerOf(last.franchiseId)?.monogram} colour={ctx.buyerOf(last.franchiseId)?.colour} size={36} />}
+              <span className={s.lotRowText}>
+                <span className={s.lotRowName}>
+                  Lot {last.lot} · {last.card?.name ?? "Player"}
+                </span>
+                {last.sold && <span className={s.note}>Sold to {ctx.nameOf(last.franchiseId) ?? "a franchise"}</span>}
               </span>
               <span className={s.blockNum}>{last.sold ? ctx.money(last.amount ?? 0) : "No bids"}</span>
             </div>

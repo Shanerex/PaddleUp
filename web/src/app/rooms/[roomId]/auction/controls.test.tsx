@@ -36,7 +36,9 @@ function ctx(over: Partial<ControlsContext> = {}): ControlsContext {
     roomId: "r1",
     state: state(),
     money: (n) => `€${n / 1_000_000} M`,
+    labels: { roles: [{ id: "def", label: "Defender" }], tags: [] } as unknown as ControlsContext["labels"],
     nameOf: (id) => (id === "fa" ? "Red FC" : null),
+    buyerOf: (id) => (id === "fa" ? { monogram: "RF", colour: "rose" } : null),
     timeLeftMs: 12_000,
     serverNow: () => Date.now(),
     onNotice: vi.fn(),
@@ -97,6 +99,7 @@ describe("Controls", () => {
     await open(c);
     await userEvent.click(screen.getByTestId("control-skip"));
     expect(screen.getByTestId("skip-sheet").textContent).toContain("Pat Reed leaves the block");
+    expect(screen.getByTestId("skip-role").textContent).toBe("Defender");
     await userEvent.click(screen.getByRole("button", { name: "Skip Lot 7" }));
     expect(sendControl).toHaveBeenCalledWith("r1", "skip", { lot: 7 });
     await waitFor(() => expect(c.onNotice).toHaveBeenLastCalledWith(expect.objectContaining({ title: "Couldn't skip Lot 7" })));
@@ -109,6 +112,9 @@ describe("Controls", () => {
     const sheet = screen.getByTestId("reopen-sheet");
     expect(sheet.textContent).toContain("Sam Cole leaves Red FC");
     expect(sheet.textContent).toContain("€0.4 M goes back to their purse");
+    // The row names the buyer with its monogram, as drawn in 3r.
+    expect(sheet.textContent).toContain("Sold to Red FC");
+    expect(sheet.textContent).toContain("RF");
     const button = screen.getByRole("button", { name: "Re-open Lot 6" }) as HTMLButtonElement;
     expect(button.disabled).toBe(true);
     await userEvent.type(screen.getByTestId("reopen-reason"), "  Wrong paddle ");
