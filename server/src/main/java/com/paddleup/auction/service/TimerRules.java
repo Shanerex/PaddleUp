@@ -56,7 +56,7 @@ public final class TimerRules {
       if (s.hasMoreLots()) {
         return List.of(
             Events.lotOpened(
-                seq, now, s.queue().get(0), now.plus(Duration.ofSeconds(s.openSeconds()))));
+                seq, now, s.queue().getFirst(), now.plus(Duration.ofSeconds(s.openSeconds()))));
       }
       // The last lot's gap has ended (R-14): lots left unsold go to the Commissioner's choice,
       // none (or an accelerated round just played) ends the auction.

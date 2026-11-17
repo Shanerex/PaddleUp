@@ -17,6 +17,7 @@ import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.SequencedSet;
 import java.util.TreeMap;
 import java.util.UUID;
 
@@ -167,27 +168,33 @@ public final class AuctionReducer {
     if (b.lastResult != null && b.lastResult.lot() == of) {
       b.lastResult = null;
     }
-    int newLot = again(b, of);
+    List<Lot> lots = new ArrayList<>(b.lots);
+    int newLot = again(lots, of);
+    b.lots = lots;
+    b.lotsByPrice = byPrice(lots);
     if (newLot != (int) e.number("newLot")) {
       throw new IllegalStateException("Re-opened lot " + of + " is not numbered " + newLot);
     }
     if (b.accel.containsKey(of)) {
       b.accel.put(newLot, b.accel.get(of));
     }
-    b.queue.add(0, newLot);
+    b.queue.addFirst(newLot);
   }
 
   /** The accelerated round: the picked unsold lots, in order, each as a new lot. */
   private static void roundStarted(AuctionState.Builder b, AuctionEvent e) {
-    List<Integer> queue = new ArrayList<>();
+    SequencedSet<Integer> queue = new LinkedHashSet<>();
     b.accel = new LinkedHashMap<>();
+    List<Lot> lots = new ArrayList<>(b.lots);
     for (int original : ints(e.payload().get("order"))) {
       int picks = (int) b.picks.values().stream().filter(l -> l.contains(original)).count();
       b.unsold.remove(Integer.valueOf(original));
-      int no = again(b, original);
+      int no = again(lots, original);
       queue.add(no);
       b.accel.put(no, new AccelSlot(queue.size(), picks));
     }
+    b.lots = lots;
+    b.lotsByPrice = byPrice(lots);
     b.accelSize = queue.size();
     b.queue = queue;
     b.phase = Phase.LIVE;
@@ -196,11 +203,13 @@ public final class AuctionReducer {
     clearLot(b);
   }
 
-  /** Adds a new lot built from the card of lot {@code original}; returns its number. */
-  private static int again(AuctionState.Builder b, int original) {
-    Lot card = b.lots.get(original - 1);
-    int no = b.lots.size() + 1;
-    List<Lot> lots = new ArrayList<>(b.lots);
+  /**
+   * Appends to {@code lots} a new lot built from the card of lot {@code original}; returns its
+   * number. The caller sorts {@code lotsByPrice} once, after the last lot it adds.
+   */
+  private static int again(List<Lot> lots, int original) {
+    Lot card = lots.get(original - 1);
+    int no = lots.size() + 1;
     lots.add(
         new Lot(
             no,
@@ -212,8 +221,6 @@ public final class AuctionReducer {
             card.set(),
             card.position(),
             card.basePrice()));
-    b.lots = lots;
-    b.lotsByPrice = byPrice(lots);
     return no;
   }
 
@@ -280,7 +287,7 @@ public final class AuctionReducer {
     b.lotsByPrice = byPrice(lots);
     b.currentLot = 0;
     b.lotOpen = false;
-    b.queue = new ArrayList<>(lots.stream().map(Lot::no).toList());
+    b.queue = new LinkedHashSet<>(lots.stream().map(Lot::no).toList());
     b.unsold = new ArrayList<>();
     b.nextOpenAt = null;
     b.lastResult = null;

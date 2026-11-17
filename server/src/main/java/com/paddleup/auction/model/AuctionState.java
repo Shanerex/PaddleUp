@@ -7,6 +7,7 @@ import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.SequencedSet;
 import java.util.Set;
 import java.util.UUID;
 
@@ -21,15 +22,16 @@ import java.util.UUID;
  * last one closed. {@code lotsByPrice} holds the same lots by base price, then lot number, sorted
  * once at go-live so the squad reserve never sorts on the bid path.
  *
- * <p>{@code queue} holds the lot numbers still to be played, in play order; the lot after the
- * current one is its head. A re-opened or accelerated lot is a new lot number (the next one, built
- * from the original card) put in the queue, so a lot number in the log never changes meaning.
- * {@code heldMs} is the time frozen by pause or adjourn (the open lot's remaining time, or the rest
- * of the gap), {@code resumeAt} the adjourn time, {@code liveAt} the end of the resume lobby.
- * {@code round} is {@code main} or {@code accelerated}; {@code picks} are the accelerated-round
- * nominations by franchise, in lot numbers. {@code accel} holds, by lot number, the position and
- * pick count of each lot the accelerated round plays (fixed when the round starts; a re-opened lot
- * keeps those of the lot it replays) and {@code accelSize} how many lots the round has.
+ * <p>{@code queue} holds the lot numbers still to be played, in play order (a set, so membership is
+ * one lookup); the lot after the current one is its head. A re-opened or accelerated lot is a new
+ * lot number (the next one, built from the original card) put in the queue, so a lot number in the
+ * log never changes meaning. {@code heldMs} is the time frozen by pause or adjourn (the open lot's
+ * remaining time, or the rest of the gap), {@code resumeAt} the adjourn time, {@code liveAt} the
+ * end of the resume lobby. {@code round} is {@code main} or {@code accelerated}; {@code picks} are
+ * the accelerated-round nominations by franchise, in lot numbers. {@code accel} holds, by lot
+ * number, the position and pick count of each lot the accelerated round plays (fixed when the round
+ * starts; a re-opened lot keeps those of the lot it replays) and {@code accelSize} how many lots
+ * the round has.
  */
 public record AuctionState(
     UUID roomId,
@@ -56,7 +58,7 @@ public record AuctionState(
     Instant nextOpenAt,
     LastResult lastResult,
     long lastSeq,
-    List<Integer> queue,
+    SequencedSet<Integer> queue,
     long heldMs,
     Instant resumeAt,
     Instant liveAt,
@@ -79,7 +81,7 @@ public record AuctionState(
     squads.forEach((id, entries) -> copy.put(id, List.copyOf(entries)));
     squads = Collections.unmodifiableMap(copy);
     unsold = List.copyOf(unsold);
-    queue = List.copyOf(queue);
+    queue = Collections.unmodifiableSequencedSet(new LinkedHashSet<>(queue));
     var pickCopy = new LinkedHashMap<UUID, List<Integer>>();
     picks.forEach((id, nos) -> pickCopy.put(id, List.copyOf(nos)));
     picks = Collections.unmodifiableMap(pickCopy);
@@ -113,7 +115,7 @@ public record AuctionState(
         null,
         null,
         0,
-        List.of(),
+        new LinkedHashSet<>(),
         0,
         null,
         null,
@@ -135,7 +137,7 @@ public record AuctionState(
   public Lot nextLot() {
     boolean held = phase == Phase.PAUSED || phase == Phase.ADJOURNED || phase == Phase.RESUME_LOBBY;
     boolean inGap = (phase == Phase.LIVE || held) && !lotOpen && currentLot >= 1;
-    return inGap && !queue.isEmpty() ? lots.get(queue.get(0) - 1) : null;
+    return inGap && !queue.isEmpty() ? lots.get(queue.getFirst() - 1) : null;
   }
 
   /**
@@ -181,7 +183,7 @@ public record AuctionState(
     public Instant nextOpenAt;
     public LastResult lastResult;
     public long lastSeq;
-    public List<Integer> queue;
+    public SequencedSet<Integer> queue;
     public long heldMs;
     public Instant resumeAt;
     public Instant liveAt;
@@ -215,7 +217,7 @@ public record AuctionState(
       nextOpenAt = s.nextOpenAt;
       lastResult = s.lastResult;
       lastSeq = s.lastSeq;
-      queue = new ArrayList<>(s.queue);
+      queue = new LinkedHashSet<>(s.queue);
       heldMs = s.heldMs;
       resumeAt = s.resumeAt;
       liveAt = s.liveAt;

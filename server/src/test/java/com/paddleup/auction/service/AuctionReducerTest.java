@@ -144,6 +144,30 @@ class AuctionReducerTest {
   }
 
   @Test
+  void theRoundStartAddsEveryAcceleratedLotAndKeepsTheByPriceListSortedWithTheQueueAsASet() {
+    var s = AuctionReducer.replay(AuctionState.initial(ROOM, catalog()), List.of(started(1)));
+    long seq = 2;
+    for (int lot = 1; lot <= 3; lot++) {
+      s = AuctionReducer.apply(s, Events.lotOpened(seq++, T0, lot, T0.plusSeconds(20)));
+      s = AuctionReducer.apply(s, Events.lotUnsold(seq++, T0.plusSeconds(20), lot));
+    }
+    s = AuctionReducer.apply(s, Events.mainDone(seq++, T0.plusSeconds(30), List.of(1, 2, 3)));
+    s = AuctionReducer.apply(s, Events.nominatingOpened(seq++, T0.plusSeconds(31), null, null));
+
+    s =
+        AuctionReducer.apply(
+            s, Events.roundStarted(seq, T0.plusSeconds(32), null, null, List.of(3, 1)));
+
+    assertThat(s.lots()).hasSize(5);
+    assertThat(s.queue()).containsExactly(4, 5);
+    assertThat(s.lots().get(3).playerId()).isEqualTo(s.lots().get(2).playerId());
+    assertThat(s.lotsByPrice()).containsExactlyInAnyOrderElementsOf(s.lots());
+    assertThat(s.lotsByPrice()).extracting(Lot::no).containsExactly(1, 2, 3, 4, 5);
+    assertThat(s.closed(4)).isFalse();
+    assertThat(s.closed(3)).isTrue();
+  }
+
+  @Test
   void thePlayQueueHoldsTheLotsStillToComeAndOpeningALotTakesItOut() {
     var live = AuctionReducer.replay(AuctionState.initial(ROOM, catalog()), List.of(started(1)));
     assertThat(live.queue()).containsExactly(1, 2, 3);
