@@ -161,7 +161,7 @@ export function NominatingPanel({
           </div>
           <button type="button" className={`${s.btn} ${s.btnTeam} ${s.btnBlock}`} data-testid="end-round" disabled={commish.busy} onClick={commish.onEndRound}>
             <Icon name="play_arrow" size={20} />
-            End round · play {commish.queued} {commish.queued === 1 ? "lot" : "lots"}
+            End round · play <span className="num">{commish.queued}</span> {commish.queued === 1 ? "lot" : "lots"}
           </button>
           <span className={s.note}>
             Ending the round closes picking for the {commish.waiting} still choosing and plays the picked lots, most-picked first. With no picks, the auction ends.
@@ -225,12 +225,12 @@ export function SendPicksBar({ picked, sent, noSlots, waiting, busy, onSend }: {
         {noSlots ? (
           <div className={s.sent} data-testid="no-slots">
             <Icon name="check_circle" size={22} style={{ color: "var(--ok)" }} />
-            Your squad is full, so there is nothing to pick. Waiting on {waiting} {waiting === 1 ? "franchise" : "franchises"}.
+            Your squad is full, so there is nothing to pick. Waiting on <span className="num">{waiting}</span> {waiting === 1 ? "franchise" : "franchises"}.
           </div>
         ) : sent ? (
           <div className={s.sent} data-testid="picks-in">
             <Icon name="check_circle" size={22} style={{ color: "var(--ok)" }} />
-            Picks in. Waiting on {waiting} {waiting === 1 ? "franchise" : "franchises"}.
+            Picks in. Waiting on <span className="num">{waiting}</span> {waiting === 1 ? "franchise" : "franchises"}.
           </div>
         ) : (
           <button type="button" className={`${s.send} ${picked > 0 ? s.sendOn : ""}`} data-testid="send-picks" disabled={picked === 0 || busy} onClick={onSend}>

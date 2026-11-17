@@ -106,6 +106,8 @@ describe("NominatingPanel", () => {
     expect(screen.getByTitle("Picking")).toBeTruthy();
     fireEvent.click(screen.getByTestId("end-round"));
     expect(screen.getByTestId("end-round").textContent).toContain("End round · play 2 lots");
+    // CR2-10: the live counts are DM Mono tabular.
+    expect(screen.getByTestId("end-round").querySelector(".num")?.textContent).toBe("2");
     expect(screen.getByText(/closes picking for the 1 still choosing/)).toBeTruthy();
     expect(onEndRound).toHaveBeenCalledTimes(1);
   });
@@ -139,11 +141,13 @@ describe("SendPicksBar", () => {
     render(<SendPicksBar picked={2} sent waiting={3} busy={false} onSend={vi.fn()} />);
     expect(screen.queryByTestId("send-picks")).toBeNull();
     expect(screen.getByTestId("picks-in").textContent).toContain("Picks in. Waiting on 3 franchises.");
+    expect(screen.getByTestId("picks-in").querySelector(".num")?.textContent).toBe("3");
   });
 
   it("tells a franchise with no open slots there is nothing to pick, instead of saying picks are in", () => {
     render(<SendPicksBar picked={0} sent noSlots waiting={1} busy={false} onSend={vi.fn()} />);
     expect(screen.queryByTestId("picks-in")).toBeNull();
     expect(screen.getByTestId("no-slots").textContent).toContain("Your squad is full, so there is nothing to pick. Waiting on 1 franchise.");
+    expect(screen.getByTestId("no-slots").querySelector(".num")?.textContent).toBe("1");
   });
 });
