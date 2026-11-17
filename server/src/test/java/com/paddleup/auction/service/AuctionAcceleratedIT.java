@@ -197,6 +197,21 @@ class AuctionAcceleratedIT extends AbstractAuctionIT {
   }
 
   @Test
+  void aFranchiseWithNoOpenSlotsIsNotWaitingForPicks() {
+    Room room = mainDone(7, 5);
+    control(room, "open_round");
+    // Manager 0 holds 5 of 5 places: it cannot pick, so the round does not wait for it.
+    assertThat(state(room, room.manager(0)).get("openSlots").asInt()).isZero();
+
+    JsonNode before = view(room);
+    assertThat(before.get("waiting")).hasSize(1);
+    assertThat(before.get("waiting").get(0).asText()).isEqualTo(room.franchise(1).toString());
+
+    picks(room, room.manager(1), List.of(6));
+    assertThat(view(room).get("waiting")).isEmpty();
+  }
+
+  @Test
   void endRoundPlaysThePickedLotsMostPickedFirstWithTiesByLotNumber() {
     Room room = mainDone(7, 4);
     control(room, "open_round");

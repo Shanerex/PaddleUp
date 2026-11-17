@@ -116,12 +116,23 @@ final class AuctionViews {
         viewerFranchise != null && s.purses().containsKey(viewerFranchise)
             ? ControlRules.openSlots(s, viewerFranchise)
             : null,
-        s.phase() == Phase.NOMINATING
-            ? s.purses().keySet().stream().filter(f -> !s.picks().containsKey(f)).toList()
-            : List.of(),
+        waiting(s),
         slot == null ? null : slot.position(),
         s.accelSize() > 0 ? s.accelSize() : null,
         slot == null ? null : slot.picks());
+  }
+
+  /**
+   * The franchises the accelerated round still waits for: those that have open slots to fill and
+   * have not sent picks. A franchise that cannot pick (no open slots) is not waited for.
+   */
+  private static List<UUID> waiting(AuctionState s) {
+    if (s.phase() != Phase.NOMINATING) {
+      return List.of();
+    }
+    return s.purses().keySet().stream()
+        .filter(f -> !s.picks().containsKey(f) && ControlRules.openSlots(s, f) > 0)
+        .toList();
   }
 
   /** The only amount the next bid may have, or null when no lot is open. */
