@@ -21,6 +21,11 @@ public final class Reason {
   public static final String NOT_LIVE = "not_live";
   public static final String NO_OPEN_LOT = "no_open_lot";
   public static final String ENDED = "ended";
+  public static final String PAUSED = "paused";
+  public static final String ADJOURNED = "adjourned";
+  public static final String RESUME_LOBBY = "resume_lobby";
+  public static final String MAIN_DONE = "main_done";
+  public static final String NOMINATING = "nominating";
 
   // The lobby ready toggle is refused (answered 409).
   public static final String NOT_SCHEDULED = "not_scheduled";

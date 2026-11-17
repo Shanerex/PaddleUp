@@ -75,6 +75,11 @@ public final class IntentRules {
     return switch (s.phase()) {
       case NONE, SCHEDULED -> Optional.of(new Decision.PhaseError(Reason.NOT_LIVE));
       case ENDED -> Optional.of(new Decision.PhaseError(Reason.ENDED));
+      case PAUSED -> Optional.of(new Decision.PhaseError(Reason.PAUSED));
+      case ADJOURNED -> Optional.of(new Decision.PhaseError(Reason.ADJOURNED));
+      case RESUME_LOBBY -> Optional.of(new Decision.PhaseError(Reason.RESUME_LOBBY));
+      case MAIN_DONE -> Optional.of(new Decision.PhaseError(Reason.MAIN_DONE));
+      case NOMINATING -> Optional.of(new Decision.PhaseError(Reason.NOMINATING));
       case LIVE ->
           s.lotOpen() ? Optional.empty() : Optional.of(new Decision.PhaseError(Reason.NO_OPEN_LOT));
     };

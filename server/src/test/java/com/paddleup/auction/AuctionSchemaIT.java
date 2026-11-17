@@ -10,7 +10,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.dao.DuplicateKeyException;
 import org.springframework.jdbc.core.JdbcTemplate;
 
-/** AC-11: the event log and lot cards are append-only and the seq is unique per room. */
+/** AC-1, AC-11: the event log and lot cards are append-only and the seq is unique per room. */
 class AuctionSchemaIT extends AbstractPostgresIT {
 
   @Autowired JdbcTemplate jdbc;
@@ -107,7 +107,34 @@ class AuctionSchemaIT extends AbstractPostgresIT {
   }
 
   @Test
-  void anAuctionPhaseOutsideTheThreeIsRejected() {
+  void everyControlPhaseIsAcceptedByTheHeaderCheck() {
+    for (String phase :
+        new String[] {
+          "scheduled",
+          "live",
+          "paused",
+          "adjourned",
+          "resume_lobby",
+          "main_done",
+          "nominating",
+          "ended"
+        }) {
+      UUID room = room();
+      jdbc.update(
+          "INSERT INTO auctions (room_id, phase, starts_at, scheduled_by, created_at, updated_at)"
+              + " VALUES (?, ?, now(), ?, now(), now())",
+          room,
+          phase,
+          user());
+      assertThat(
+              jdbc.queryForObject(
+                  "SELECT phase FROM auctions WHERE room_id = ?", String.class, room))
+          .isEqualTo(phase);
+    }
+  }
+
+  @Test
+  void anAuctionPhaseOutsideTheListIsRejected() {
     UUID room = room();
     assertThatThrownBy(
             () ->

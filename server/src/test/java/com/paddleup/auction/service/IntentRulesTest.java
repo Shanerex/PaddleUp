@@ -21,7 +21,7 @@ import java.util.List;
 import java.util.UUID;
 import org.junit.jupiter.api.Test;
 
-/** AC-4, AC-5, AC-6: the pure rules for a bid and a pass. */
+/** AC-1, AC-4, AC-5, AC-6: the pure rules for a bid and a pass. */
 class IntentRulesTest {
 
   private static final Instant NOW = T0.plusSeconds(3);
@@ -189,6 +189,26 @@ class IntentRulesTest {
     }
     assertThat(last.phase().value()).isEqualTo("ended");
     assertThat(bid(last, A, USER_A, 4, 20)).isEqualTo(new Decision.PhaseError(Reason.ENDED));
+  }
+
+  @Test
+  void bidsAndPassesAreRefusedInEveryPhaseThatIsNotLive() {
+    var open = AuctionFixtures.lotOneOpen();
+    for (var phase :
+        List.of(
+            com.paddleup.auction.model.Phase.PAUSED,
+            com.paddleup.auction.model.Phase.ADJOURNED,
+            com.paddleup.auction.model.Phase.RESUME_LOBBY,
+            com.paddleup.auction.model.Phase.MAIN_DONE,
+            com.paddleup.auction.model.Phase.NOMINATING)) {
+      var edit = open.edit();
+      edit.phase = phase;
+      var s = edit.build();
+      var expected = new Decision.PhaseError(phase.value());
+
+      assertThat(bid(s, A, USER_A, 1, 20)).as("bid in %s", phase).isEqualTo(expected);
+      assertThat(pass(s, B, USER_B, 1)).as("pass in %s", phase).isEqualTo(expected);
+    }
   }
 
   @Test
