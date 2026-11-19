@@ -37,19 +37,19 @@ Cells name the outcome; "reject" returns a reason, writes no event. Lifetime sta
 | Ended | all reject | reject | none | link to room |
 
 ## Acceptance criteria
-- AC-1 (R-1, R-2): After a server restart in lobby, live, paused, adjourned, main-done and nominating, phase, lot and remaining time equal the pre-restart values.
-- AC-2 (R-2): Each control event is persisted before its broadcast; a failed write broadcasts nothing; replaying one intent id adds one event.
-- AC-3 (R-3): A non-Commissioner control intent returns 403, writes no event, broadcasts nothing.
-- AC-4 (R-4): While paused, bids and passes are rejected and the timer does not advance; after Resume the remaining time equals the value at pause.
-- AC-6 (R-5): Skip on a lot with no bid closes it and is audited; skip on a lot with a bid is refused with a reason and writes no event.
-- AC-7 (R-6): Re-open without a reason is rejected; with one, purse and squad return to pre-sale values and the audit entry holds the reason.
-- AC-8 (R-6, R-14): The re-opened lot is the next lot after the current one and opens at base price with no earlier bids; a wrongly closed last lot can be re-opened during its gap, and the phase changes (R-14) only after the gap.
-- AC-9 (R-7): Adjourn then restart keeps bidding locked; Resume now opens a 2-minute resume lobby, then the lot goes live; Change time updates the stored time.
-- AC-10 (R-8): A no-bid lot appears in the unsold pool; a sold lot does not; a nomination beyond a franchise's open squad slots is rejected, one within them is accepted.
-- AC-11 (R-9): Every room member's response includes pick counts; accelerated lots run most-picked first; a won accelerated lot still fails the eligibility guard when FR-44 is breached.
-- AC-13 (R-11): A room member sees bid, pass, RTM, lifeline and admin entries in time order (non-member gets 404); lifeline entries carry only type, lot and time; each filter returns only its kind; an empty log shows the empty state.
-- AC-14 (R-12, R-13): Playwright at 390 and 1440 against the mocks: Start now, controls, adjourned button, end-of-main choice, paused and adjourned notices from real phases (new tab and stale state included); stub pack passes unchanged.
-- AC-15 (R-14, R-15): With unsold lots the main pool ends in main-done, with none in ended; the Commissioner can open the accelerated round or end the auction; a Manager sending either returns 403 and writes no event; a second accelerated round is rejected.
+- AC-1: (R-1, R-2) After a server restart in lobby, live, paused, adjourned, main-done and nominating, phase, lot and remaining time equal the pre-restart values.
+- AC-2: (R-2) Each control event is persisted before its broadcast; a failed write broadcasts nothing; replaying one intent id adds one event.
+- AC-3: (R-3) A non-Commissioner control intent returns 403, writes no event, broadcasts nothing.
+- AC-4: (R-4) While paused, bids and passes are rejected and the timer does not advance; after Resume the remaining time equals the value at pause.
+- AC-6: (R-5) Skip on a lot with no bid closes it and is audited; skip on a lot with a bid is refused with a reason and writes no event.
+- AC-7: (R-6) Re-open without a reason is rejected; with one, purse and squad return to pre-sale values and the audit entry holds the reason.
+- AC-8: (R-6, R-14) The re-opened lot is the next lot after the current one and opens at base price with no earlier bids; a wrongly closed last lot can be re-opened during its gap, and the phase changes (R-14) only after the gap.
+- AC-9: (R-7) Adjourn then restart keeps bidding locked; Resume now opens a 2-minute resume lobby, then the lot goes live; Change time updates the stored time.
+- AC-10: (R-8) A no-bid lot appears in the unsold pool; a sold lot does not; a nomination beyond a franchise's open squad slots is rejected, one within them is accepted.
+- AC-11: (R-9) Every room member's response includes pick counts; accelerated lots run most-picked first; a won accelerated lot still fails the eligibility guard when FR-44 is breached.
+- AC-13: (R-11) A room member sees bid, pass, RTM, lifeline and admin entries in time order (non-member gets 404); lifeline entries carry only type, lot and time; each filter returns only its kind; an empty log shows the empty state.
+- AC-14: (R-12, R-13) Playwright at 390 and 1440 against the mocks: Start now, controls, adjourned button, end-of-main choice, paused and adjourned notices from real phases (new tab and stale state included); stub pack passes unchanged.
+- AC-15: (R-14, R-15) With unsold lots the main pool ends in main-done, with none in ended; the Commissioner can open the accelerated round or end the auction; a Manager sending either returns 403 and writes no event; a second accelerated round is rejected.
 
 ## Out of scope
 - Scoring-sourced audit entries (the Scoring filter stays empty until the scoring spec); RTM flow (17); push notices (21).
