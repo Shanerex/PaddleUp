@@ -230,13 +230,26 @@ final class AuctionRunner {
         },
         (before, now) -> {
           if (startsFromLobby(before, control)) {
-            goLive(now);
+            goLiveAfterStartNow(now);
           }
         });
   }
 
   private static boolean startsFromLobby(AuctionState state, Control control) {
     return control.action() == Control.Action.START_NOW && state.phase() == Phase.SCHEDULED;
+  }
+
+  /**
+   * {@code start_now} is already stored, so the control has happened whatever the go-live does: a
+   * failed write must not turn the answer into an error, since a resend would then be answered as
+   * accepted anyway. The stored time is now, so the next tick goes live.
+   */
+  private void goLiveAfterStartNow(Instant now) {
+    try {
+      goLive(now);
+    } catch (LogWriteException e) {
+      log.warn("Auction {} start now is logged but going live failed; the tick retries", roomId, e);
+    }
   }
 
   private Outcome handlePicks(Picks picks) {

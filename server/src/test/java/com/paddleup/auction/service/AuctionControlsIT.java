@@ -176,6 +176,39 @@ class AuctionControlsIT extends AbstractAuctionIT {
     assertThat(eventCount(room, "lot_opened")).isEqualTo(2);
   }
 
+  /**
+   * CR3-2: once start_now is stored, a go-live that fails to write is not a failed control: the
+   * answer stays accepted for every resend and the next tick goes live.
+   */
+  @Test
+  void aGoLiveThatFailsAfterStartNowStillAnswersAcceptedAndTheTickRetriesIt() {
+    Room room = room(2, 6);
+    clock.freeze(T0.minusSeconds(3600));
+    schedule(room, T0);
+    UUID intent = UUID.randomUUID();
+    // start_now is written; the first write of the go-live (auction_started) fails.
+    org.mockito.Mockito.doCallRealMethod()
+        .doThrow(new DataAccessResourceFailureException("disk gone"))
+        .doCallRealMethod()
+        .when(eventLog)
+        .append(any(), any());
+
+    var first = control(room, intent, "start_now");
+    org.mockito.Mockito.reset(eventLog);
+
+    assertThat(outcome(first)).isEqualTo("accepted");
+    assertThat(eventCount(room, "start_now")).isEqualTo(1);
+    assertThat(eventCount(room, "auction_started")).isZero();
+    assertThat(phase(room)).isEqualTo("scheduled");
+    assertThat(outcome(control(room, intent, "start_now"))).isEqualTo("accepted");
+    assertThat(eventCount(room, "start_now")).isEqualTo(1);
+
+    tick();
+
+    assertThat(phase(room)).isEqualTo("live");
+    assertThat(eventCount(room, "auction_started")).isEqualTo(1);
+  }
+
   @Test
   void pauseAndResumeAreRefusedOutsideTheirPhase() {
     Room room = room(2, 6);
