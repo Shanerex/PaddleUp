@@ -264,6 +264,20 @@ describe("AuctionView", () => {
     expect(screen.getByTestId("timer").textContent).toBe("0:09");
   });
 
+  describe("the Commissioner's skip and re-open notice", () => {
+    const reopen = { seq: 4, kind: "lot_reopened", lot: 3, newLot: 12, reason: "Wrong paddle", franchiseId: null, amount: null };
+
+    it("names the lot number the re-opened lot plays under, not the old one (CR3-4)", async () => {
+      feed.set(snap(live({ lot: { ...lot, no: 12 } })));
+      render(<AuctionView roomId="r1" />);
+      await screen.findByTestId("bid-button");
+      act(() => feed.set(snap(live({ lastSeq: 4, lot: { ...lot, no: 12 } }), { adminEvent: reopen })));
+      const text = (await screen.findByTestId("notice-admin")).textContent ?? "";
+      expect(text).toContain("Lot 12 is back");
+      expect(text).not.toContain("Lot 3");
+    });
+  });
+
   it("says the adjourned auction stopped after the lots the server counts as closed, in either round", async () => {
     // A re-opened or accelerated lot carries number 12; nine lots have closed (CR2-4).
     feed.set(snap(live({ phase: "adjourned", lotOpen: true, lot: { ...live().lot!, no: 12 }, lotsClosed: 9 })));

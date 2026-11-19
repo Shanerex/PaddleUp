@@ -161,9 +161,11 @@ test.describe("Commissioner controls", () => {
     await boss.getByTestId("reopen-reason").fill("Timer bug on Zoya's phone");
     await submit.click();
 
-    await expect(manager.getByTestId("notice-admin")).toContainText("Lot 1 is back");
-    await expect(manager.getByTestId("notice-admin")).toContainText("Timer bug on Zoya's phone");
+    // The lot comes back under a new number (queue head), and the notice names that one (CR3-4).
     const s = await auctionState(fx);
+    expect(s.nextLot.no).toBeGreaterThan(1);
+    await expect(manager.getByTestId("notice-admin")).toContainText(`Lot ${s.nextLot.no} is back`);
+    await expect(manager.getByTestId("notice-admin")).toContainText("Timer bug on Zoya's phone");
     expect(s.standings.every((x: { purse: number; squad: unknown[] }) => x.squad.length === 0)).toBe(true);
   });
 

@@ -185,7 +185,7 @@ function Auction({ roomId, data, reloadRoom }: { roomId: string; data: Data; rel
       setAdminToast(skippedNotice(adminEvent.lot, state?.lot?.no === adminEvent.lot ? (state?.lot?.name ?? null) : closedName));
     } else {
       setAdminToast(
-        reopenedNotice(adminEvent.lot, adminEvent.reason, adminEvent.franchiseId && adminEvent.amount !== null ? { name: whoOf(adminEvent.franchiseId)?.name ?? "The buyer", amount: money(adminEvent.amount) } : null),
+        reopenedNotice(adminEvent.newLot, adminEvent.reason, adminEvent.franchiseId && adminEvent.amount !== null ? { name: whoOf(adminEvent.franchiseId)?.name ?? "The buyer", amount: money(adminEvent.amount) } : null),
       );
     }
   }

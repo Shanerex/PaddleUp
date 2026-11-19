@@ -31,6 +31,8 @@ export type AdminEvent = {
   seq: number;
   kind: "lot_skipped" | "lot_reopened";
   lot: number | null;
+  /** For a re-open: the number the lot plays under now (its old number is `lot`); null for a skip. */
+  newLot: number | null;
   reason: string | null;
   franchiseId: string | null;
   amount: number | null;
@@ -237,6 +239,7 @@ export function createLive(deps: LiveDeps) {
           seq: e.seq,
           kind: e.kind,
           lot: e.lot ?? null,
+          newLot: typeof e.payload.newLot === "number" ? e.payload.newLot : null,
           reason: typeof e.payload.reason === "string" ? e.payload.reason : null,
           franchiseId: e.franchiseId ?? null,
           amount: typeof e.payload.amount === "number" ? e.payload.amount : null,
