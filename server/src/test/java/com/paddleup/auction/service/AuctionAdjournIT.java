@@ -169,20 +169,30 @@ class AuctionAdjournIT extends AbstractAuctionIT {
     assertThat(outcome(control(room, "start_now"))).isEqualTo("rejected:wrong_phase");
   }
 
+  /** CR3-1: a Start now the room cannot honour is refused with no event; the schedule stands. */
   @Test
-  void aRefusedGoLiveAfterStartNowStillLogsStartRefused() {
+  void aStartNowTheRoomCannotHonourIsRefusedWithNoEventAndTheScheduleStands() {
     Room room = room(2, 6);
     clock.freeze(T0.minusSeconds(3600));
     schedule(room, T0);
     replacePool(room.id(), 1, 20);
+    long seq = lastSeq(room);
 
-    assertThat(outcome(control(room, "start_now"))).isEqualTo("accepted");
+    var refused = control(room, "start_now");
 
+    assertThat(refused.getStatusCode()).isEqualTo(HttpStatus.CONFLICT);
+    assertThat(body(refused).get("error").asText()).isEqualTo("not_ready");
     assertThat(phase(room)).isEqualTo("scheduled");
-    assertThat(eventCount(room, "start_now")).isEqualTo(1);
-    assertThat(eventCount(room, "start_refused")).isEqualTo(1);
-    assertThat(seqOf(room, "start_now")).isLessThan(seqOf(room, "start_refused"));
-    assertThat(view(room).get("startRefusal").asText()).contains("1 player");
+    assertThat(lastSeq(room)).isEqualTo(seq);
+    assertThat(eventCount(room, "start_now")).isZero();
+    assertThat(eventCount(room, "start_refused")).isZero();
+    assertThat(Instant.parse(view(room).get("startsAt").asText())).isEqualTo(T0);
+
+    // Fixed before the original time: the auction still starts by itself then.
+    replacePool(room.id(), 6, 20);
+    clock.freeze(T0);
+    tick();
+    assertThat(phase(room)).isEqualTo("live");
   }
 
   @Test

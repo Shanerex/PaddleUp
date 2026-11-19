@@ -37,6 +37,13 @@ describe("explainRoomError", () => {
     expect(e.refetch).toBe(false);
   });
 
+  it("shows why the room cannot start now, with no reload (CR3-1)", () => {
+    const e = explainRoomError(api(409, { error: "not_ready", message: "The pool has 1 player but 6 are needed" }));
+
+    expect(e.message).toBe("The pool has 1 player but 6 are needed");
+    expect(e.refetch).toBe(false);
+  });
+
   it("joins every config violation into one message", () => {
     const e = explainRoomError(
       api(400, {

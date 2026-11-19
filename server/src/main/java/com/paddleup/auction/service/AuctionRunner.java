@@ -206,20 +206,37 @@ final class AuctionRunner {
 
   /**
    * A control is decided like a bid: by the pure rules, stored once under its intent id, then
-   * broadcast. Start now in the lobby logs {@code start_now} first and then goes live, so a refused
-   * go-live still logs {@code start_refused} after it.
+   * broadcast. Start now in the lobby is refused with no event when the room is not ready; else it
+   * logs {@code start_now} first and then goes live (a go-live that is refused later still logs
+   * {@code start_refused} after it).
    */
   private Outcome handleControl(Control control) {
     return decideAndCommit(
         control.actor(),
         control.intentId(),
         control.lot(),
-        (state, now) -> ControlRules.decide(state, control, now, d.props().resumeLobby()),
+        (state, now) -> {
+          if (startsFromLobby(state, control)) {
+            // A Start now the room cannot honour logs nothing, so the schedule stands.
+            d.port()
+                .auctionRefusal(roomId)
+                .ifPresent(
+                    reason -> {
+                      throw new AuctionConflictException(
+                          AuctionConflictException.NOT_READY, reason);
+                    });
+          }
+          return ControlRules.decide(state, control, now, d.props().resumeLobby());
+        },
         (before, now) -> {
-          if (control.action() == Control.Action.START_NOW && before.phase() == Phase.SCHEDULED) {
+          if (startsFromLobby(before, control)) {
             goLive(now);
           }
         });
+  }
+
+  private static boolean startsFromLobby(AuctionState state, Control control) {
+    return control.action() == Control.Action.START_NOW && state.phase() == Phase.SCHEDULED;
   }
 
   private Outcome handlePicks(Picks picks) {

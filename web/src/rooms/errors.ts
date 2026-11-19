@@ -97,6 +97,8 @@ export function explainRoomError(error: unknown): Explained {
           return { message: "This room is full.", refetch: true };
         case "duplicate":
           return { message: serverMessage(error.body) ?? "That is already taken.", refetch: false };
+        case "not_ready":
+          return { message: serverMessage(error.body) ?? "The room is not ready to start yet.", refetch: false };
         default:
           return { message: "The room has changed. We reloaded it.", refetch: true };
       }
