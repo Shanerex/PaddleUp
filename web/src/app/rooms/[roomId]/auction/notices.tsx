@@ -31,8 +31,10 @@ export function Notices({
   onResume,
   resumeLobby,
   toast,
+  adminToast,
   onRetry,
   onDismiss,
+  onDismissAdmin,
 }: {
   reconnecting: boolean;
   paused: boolean;
@@ -45,10 +47,13 @@ export function Notices({
   /** The resume lobby's countdown to the lot going live, from the server's `liveAt`. */
   resumeLobby?: { lot: number | null; leftMs: number } | null;
   toast: Toast | null;
+  /** The Commissioner's skip or re-open as every manager sees it; it has its own slot so another toast cannot hide it. */
+  adminToast?: Toast | null;
   onRetry: () => void;
   onDismiss: () => void;
+  onDismissAdmin?: () => void;
 }) {
-  if (!reconnecting && !paused && !toast && !resumeLobby) return null;
+  if (!reconnecting && !paused && !toast && !adminToast && !resumeLobby) return null;
   return (
     <div className={s.notices}>
       <div className={s.noticeStack}>
@@ -104,40 +109,49 @@ export function Notices({
             </div>
           </div>
         )}
-        {toast?.kind === "outbid" && (
-          <div className={`${s.notice} ${s.noticeOutbid}`} role="status" data-testid="notice-outbid">
-            <span className={s.noticeMono} style={hueStyle(toast.who?.colour ?? "")}>
-              {toast.who?.monogram ?? ""}
-            </span>
-            <div className={s.noticeText}>
-              <span className={s.noticeTitle}>{OUTBID_TITLE}</span>
-              <span className={s.noticeBody}>{outbidBody(toast.who?.name ?? "Someone", toast.amount)}</span>
-            </div>
-            <DismissButton onClick={onDismiss} />
-          </div>
-        )}
-        {toast?.kind === "admin" && (
-          <div className={`${s.notice} ${s.noticeAdmin}`} role="status" data-testid="notice-admin">
-            <Icon name="shield_person" size={22} style={{ color: "var(--warn-ink)" }} />
-            <div className={s.noticeText}>
-              <span className={s.noticeTitle}>{toast.notice.title}</span>
-              <span className={s.noticeBody}>{toast.notice.body}</span>
-            </div>
-            <DismissButton onClick={onDismiss} />
-          </div>
-        )}
-        {toast?.kind === "rejected" && (
-          <div className={`${s.notice} ${s.noticeBad}`} role="alert" data-testid="notice-rejected">
-            <Icon name="block" size={22} style={{ color: "var(--bad)" }} />
-            <div className={s.noticeText}>
-              <span className={s.noticeTitle}>{toast.notice.title}</span>
-              <span className={s.noticeBody}>{toast.notice.body}</span>
-            </div>
-            <DismissButton onClick={onDismiss} />
-          </div>
-        )}
+        {toast && <ToastView toast={toast} onDismiss={onDismiss} />}
+        {adminToast && <ToastView toast={adminToast} onDismiss={onDismissAdmin ?? onDismiss} />}
       </div>
     </div>
+  );
+}
+
+function ToastView({ toast, onDismiss }: { toast: Toast; onDismiss: () => void }) {
+  return (
+    <>
+      {toast.kind === "outbid" && (
+        <div className={`${s.notice} ${s.noticeOutbid}`} role="status" data-testid="notice-outbid">
+          <span className={s.noticeMono} style={hueStyle(toast.who?.colour ?? "")}>
+            {toast.who?.monogram ?? ""}
+          </span>
+          <div className={s.noticeText}>
+            <span className={s.noticeTitle}>{OUTBID_TITLE}</span>
+            <span className={s.noticeBody}>{outbidBody(toast.who?.name ?? "Someone", toast.amount)}</span>
+          </div>
+          <DismissButton onClick={onDismiss} />
+        </div>
+      )}
+      {toast.kind === "admin" && (
+        <div className={`${s.notice} ${s.noticeAdmin}`} role="status" data-testid="notice-admin">
+          <Icon name="shield_person" size={22} style={{ color: "var(--warn-ink)" }} />
+          <div className={s.noticeText}>
+            <span className={s.noticeTitle}>{toast.notice.title}</span>
+            <span className={s.noticeBody}>{toast.notice.body}</span>
+          </div>
+          <DismissButton onClick={onDismiss} />
+        </div>
+      )}
+      {toast.kind === "rejected" && (
+        <div className={`${s.notice} ${s.noticeBad}`} role="alert" data-testid="notice-rejected">
+          <Icon name="block" size={22} style={{ color: "var(--bad)" }} />
+          <div className={s.noticeText}>
+            <span className={s.noticeTitle}>{toast.notice.title}</span>
+            <span className={s.noticeBody}>{toast.notice.body}</span>
+          </div>
+          <DismissButton onClick={onDismiss} />
+        </div>
+      )}
+    </>
   );
 }
 

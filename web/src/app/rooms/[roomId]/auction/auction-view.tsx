@@ -189,24 +189,31 @@ function Auction({ roomId, data, reloadRoom }: { roomId: string; data: Data; rel
       );
     }
   }
-  const toast: Toast | null = refusal ?? (controlNotice ? { kind: "rejected", notice: controlNotice } : null) ?? outbid ?? (adminToast ? { kind: "admin", notice: adminToast } : null);
+  // The Commissioner's notice has a slot of its own: the outbid toast neither hides nor clears it.
+  const toast: Toast | null = refusal ?? (controlNotice ? { kind: "rejected", notice: controlNotice } : null) ?? outbid;
+  const adminNotice: Toast | null = adminToast ? { kind: "admin", notice: adminToast } : null;
   const { dismiss } = bidder;
   const dismissToast = useCallback(() => {
     setOutbid(null);
     setControlNotice(null);
-    setAdminToast(null);
     dismiss();
   }, [dismiss]);
+  const dismissAdmin = useCallback(() => setAdminToast(null), []);
   // A refusal means the screen was behind the server (say a lot closed as the bid went): read again.
   const refused = outcome?.kind === "rejected";
   useEffect(() => {
     if (refused) live.resync();
   }, [refused, outcome, live]);
   useEffect(() => {
-    if (!outbid && !outcome && !controlNotice && !adminToast) return;
+    if (!outbid && !outcome && !controlNotice) return;
     const id = setTimeout(dismissToast, TOAST_MS);
     return () => clearTimeout(id);
-  }, [outbid, outcome, controlNotice, adminToast, dismissToast]);
+  }, [outbid, outcome, controlNotice, dismissToast]);
+  useEffect(() => {
+    if (!adminToast) return;
+    const id = setTimeout(dismissAdmin, TOAST_MS);
+    return () => clearTimeout(id);
+  }, [adminToast, dismissAdmin]);
 
   // Ready toggle: only the server's answer changes what shows.
   const [readyBusy, setReadyBusy] = useState(false);
@@ -525,8 +532,10 @@ function Auction({ roomId, data, reloadRoom }: { roomId: string; data: Data; rel
           onResume={commish ? () => void control("resume") : undefined}
           resumeLobby={view.status === "resume_lobby" && state.liveAt && serverNow !== null ? { lot: playsNext?.no ?? null, leftMs: Math.max(0, Date.parse(state.liveAt) - serverNow) } : null}
           toast={toast}
+          adminToast={adminNotice}
           onRetry={live.retry}
           onDismiss={dismissToast}
+          onDismissAdmin={dismissAdmin}
         />
       </div>
       {scheduleSheet}

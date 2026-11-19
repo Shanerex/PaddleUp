@@ -276,6 +276,22 @@ describe("AuctionView", () => {
       expect(text).toContain("Lot 12 is back");
       expect(text).not.toContain("Lot 3");
     });
+
+    it("is not hidden or cleared by the outbid toast (CR3-6)", async () => {
+      feed.set(snap(live({ currentBid: 300_000, leaderFranchiseId: "fa", nextBid: 400_000 })));
+      render(<AuctionView roomId="r1" />);
+      await screen.findByTestId("bid-button");
+
+      act(() => feed.set(snap(live({ lastSeq: 5, currentBid: 400_000, leaderFranchiseId: "fb", nextBid: 500_000 }), { adminEvent: { ...reopen, seq: 5 } })));
+
+      expect(await screen.findByTestId("notice-outbid")).toBeTruthy();
+      expect(screen.getByTestId("notice-admin").textContent).toContain("Lot 12 is back");
+
+      // Closing the outbid toast leaves the Commissioner's notice, and the other way round.
+      await userEvent.click(within(screen.getByTestId("notice-outbid")).getByRole("button", { name: "Dismiss" }));
+      expect(screen.queryByTestId("notice-outbid")).toBeNull();
+      expect(screen.getByTestId("notice-admin")).toBeTruthy();
+    });
   });
 
   it("says the adjourned auction stopped after the lots the server counts as closed, in either round", async () => {
