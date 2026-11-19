@@ -251,7 +251,7 @@ describe("Notices", () => {
 
   it("adjourned says where it stopped, and closed links back to the room", () => {
     render(<AdjournedCard lotsDone={86} squad={4} purse="€12 M" resumes={null} />);
-    expect(screen.getByTestId("adjourned-card").textContent).toContain("Adjourned after Lot 86");
+    expect(screen.getByTestId("adjourned-card").textContent).toContain("Adjourned after 86 lots");
     cleanup();
     render(<ClosedCard roomHref="/rooms/r1" />);
     expect(screen.getByRole("link", { name: /Back to room/ }).getAttribute("href")).toBe("/rooms/r1");

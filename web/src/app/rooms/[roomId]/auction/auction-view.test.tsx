@@ -282,7 +282,7 @@ describe("AuctionView", () => {
     // A re-opened or accelerated lot carries number 12; nine lots have closed (CR2-4).
     feed.set(snap(live({ phase: "adjourned", lotOpen: true, lot: { ...live().lot!, no: 12 }, lotsClosed: 9 })));
     render(<AuctionView roomId="r1" />);
-    expect((await screen.findByTestId("adjourned-card")).textContent).toContain("Adjourned after Lot 9.");
+    expect((await screen.findByTestId("adjourned-card")).textContent).toContain("Adjourned after 9 lots.");
   });
 
   describe("the resume lobby for the Commissioner and the lot that plays next", () => {

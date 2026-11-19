@@ -77,9 +77,13 @@ export function lobbyLength(seconds: number): string {
   return seconds > 0 && seconds % 60 === 0 ? `${seconds / 60}-minute` : `${seconds}-second`;
 }
 
-/** The adjourned card's first sentence; no lot has a number 0, so zero lots done reads differently. */
+/**
+ * The adjourned card's first sentence. `lotsDone` is how many lots have closed, not a lot number
+ * (a re-opened or accelerated lot is numbered past the count), so it is stated as a count.
+ */
 export function adjournedLine(lotsDone: number): string {
-  return lotsDone > 0 ? `Adjourned after Lot ${lotsDone}.` : "Adjourned before the first lot closed.";
+  if (lotsDone <= 0) return "Adjourned before the first lot closed.";
+  return `Adjourned after ${lotsDone} ${lotsDone === 1 ? "lot" : "lots"}.`;
 }
 
 export const OUTBID_TITLE = "Outbid!";

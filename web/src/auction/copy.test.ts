@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { rejectedNotice } from "./copy";
+import { adjournedLine, rejectedNotice, reopenedNotice } from "./copy";
 
 describe("rejectedNotice", () => {
   it("has its own words for every phase code a bid can still get", () => {
@@ -11,5 +11,19 @@ describe("rejectedNotice", () => {
     expect(rejectedNotice("paused").title).toBe("Auction paused");
     expect(rejectedNotice("adjourned").title).toBe("Adjourned");
     expect(rejectedNotice("resume_lobby").title).toBe("Resuming soon");
+  });
+});
+
+describe("adjournedLine", () => {
+  it("states a count of lots, never a lot number (CR3-5)", () => {
+    expect(adjournedLine(9)).toBe("Adjourned after 9 lots.");
+    expect(adjournedLine(1)).toBe("Adjourned after 1 lot.");
+    expect(adjournedLine(0)).toBe("Adjourned before the first lot closed.");
+  });
+});
+
+describe("reopenedNotice", () => {
+  it("names the lot number given", () => {
+    expect(reopenedNotice(12, "timer bug", null).title).toBe("Lot 12 is back");
   });
 });

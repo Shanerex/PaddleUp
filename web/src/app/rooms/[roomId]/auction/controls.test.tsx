@@ -192,7 +192,7 @@ describe("AdjournedCard", () => {
     render(<AdjournedCard lotsDone={86} squad={4} purse="€1 M" resumes="Sat 2 Nov, 8:00 PM" />);
     expect(screen.getByTestId("adjourned-card").textContent).toContain("Bidding resumes Sat 2 Nov, 8:00 PM your time.");
     expect(screen.queryByTestId("resume-now")).toBeNull();
-    expect(screen.getByTestId("adjourned-card").textContent).toContain("Adjourned after Lot 86.");
+    expect(screen.getByTestId("adjourned-card").textContent).toContain("Adjourned after 86 lots.");
   });
 
   it("does not claim a Lot 0 when adjourned before any lot closed", () => {
