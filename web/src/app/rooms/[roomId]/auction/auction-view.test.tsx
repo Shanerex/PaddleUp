@@ -242,6 +242,28 @@ describe("AuctionView", () => {
     expect((screen.getByTestId("bid-button") as HTMLButtonElement).textContent).toContain("Adjourned");
   });
 
+  it("a pause in a gap says it paused between lots and shows no frozen lot clock (CR3-3)", async () => {
+    feed.set(
+      snap(live({ phase: "paused", lotOpen: false, heldMs: 3000, deadline: undefined, nextBid: undefined, currentBid: 400_000, leaderFranchiseId: "fb", lastResult: { lot: 1, sold: true, franchiseId: "fb", amount: 400_000 } })),
+    );
+    render(<AuctionView roomId="r1" />);
+
+    const notice = (await screen.findByTestId("notice-paused")).textContent ?? "";
+    expect(notice).toContain("Paused between lots");
+    expect(notice).toContain("0:03");
+    expect(notice).not.toContain("Timer frozen at");
+    expect(screen.getByTestId("timer").textContent).toBe("0:00");
+    expect(screen.getByTestId("timer-note").textContent).toBe("PAUSED");
+    expect(screen.getByTestId("stamp-sold").textContent).toContain("Blue FC");
+  });
+
+  it("a pause on the open lot still shows the frozen lot clock", async () => {
+    feed.set(snap(live({ phase: "paused", heldMs: 9000, deadline: undefined })));
+    render(<AuctionView roomId="r1" />);
+    expect((await screen.findByTestId("notice-paused")).textContent).toContain("Timer frozen at 0:09");
+    expect(screen.getByTestId("timer").textContent).toBe("0:09");
+  });
+
   it("says the adjourned auction stopped after the lots the server counts as closed, in either round", async () => {
     // A re-opened or accelerated lot carries number 12; nine lots have closed (CR2-4).
     feed.set(snap(live({ phase: "adjourned", lotOpen: true, lot: { ...live().lot!, no: 12 }, lotsClosed: 9 })));

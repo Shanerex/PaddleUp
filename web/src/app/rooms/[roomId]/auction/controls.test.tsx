@@ -173,6 +173,14 @@ describe("Notices for the control phases", () => {
     expect(text).toContain("1:42");
   });
 
+  it("says a pause between lots holds the gap, not a lot clock (CR3-3)", () => {
+    render(<Notices {...base} paused pausedLeftMs={3000} pausedBetween />);
+    const text = screen.getByTestId("notice-paused").textContent ?? "";
+    expect(text).toContain("Paused between lots");
+    expect(text).toContain("0:03");
+    expect(text).not.toContain("Timer frozen at");
+  });
+
   it("shows the Commissioner's skip or re-open to every manager", () => {
     render(<Notices {...base} toast={{ kind: "admin", notice: { title: "Lot 41 is back", body: 'The Commissioner re-opened it: "timer bug".' } }} />);
     expect(screen.getByTestId("notice-admin").textContent).toContain("Lot 41 is back");

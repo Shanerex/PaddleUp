@@ -176,6 +176,42 @@ class AuctionControlsIT extends AbstractAuctionIT {
     assertThat(eventCount(room, "lot_opened")).isEqualTo(2);
   }
 
+  /** CR3-3: a pause in a gap holds the gap; it names no lot, because no lot clock was frozen. */
+  @Test
+  void aPauseInAGapIsLoggedAsBetweenLotsWithNoLot() {
+    Room room = room(2, 6);
+    goLive(room);
+    advance(20);
+    tick();
+    advance(2);
+    assertThat(outcome(control(room, "pause"))).isEqualTo("accepted");
+
+    JsonNode event = pausedEvent(room);
+    assertThat(event.has("lot")).isFalse();
+    assertThat(event.get("payload").get("gap").asBoolean()).isTrue();
+    assertThat(event.get("payload").get("heldMs").asLong()).isEqualTo(3000);
+
+    // A pause on the open lot still names the lot and is not a gap.
+    Room other = room(2, 6);
+    goLive(other);
+    advance(5);
+    control(other, "pause");
+    JsonNode open = pausedEvent(other);
+    assertThat(open.get("lot").asInt()).isEqualTo(1);
+    assertThat(open.get("payload").has("gap")).isFalse();
+  }
+
+  private JsonNode pausedEvent(Room room) {
+    JsonNode found = null;
+    for (JsonNode e : events(room, room.commissioner(), 0).get("events")) {
+      if ("paused".equals(e.get("kind").asText())) {
+        found = e;
+      }
+    }
+    assertThat(found).isNotNull();
+    return found;
+  }
+
   /**
    * CR3-2: once start_now is stored, a go-live that fails to write is not a failed control: the
    * answer stays accepted for every resend and the next tick goes live.

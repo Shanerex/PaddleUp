@@ -158,7 +158,11 @@ public final class Events {
     return new AuctionEvent(seq, at, EventKind.START_NOW, null, null, actor, intentId, Map.of());
   }
 
-  /** {@code heldMs} is the time frozen by the pause: the open lot's remaining time or the gap. */
+  /**
+   * {@code heldMs} is the time frozen by the pause. On an open lot, {@code lot} is that lot and
+   * {@code heldMs} its remaining time. In a gap there is no lot clock: {@code lot} is 0 and the
+   * payload says {@code gap}, and {@code heldMs} is the rest of the gap.
+   */
   public static AuctionEvent paused(
       long seq, Instant at, UUID actor, UUID intentId, int lot, long heldMs) {
     return new AuctionEvent(
@@ -169,7 +173,7 @@ public final class Events {
         lot > 0 ? lot : null,
         actor,
         intentId,
-        Map.of("heldMs", heldMs));
+        lot > 0 ? Map.of("heldMs", heldMs) : Map.of("heldMs", heldMs, "gap", true));
   }
 
   /** Resumes a pause (actor set) or ends the resume lobby on its own (actor null). */

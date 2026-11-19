@@ -15,6 +15,8 @@ describe("audit text", () => {
     expect(auditText(entry({ kind: "lot_sold", franchiseId: "fa", lot: 42, player: "Jaden Okoro", detail: { amount: 900 } }), names)).toBe("Red FC won Lot 42 · Jaden Okoro for €900");
     expect(auditText(entry({ kind: "lot_reopened", category: "admin", lot: 39, player: "Pat", detail: { reason: "timer bug" } }), names)).toBe('Commissioner re-opened Lot 39 · Pat · "timer bug"');
     expect(auditText(entry({ kind: "paused", category: "admin", lot: 40, detail: { heldMs: 9000 } }), names)).toBe("Commissioner paused the auction · Lot 40 at 0:09");
+    // CR3-3: a pause in a gap froze no lot clock, so it names no lot and no lot time.
+    expect(auditText(entry({ kind: "paused", category: "admin", detail: { heldMs: 3000, gap: true } }), names)).toBe("Commissioner paused the auction between lots");
     expect(auditText(entry({ kind: "lot_skipped", category: "admin", lot: 24, player: "Ann" }), names)).toBe("Commissioner skipped Lot 24 · Ann · no bids");
   });
 

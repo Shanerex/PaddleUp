@@ -87,7 +87,7 @@ final class AuditViews {
     DETAIL.put(EventKind.SCHEDULED, List.of("startsAt"));
     DETAIL.put(EventKind.RESCHEDULED, List.of("from", "to"));
     DETAIL.put(EventKind.START_REFUSED, List.of("reason"));
-    DETAIL.put(EventKind.PAUSED, List.of("heldMs"));
+    DETAIL.put(EventKind.PAUSED, List.of("heldMs", "gap"));
     DETAIL.put(EventKind.LOT_REOPENED, List.of("reason", "newLot", "amount"));
     DETAIL.put(EventKind.ADJOURNED, List.of("resumeAt", "heldMs"));
     DETAIL.put(EventKind.RESUME_TIME_CHANGED, List.of("from", "to"));

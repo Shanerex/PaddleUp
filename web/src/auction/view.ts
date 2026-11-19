@@ -70,6 +70,8 @@ export type AuctionView = {
   timerFrozen: boolean;
   /** The clock is held and drawn grey (3f, 3d): frozen, but not just because the lot closed. */
   timerGrey: boolean;
+  /** Paused in the gap after a lot closed: no lot clock is frozen, the rest of the gap is held. */
+  betweenLots: boolean;
   timeLeftMs: number | null;
   /** 0 to 100, how much of the clock is left. */
   timePct: number;
@@ -156,8 +158,12 @@ export function buildView(input: ViewInput): AuctionView {
   const live = state?.deadline && input.serverNow !== null ? Math.max(0, Date.parse(state.deadline) - input.serverNow) : null;
   // Paused, adjourned and the resume lobby hold the lot's time as the server froze it.
   const held = status === "paused" || status === "adjourned" || status === "resume_lobby";
+  // A pause in a gap holds the rest of the gap, not a lot clock: the closed lot shows 0:00.
+  const betweenLots = status === "paused" && !!state && !state.lotOpen;
   const timeLeftMs = held
-    ? (state?.heldMs ?? 0)
+    ? betweenLots
+      ? 0
+      : (state?.heldMs ?? 0)
     : running
       ? live
       : (input.frozenLeft ?? (status === "sold" || status === "unsold" || status === "ended" ? 0 : live));
@@ -183,7 +189,7 @@ export function buildView(input: ViewInput): AuctionView {
               : "";
 
   const last = state?.lastResult;
-  const closed = status === "sold" || status === "unsold";
+  const closed = status === "sold" || status === "unsold" || (betweenLots && !!last && !!state?.lot && last.lot === state.lot.no);
   // Once a lot has closed the server clears the bid; the card keeps showing how it ended.
   const sold = closed && last?.sold === true;
   const leaderId = sold ? (last?.franchiseId ?? null) : heldBy;
@@ -202,13 +208,14 @@ export function buildView(input: ViewInput): AuctionView {
     sending: input.sending,
     timerFrozen: !running,
     timerGrey: !running && !closed,
+    betweenLots,
     timeLeftMs,
     timePct,
     urgent,
     timerNote,
     bidLabel: currentBid > 0 ? "CURRENT BID" : "OPENS AT",
     result:
-      (status === "sold" || status === "unsold") && last
+      closed && last
         ? { sold: last.sold ?? false, franchiseId: last.franchiseId ?? null, amount: last.amount ?? 0 }
         : null,
   };

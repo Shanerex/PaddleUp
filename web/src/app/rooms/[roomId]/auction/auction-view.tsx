@@ -356,7 +356,7 @@ function Auction({ roomId, data, reloadRoom }: { roomId: string; data: Data; rel
   // The lot that plays next: the open (held) lot, or in a gap the one the server queued after it.
   const playsNext = state.lotOpen ? lot : (state.nextLot ?? null);
   const result: LotResult | null =
-    view.result && (view.status === "sold" || view.status === "unsold")
+    view.result
       ? { sold: view.result.sold, who: whoOf(view.result.franchiseId), amount: view.result.amount, youWon: !!me && view.result.franchiseId === me }
       : null;
   const leader = whoOf(view.leaderId);
@@ -521,6 +521,7 @@ function Auction({ roomId, data, reloadRoom }: { roomId: string; data: Data; rel
           reconnecting={offline}
           paused={view.status === "paused"}
           pausedLeftMs={state.heldMs}
+          pausedBetween={view.betweenLots}
           onResume={commish ? () => void control("resume") : undefined}
           resumeLobby={view.status === "resume_lobby" && state.liveAt && serverNow !== null ? { lot: playsNext?.no ?? null, leftMs: Math.max(0, Date.parse(state.liveAt) - serverNow) } : null}
           toast={toast}

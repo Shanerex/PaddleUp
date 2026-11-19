@@ -64,6 +64,8 @@ export function auditText(e: AuditEntry, n: Names): string {
     case "auction_started":
       return "The auction started";
     case "paused":
+      // A pause in a gap froze no lot clock: it holds the rest of the gap.
+      if (d.gap === true) return "Commissioner paused the auction between lots";
       return `Commissioner paused the auction${lot}${num(d.heldMs) !== null ? ` at ${formatLotTime(num(d.heldMs) ?? 0)}` : ""}`;
     case "resumed":
       return "The auction resumed";

@@ -69,7 +69,12 @@ public final class ControlRules {
     }
     return accept(
         Events.paused(
-            s.lastSeq() + 1, now, c.actor(), c.intentId(), s.currentLot(), remainingMs(s, now)));
+            s.lastSeq() + 1,
+            now,
+            c.actor(),
+            c.intentId(),
+            s.lotOpen() ? s.currentLot() : 0,
+            remainingMs(s, now)));
   }
 
   private static Decision resume(AuctionState s, Control c, Instant now) {

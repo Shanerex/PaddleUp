@@ -27,6 +27,7 @@ export function Notices({
   reconnecting,
   paused,
   pausedLeftMs,
+  pausedBetween,
   onResume,
   resumeLobby,
   toast,
@@ -35,7 +36,10 @@ export function Notices({
 }: {
   reconnecting: boolean;
   paused: boolean;
+  /** Ms frozen: the lot's remaining time, or in a gap (`pausedBetween`) the rest of the gap. */
   pausedLeftMs: number | null;
+  /** The pause came between lots: there is no lot clock to show, only the gap that is held. */
+  pausedBetween?: boolean;
   /** Given to the Commissioner: the pause notice then carries Resume (AuctionNotices isPausedCommish). */
   onResume?: () => void;
   /** The resume lobby's countdown to the lot going live, from the server's `liveAt`. */
@@ -66,7 +70,11 @@ export function Notices({
             <div className={s.noticeText}>
               <span className={s.noticeTitle}>{onResume ? "You paused the auction" : "Commish hit pause"}</span>
               <span className={s.noticeBody}>
-                {onResume ? (
+                {pausedBetween ? (
+                  <>
+                    Paused between lots. The next lot opens <span className="num">{formatLotTime(pausedLeftMs ?? 0)}</span> after {onResume ? "you resume" : "it resumes"}.
+                  </>
+                ) : onResume ? (
                   <>
                     Timer frozen at <span className="num">{formatLotTime(pausedLeftMs ?? 0)}</span> for everyone.
                   </>
