@@ -87,6 +87,8 @@ public final class AuctionReducer {
       case START_NOW -> {
         if (b.phase == Phase.SCHEDULED) {
           b.startsAt = e.at();
+          // A fresh go-live request: an earlier refusal must not stop the tick retrying it.
+          b.startRefusal = null;
         }
       }
       case PAUSED -> hold(b, Phase.PAUSED, e.number("heldMs"));

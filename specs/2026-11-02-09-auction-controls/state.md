@@ -6,7 +6,7 @@ g1: approved:Shanerex:2026-11-17
 g2: approved:Shanerex:2026-11-17
 g3: none
 bump: none
-next: qa and security re-verify only (fix loop 3 done), then g3 and bump
+next: dev fix loop 4 (human-approved) for CR4-1, then qa + security only
 ---
 # State: 2026-11-02-09-auction-controls
 
@@ -38,3 +38,6 @@ next: qa and security re-verify only (fix loop 3 done), then g3 and bump
 - 2026-11-18 verify: fix loop 2 done; round 3 qa pass, security pass, /code-review 10 new findings (CR3-1..CR3-6 bugs); blocked after 2 loops
 - 2026-11-18 verify: human approved fix loop 3 for CR3-1..CR3-6, re-verify with qa + security only; deferred to a new spec (not yet on roadmap): CR3-7 zero/changed picks, CR3-8 held-phase tick, CR3-9 shared sanitiser, CR3-10 Phase.timed()/held()
 - 2026-11-19 fix-loop-3: CR3-1..CR3-6 fixed test first, one commit each; Start now the room cannot honour is refused not_ready with no event, a go-live write failure after start_now stays accepted and the tick retries, a gap pause logs no lot (payload gap) and reads "Paused between lots", re-open notice uses newLot, adjourned card says "after N lots", the skip and re-open notice has its own slot; unit and web tests, spotless, agnostic check green; ITs and make test NOT run: Docker image store broken (containerd meta.db input/output error, postgres:17 cannot be pulled); CR3-7..CR3-10 untouched (deferred)
+- 2026-11-19 verify: fix loop 3 done (CR3-1..CR3-6, 7 commits); round 4 qa pass (ITs and e2e unrun, Docker broken), security pass; CR4-1 found (go-live retry blocked by startRefusal); blocked for human
+- 2026-11-19 verify: human approved fix loop 4 for CR4-1 only; then qa + security
+- 2026-11-19 fix-loop-4: CR4-1 fixed test first, one commit; START_NOW from SCHEDULED now clears startRefusal in AuctionReducer (replay-safe; state DTO derives from it so the refusal stops showing), so the tick retries a go-live that failed after an earlier start_refused; new reducer unit test, new IT case in AuctionControlsIT (compiles, NOT run: Docker broken); unit tests (431), spotless, check-agnostic green; web untouched; CR3-7..CR3-10 untouched

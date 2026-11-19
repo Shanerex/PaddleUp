@@ -245,6 +245,41 @@ class AuctionControlsIT extends AbstractAuctionIT {
     assertThat(eventCount(room, "auction_started")).isEqualTo(1);
   }
 
+  /**
+   * CR4-1: an earlier start_refused must not stop the tick retrying a go-live that failed to write
+   * after Start now; start_now clears the refusal.
+   */
+  @Test
+  void aGoLiveThatFailsAfterARefusedStartAndStartNowIsStillRetriedByTheTick() {
+    Room room = room(2, 6);
+    clock.freeze(T0.minusSeconds(60));
+    schedule(room, T0);
+    replacePool(room.id(), 1, 20);
+    clock.freeze(T0);
+    tick();
+    assertThat(eventCount(room, "start_refused")).isEqualTo(1);
+    assertThat(state(room, room.commissioner()).get("startRefusal").asText()).isNotEmpty();
+
+    replacePool(room.id(), 6, 20);
+    org.mockito.Mockito.doCallRealMethod()
+        .doThrow(new DataAccessResourceFailureException("disk gone"))
+        .doCallRealMethod()
+        .when(eventLog)
+        .append(any(), any());
+    var first = control(room, UUID.randomUUID(), "start_now");
+    org.mockito.Mockito.reset(eventLog);
+
+    assertThat(outcome(first)).isEqualTo("accepted");
+    assertThat(eventCount(room, "auction_started")).isZero();
+    assertThat(phase(room)).isEqualTo("scheduled");
+    assertThat(state(room, room.commissioner()).has("startRefusal")).isFalse();
+
+    tick();
+
+    assertThat(phase(room)).isEqualTo("live");
+    assertThat(eventCount(room, "auction_started")).isEqualTo(1);
+  }
+
   @Test
   void pauseAndResumeAreRefusedOutsideTheirPhase() {
     Room room = room(2, 6);

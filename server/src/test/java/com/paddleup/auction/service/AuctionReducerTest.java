@@ -313,6 +313,29 @@ class AuctionReducerTest {
     assertThat(again.phase()).isEqualTo(Phase.SCHEDULED);
   }
 
+  /**
+   * CR4-1: Start now is a fresh go-live request, so it clears an earlier refusal (live or
+   * replayed).
+   */
+  @Test
+  void startNowFromTheLobbyClearsAnEarlierStartRefusal() {
+    var empty = AuctionState.initial(ROOM, Map.of());
+    List<AuctionEvent> log =
+        List.of(
+            Events.scheduled(1, T0, COMMISSIONER, T0.plusSeconds(60)),
+            Events.startRefused(2, T0.plusSeconds(60), "The pool is too small"),
+            Events.startNow(3, T0.plusSeconds(90), COMMISSIONER, UUID.randomUUID()));
+
+    AuctionState replayed = AuctionReducer.replay(empty, log);
+    AuctionState live = AuctionReducer.replay(empty, log.subList(0, 2));
+    live = AuctionReducer.apply(live, log.get(2));
+
+    assertThat(live.phase()).isEqualTo(Phase.SCHEDULED);
+    assertThat(live.startsAt()).isEqualTo(T0.plusSeconds(90));
+    assertThat(live.startRefusal()).isNull();
+    assertThat(replayed).isEqualTo(live);
+  }
+
   @Test
   void aResumedLotGetsTheNewDeadline() {
     AuctionState s =
