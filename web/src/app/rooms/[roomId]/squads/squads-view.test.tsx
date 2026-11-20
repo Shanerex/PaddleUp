@@ -200,6 +200,18 @@ describe("SquadsView", () => {
     expect(within(panel).getByTestId("squad-restricted-foreign-cap").textContent).toBe("0/2");
   });
 
+  it("keeps the first word of a name on its chip, and the whole name when two franchises start alike", async () => {
+    setup();
+    vi.mocked(getMembers).mockResolvedValue([
+      { ...members[0], franchise: { ...members[0].franchise!, name: "Club One" } },
+      { ...members[1], franchise: { ...members[1].franchise!, name: "Club Two" } },
+    ] as Member[]);
+    render(<SquadsView roomId="room-1" />);
+
+    const chips = within(await screen.findByRole("group", { name: "Franchises" })).getAllByRole("button");
+    expect(chips.map((c) => c.textContent)).toEqual(["AUYou", "BRClub Two"]);
+  });
+
   it("opens on the first franchise for a Commissioner without a franchise", async () => {
     setup(auction(), { myFranchiseId: null, myRole: "commissioner" });
     render(<SquadsView roomId="room-1" />);
@@ -270,6 +282,21 @@ describe("SquadsView live updates", () => {
     const fresh = within(panel).getByTestId("just-in").closest("[data-testid=squad-player]");
     expect(fresh?.textContent).toContain("Fake 3");
     expect(vi.mocked(getRoom).mock.calls.length).toBe(roomReads);
+  });
+
+  it("reads the room again when the auction goes live, so the header follows", async () => {
+    setup(auction({ phase: "scheduled", lotOpen: false, lotsClosed: 0, standings: [] }));
+    render(<SquadsView roomId="room-1" />);
+    await screen.findByTestId("squad-empty");
+    const roomReads = vi.mocked(getRoom).mock.calls.length;
+
+    vi.mocked(getAuction).mockResolvedValue(auction({ lastSeq: 9 }));
+    await act(async () => {
+      sockets[0].subs.get("/topic/auctions/room-1")?.(JSON.stringify({ seq: 9, at: "x", kind: "auction_started", payload: {} }));
+    });
+
+    await waitFor(() => expect(screen.getByTestId("squad-pill").textContent).toBe("LIVE"));
+    await waitFor(() => expect(vi.mocked(getRoom).mock.calls.length).toBe(roomReads + 1));
   });
 
   it("drops the marker once the next lot opens", async () => {

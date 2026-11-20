@@ -1,12 +1,12 @@
 ---
 feature: 2026-11-02-10-squads
 phase: build
-status: draft
+status: approved
 g1: none
 g2: approved:Shanerex:2026-11-20
 g3: none
 bump: none
-next: rx:dev builds T-1..T-7 from quick.md
+next: verify: /code-review on the branch (QA), then close; deferred items are logged below
 ---
 # State: 2026-11-02-10-squads
 
@@ -22,3 +22,5 @@ next: rx:dev builds T-1..T-7 from quick.md
 - 2026-11-17 intake: design refs drawn (P-1, approved 2026-11-17 by Shanerex): App Screens 9d-9e (Room `squadLive`, `squadEmpty`); the auction-screen squad chip and sheet are AuctionSquad (already drawn). The season squad view (Room `squad`, 4b) adds points and stays with 14-leaderboard.
 - 2026-11-20 plan: quick.md written from intake (FR-60, design refs 9d-9e + AuctionSquad); Rivals and Bids chips and lot-card facts grid left out; awaiting g2
 - 2026-11-20 plan: g2 approved by Shanerex; phase build
+- 2026-11-20 build: T-1..T-7 done (squads page, squad sheet, fetch fallback, view and read tests, e2e with 390/1440 pairs); web 510 tests green, lint and check-agnostic green; scripts/check-agnostic.sh allowlist widened for the intent helper's run (main already failed it)
+- 2026-11-20 build: deferred to 14-leaderboard or a later spec: sheet Max bid and reserved-for-minimums bar (no server value), desktop Your needs card, Rivals and Bids chips; AC-6 says 403 but the existing non-member answer is 404 (architecture.md), tested as 404

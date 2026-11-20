@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { getAuction, type AuctionState, type Member } from "../../../../api/client";
 import { squadView } from "../../../../auction/squads";
 import { useLive } from "../../../../auction/useLive";
@@ -12,7 +12,7 @@ import { Icon } from "../../../../ui/Icon";
 import { RoomFrame } from "../room-frame";
 import r from "../room.module.css";
 import { frameOf, usePoolData } from "../use-pool-data";
-import { SquadChips, SquadPanel, type SquadPhase, type SquadWho } from "./squad-panel";
+import { pillText, SquadChips, SquadPanel, type SquadPhase, type SquadWho } from "./squad-panel";
 import s from "./squads.module.css";
 
 /** How often the page asks for the state itself while the live feed is down. */
@@ -55,6 +55,14 @@ export function SquadsView({ roomId }: { roomId: string }) {
   const state = fetched && (!snapshot.state || fetched.lastSeq >= snapshot.state.lastSeq) ? fetched : snapshot.state;
   const [picked, setPicked] = useState<string | null>(null);
 
+  // The room's own state (the header chip) changes when the auction goes live or ends: read it again.
+  const phase0 = state?.phase ?? null;
+  const lastPhase = useRef(phase0);
+  useEffect(() => {
+    if (lastPhase.current !== null && phase0 !== null && lastPhase.current !== phase0) void load();
+    lastPhase.current = phase0;
+  }, [phase0, load]);
+
   const f = frameOf(data);
   const room = data?.room;
   const pool = data?.pool;
@@ -63,7 +71,7 @@ export function SquadsView({ roomId }: { roomId: string }) {
   const whoOf = useMemo(() => {
     const byId = new Map<string, SquadWho>();
     for (const m of (members ?? []) as Member[]) {
-      if (m.franchise) byId.set(m.franchise.id, { name: m.franchise.name, monogram: m.franchise.monogram, colour: m.franchise.colour, manager: m.displayName, mine: m.franchise.id === room?.myFranchiseId });
+      if (m.franchise) byId.set(m.franchise.id, { name: m.franchise.name, monogram: m.franchise.monogram, colour: m.franchise.colour, manager: m.franchise.id === room?.myFranchiseId ? "You" : m.displayName, mine: m.franchise.id === room?.myFranchiseId });
     }
     return byId;
   }, [members, room?.myFranchiseId]);
@@ -90,9 +98,12 @@ export function SquadsView({ roomId }: { roomId: string }) {
   const franchiseIds = squads ? squads.map((x) => x.franchiseId) : [...whoOf.keys()];
   const shownId = picked && franchiseIds.includes(picked) ? picked : room?.myFranchiseId && franchiseIds.includes(room.myFranchiseId) ? room.myFranchiseId : (franchiseIds[0] ?? null);
   const unknown: SquadWho = { name: "Franchise", monogram: "", colour: "", manager: null, mine: false };
-  const chips = franchiseIds.map((id) => {
+  const firstWords = franchiseIds.map((id) => (whoOf.get(id) ?? unknown).name.split(" ")[0]);
+  const chips = franchiseIds.map((id, i) => {
     const who = whoOf.get(id) ?? unknown;
-    return { id, label: who.mine ? "You" : who.name.split(" ")[0], monogram: who.monogram, colour: who.colour };
+    // The first word of the name, as the mock draws it, unless another franchise starts the same way.
+    const short = firstWords.filter((w) => w === firstWords[i]).length > 1 ? who.name : firstWords[i];
+    return { id, label: who.mine ? "You" : short, monogram: who.monogram, colour: who.colour };
   });
   const phase: SquadPhase = !state ? "none" : state.phase === "scheduled" ? "scheduled" : state.phase === "ended" ? "ended" : "live";
   const firstHammer = !!state && state.lotsClosed === 0 && !!squads && squads.every((x) => x.empty);
@@ -104,6 +115,7 @@ export function SquadsView({ roomId }: { roomId: string }) {
       hue={f.hue}
       roomName={room?.config.name ?? ""}
       state={room?.state}
+      chip={phase === "scheduled" && state?.startsAt ? pillText(phase, state.startsAt) : undefined}
       sub={f.sub}
       mine={f.mine}
       loaded={!!room}

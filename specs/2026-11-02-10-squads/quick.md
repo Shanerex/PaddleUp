@@ -22,4 +22,4 @@ Design refs: Room.dc.html `squadLive`, `squadEmpty` (App Screens 9d-9e); Auction
 - [x] T-4 (AC-4): `squadEmpty` state, scheduled-start line, and the fetch fallback on a stale connection; component tests.
 - [x] T-5 (AC-5): Auction-screen squad chip and sheet reusing `SquadPanel`, built to AuctionSquad.dc.html.
 - [x] T-6 (AC-6): Member-only integration test on `GET /auction` standings for all franchises; stub football pack test; run check-agnostic.
-- [ ] T-7 (AC-1..AC-5): Playwright run on `make dev` (alt ports): hammer, new tab, stale state; 390 and 1440 shots beside the mocks.
+- [x] T-7 (AC-1..AC-5): Playwright run on `make dev` (alt ports): hammer, new tab, stale state; 390 and 1440 shots beside the mocks.
