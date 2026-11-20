@@ -27,3 +27,4 @@ next: open a PR; a human merges
 - 2026-11-19 close: Docker Desktop restarted, postgres:17 pulled, dev DB restarted; rerunning rx-check done
 - 2026-11-19 close: fixed mechanical rx-check findings: AC lines in requirements.md now '- AC-n: (R-..)' form, state.md log collapsed; rerunning rx-check done
 - 2026-11-19 close: rx-check done green (make test incl. ITs, lint); phase done
+- 2026-11-20 pr-review: PR 16 /code-review comments: pickCounts privacy not changed, S-3 stands (human, 2026-11-20); fixed test first: resumeLobbySeconds rounds up, re-open reason sanitised once, reopen uses AuctionState.closed, web keeps one intent id per tap across a lost answer (IntentRetry); already deferred: zero/changed picks (CR3-7), ROUND_DONE dead branch (CR2-9), shared ReasonText (CR2-8, CR3-9), Phase.timed() (CR3-10); deferred to a new spec: AuctionState builder double copy (optional efficiency); unit tests 434 and web 483, eslint, tsc, spotless green; ITs and e2e not run

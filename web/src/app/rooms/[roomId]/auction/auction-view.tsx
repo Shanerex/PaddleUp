@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties } from "react";
+import { useIntentRetry } from "../../../../api/intent";
 import { ApiError, getMembers, getRoom, sendControl, sendPicks, setReady, type Member, type Room } from "../../../../api/client";
 import { formatLotTime, pageClock } from "../../../../auction/clock";
 import { controlRefusal, reopenedNotice, skippedNotice, type Notice } from "../../../../auction/copy";
@@ -238,12 +239,14 @@ function Auction({ roomId, data, reloadRoom }: { roomId: string; data: Data; rel
   const commish = room.myRole === "commissioner";
 
   // Commissioner intents that need no form: each only asks, and the server's answer or a refusal shows.
+  // One intent id per tap, kept if the answer is lost so a retry is not read as a new action.
+  const intents = useIntentRetry();
   const [controlBusy, setControlBusy] = useState(false);
   const control = async (action: "start_now" | "resume" | "resume_now" | "open_round" | "end_auction" | "end_round") => {
     if (controlBusy) return;
     setControlBusy(true);
     try {
-      const answer = await sendControl(roomId, action);
+      const answer = await intents.run(action, (id) => sendControl(roomId, action, {}, id));
       if (answer.outcome === "rejected") setControlNotice(controlRefusal(action, answer.reason, state?.lot?.no ?? null, null));
       live.resync();
     } catch (e) {
@@ -265,7 +268,7 @@ function Auction({ roomId, data, reloadRoom }: { roomId: string; data: Data; rel
     if (picksBusy || selected.length === 0) return;
     setPicksBusy(true);
     try {
-      const answer = await sendPicks(roomId, selected);
+      const answer = await intents.run(`picks:${selected.join(",")}`, (id) => sendPicks(roomId, selected, id));
       if (answer.outcome === "rejected") setControlNotice(controlRefusal("picks", answer.reason, null, null));
       live.resync();
     } catch (e) {
@@ -281,7 +284,7 @@ function Auction({ roomId, data, reloadRoom }: { roomId: string; data: Data; rel
         roomId={roomId}
         mode={sheet}
         startsAt={sheet === "retime" ? (state?.resumeAt ?? undefined) : state?.startsAt}
-        send={sheet === "retime" ? (iso) => sendControl(roomId, "change_time", { resumeAt: iso }) : undefined}
+        send={sheet === "retime" ? (iso) => intents.run(`change_time:${iso}`, (id) => sendControl(roomId, "change_time", { resumeAt: iso }, id)) : undefined}
         // With no auction there is no state to sample; the page clock is fed by every request's Date header.
         serverNow={() => (clock.ready ? clock.now() : pageClock.ready ? pageClock.now() : null)}
         poolHref={`/rooms/${roomId}/pool`}

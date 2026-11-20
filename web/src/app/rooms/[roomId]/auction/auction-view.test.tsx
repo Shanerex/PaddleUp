@@ -410,7 +410,7 @@ describe("AuctionView", () => {
       await user.click(rows[0]);
       await user.click(rows[1]);
       await user.click(screen.getByTestId("send-picks"));
-      expect(sendPicks).toHaveBeenCalledWith("r1", [7, 4]);
+      expect(sendPicks).toHaveBeenCalledWith("r1", [7, 4], expect.any(String));
 
       act(() => feed.set(snap(picking({ waiting: ["fb"], myPicks: [7, 4] }))));
       expect((await screen.findByTestId("picks-in")).textContent).toContain("Waiting on 1 franchise.");

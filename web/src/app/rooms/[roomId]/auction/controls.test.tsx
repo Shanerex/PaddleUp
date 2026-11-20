@@ -108,8 +108,26 @@ describe("Controls", () => {
     const c = ctx();
     await open(c);
     await userEvent.click(screen.getByTestId("control-pause"));
-    expect(sendControl).toHaveBeenCalledWith("r1", "pause", {});
+    expect(sendControl).toHaveBeenCalledWith("r1", "pause", {}, expect.any(String));
     await waitFor(() => expect(c.onResync).toHaveBeenCalled());
+  });
+
+  it("a retry after a lost answer sends the same intent id, and a tap after an answer sends a new one", async () => {
+    vi.mocked(sendControl)
+      .mockRejectedValueOnce(new Error("offline"))
+      .mockResolvedValueOnce({ outcome: "accepted", lot: 7, serverNow: "" })
+      .mockResolvedValueOnce({ outcome: "rejected", reason: "wrong_phase", lot: 7, serverNow: "" });
+    await open(ctx());
+    // The sheet closes after every send, so each tap reopens it.
+    for (let tap = 1; tap <= 3; tap++) {
+      if (tap > 1) await userEvent.click(screen.getByTestId("controls-chip"));
+      await userEvent.click(screen.getByTestId("control-pause"));
+      await waitFor(() => expect(sendControl).toHaveBeenCalledTimes(tap));
+      await waitFor(() => expect(screen.queryByTestId("control-pause")).toBeNull());
+    }
+    const ids = vi.mocked(sendControl).mock.calls.map((call) => call[3]);
+    expect(ids[1]).toBe(ids[0]);
+    expect(ids[2]).not.toBe(ids[0]);
   });
 
   it("offers Resume while paused", async () => {
@@ -125,7 +143,7 @@ describe("Controls", () => {
     expect(screen.getByTestId("skip-sheet").textContent).toContain("Pat Reed leaves the block");
     expect(screen.getByTestId("skip-role").textContent).toBe("Defender");
     await userEvent.click(screen.getByRole("button", { name: "Skip Lot 7" }));
-    expect(sendControl).toHaveBeenCalledWith("r1", "skip", { lot: 7 });
+    expect(sendControl).toHaveBeenCalledWith("r1", "skip", { lot: 7 }, expect.any(String));
     await waitFor(() => expect(c.onNotice).toHaveBeenLastCalledWith(expect.objectContaining({ title: "Couldn't skip Lot 7" })));
   });
 
@@ -144,7 +162,7 @@ describe("Controls", () => {
     await userEvent.type(screen.getByTestId("reopen-reason"), "  Wrong paddle ");
     expect(button.disabled).toBe(false);
     await userEvent.click(button);
-    expect(sendControl).toHaveBeenCalledWith("r1", "reopen", { lot: 6, reason: "Wrong paddle" });
+    expect(sendControl).toHaveBeenCalledWith("r1", "reopen", { lot: 6, reason: "Wrong paddle" }, expect.any(String));
   });
 });
 
