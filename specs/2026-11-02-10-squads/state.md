@@ -1,12 +1,12 @@
 ---
 feature: 2026-11-02-10-squads
-phase: build
+phase: done
 status: approved
 g1: none
 g2: approved:Shanerex:2026-11-20
 g3: none
-bump: none
-next: verify: /code-review on the branch (QA), then close; deferred items are logged below
+bump: minor
+next: open a PR; a human merges
 ---
 # State: 2026-11-02-10-squads
 
@@ -24,3 +24,7 @@ next: verify: /code-review on the branch (QA), then close; deferred items are lo
 - 2026-11-20 plan: g2 approved by Shanerex; phase build
 - 2026-11-20 build: T-1..T-7 done (squads page, squad sheet, fetch fallback, view and read tests, e2e with 390/1440 pairs); web 510 tests green, lint and check-agnostic green; scripts/check-agnostic.sh allowlist widened for the intent helper's run (main already failed it)
 - 2026-11-20 build: deferred to 14-leaderboard or a later spec: sheet Max bid and reserved-for-minimums bar (no server value), desktop Your needs card, Rivals and Bids chips; AC-6 says 403 but the existing non-member answer is 404 (architecture.md), tested as 404
+- 2026-11-20 build: all 7 tasks ticked; phase verify
+- 2026-11-20 verify: rx:qa pass, no blocking; make test green; review.md written
+- 2026-11-21 verify: bump minor; /code-review skipped by Shanerex (runs it before the PR); phase close
+- 2026-11-21 close: decision squad-view-from-standings-and-room, learning agnostic-check-trips-on-verbs; rx-check done green; phase done
