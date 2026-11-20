@@ -584,6 +584,9 @@ export function RoomView({ roomId, note }: { roomId: string; note?: string }) {
                     >
                       {room.state === "auction_live" ? "Open the live auction" : "Open the lobby"}
                     </ButtonLink>
+                    <ButtonLink href={`/rooms/${roomId}/squads`} size="M48" variant="glass" icon="shield">
+                      Squads
+                    </ButtonLink>
                   </div>
                 )}
                 {commish && nextSteps.length > 0 && (

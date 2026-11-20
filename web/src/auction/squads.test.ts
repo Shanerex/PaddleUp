@@ -82,6 +82,15 @@ describe("squadView", () => {
     ]);
   });
 
+  it("lists every pack role with its count and its minimum or none, for the sheet", () => {
+    const [a] = squadView(state(), { players }, room);
+    expect(a.roleCounts.map((r) => [r.short, r.have, r.min])).toEqual([
+      ["GK", 1, 1],
+      ["DEF", 2, 2],
+      ["MID", 1, null],
+    ]);
+  });
+
   it("counts the restricted category by its tag against the room's cap, not the pack's", () => {
     const [a, b] = squadView(state(), { players }, room);
     expect(a.restricted).toEqual([{ id: "foreign-cap", label: "Foreign players", count: 2, cap: 2 }]);

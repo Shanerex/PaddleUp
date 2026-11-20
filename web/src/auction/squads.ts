@@ -30,6 +30,9 @@ export type SquadPlayer = {
   justBought: boolean;
 };
 
+/** One pack role with how many are held and its minimum, when the room sets one (the sheet's role chips). */
+export type RoleCount = { key: string; label: string; short: string; slot: number; have: number; min: number | null };
+
 export type RoleGroup = { key: string; label: string; short: string; slot: number; players: SquadPlayer[] };
 
 /** One franchise's squad as the screens draw it. Money stays in stored units; the component formats it. */
@@ -40,6 +43,8 @@ export type FranchiseSquad = {
   count: number;
   range: { min: number; max: number };
   roles: RoleBar[];
+  /** Every pack role in pack order, for the compact sheet. */
+  roleCounts: RoleCount[];
   restricted: RestrictedCount[];
   /** Pack role order; roles with no player are left out; newest first inside a group. */
   groups: RoleGroup[];
@@ -103,6 +108,13 @@ export function squadView(state: Pick<AuctionState, "standings" | "lastResult" |
         return { ...r, slot: roleSlot(labels, r.key), have, min, pct: Math.min(100, Math.round((100 * have) / min)), met: have >= min, need: Math.max(0, min - have) };
       });
 
+    const roleCounts: RoleCount[] = roleDefs.map((r) => ({
+      ...r,
+      slot: roleSlot(labels, r.key),
+      have: players.filter((x) => x.role === r.key).length,
+      min: (config.roleMinimums[r.key] ?? 0) > 0 ? config.roleMinimums[r.key] : null,
+    }));
+
     const restricted: RestrictedCount[] = labels.restrictedCategories.map((c) => ({
       id: c.id ?? "",
       label: c.label ?? c.id ?? "",
@@ -117,6 +129,7 @@ export function squadView(state: Pick<AuctionState, "standings" | "lastResult" |
       count: players.length,
       range: { min: config.squadMin, max: config.squadMax },
       roles,
+      roleCounts,
       restricted,
       groups,
       empty: players.length === 0,
