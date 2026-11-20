@@ -18,7 +18,7 @@ Design refs: Room.dc.html `squadLive`, `squadEmpty` (App Screens 9d-9e); Auction
 ## Tasks
 - [x] T-1 (AC-1, AC-2): Pure `squadView(state, pool, config)` in `web/src/auction/squads.ts` with unit tests: grouping, newest first, role bars, restricted count, empty squad.
 - [x] T-2 (AC-1, AC-2): `SquadPanel` component and `/rooms/[roomId]/squads` page with the franchise chips, built to `squadLive` at 390 and 1440.
-- [ ] T-3 (AC-3): Wire the panel to `useLive` state; just-bought marker; component test that a hammer event updates the open view.
+- [x] T-3 (AC-3): Wire the panel to `useLive` state; just-bought marker; component test that a hammer event updates the open view.
 - [ ] T-4 (AC-4): `squadEmpty` state, scheduled-start line, and the fetch fallback on a stale connection; component tests.
 - [ ] T-5 (AC-5): Auction-screen squad chip and sheet reusing `SquadPanel`, built to AuctionSquad.dc.html.
 - [ ] T-6 (AC-6): Member-only integration test on `GET /auction` standings for all franchises; stub football pack test; run check-agnostic.

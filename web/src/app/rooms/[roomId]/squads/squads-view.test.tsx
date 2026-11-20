@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-import { cleanup, render, screen, waitFor, within } from "@testing-library/react";
+import { act, cleanup, render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
@@ -217,5 +217,71 @@ describe("SquadsView", () => {
     render(<SquadsView roomId="room-1" />);
 
     expect(await screen.findByText("Can't find that room")).toBeTruthy();
+  });
+});
+
+describe("SquadsView live updates", () => {
+  const hammer = {
+    seq: 9,
+    at: "2031-01-02T20:11:00Z",
+    kind: "lot_closed",
+    franchiseId: "fa",
+    lot: 3,
+    payload: { sold: true, amount: 15_000_000 },
+  };
+  const afterHammer = () =>
+    auction({
+      lastSeq: 9,
+      lotOpen: false,
+      lotsClosed: 3,
+      lastResult: { lot: 3, sold: true, franchiseId: "fa", amount: 15_000_000 },
+      standings: [
+        {
+          franchiseId: "fa",
+          purse: 55_000_000,
+          squad: [
+            { lot: 1, playerId: "p1", price: 10_000_000 },
+            { lot: 2, playerId: "p2", price: 20_000_000 },
+            { lot: 3, playerId: "p3", price: 15_000_000 },
+          ],
+        },
+        { franchiseId: "fb", purse: 100_000_000, squad: [] },
+      ],
+    });
+
+  it("shows the new player, count, purse and bars after a hammer with no reload, marked until the next lot opens", async () => {
+    setup();
+    render(<SquadsView roomId="room-1" />);
+    await screen.findAllByTestId("squad-player");
+    expect(screen.queryByTestId("just-in")).toBeNull();
+    const roomReads = vi.mocked(getRoom).mock.calls.length;
+
+    vi.mocked(getAuction).mockResolvedValue(afterHammer());
+    await act(async () => {
+      sockets[0].subs.get("/topic/auctions/room-1")?.(JSON.stringify(hammer));
+    });
+
+    await waitFor(() => expect(screen.getAllByTestId("squad-player")).toHaveLength(3));
+    const panel = screen.getByTestId("squad-panel");
+    expect(within(panel).getByTestId("squad-purse").textContent).toBe("€55 M");
+    expect(within(panel).getByTestId("squad-spent").textContent).toBe("€45 M");
+    expect(within(panel).getByTestId("squad-role-def").textContent).toContain("Met");
+    const fresh = within(panel).getByTestId("just-in").closest("[data-testid=squad-player]");
+    expect(fresh?.textContent).toContain("Fake 3");
+    expect(vi.mocked(getRoom).mock.calls.length).toBe(roomReads);
+  });
+
+  it("drops the marker once the next lot opens", async () => {
+    setup(afterHammer());
+    render(<SquadsView roomId="room-1" />);
+    expect(await screen.findByTestId("just-in")).toBeTruthy();
+
+    vi.mocked(getAuction).mockResolvedValue({ ...afterHammer(), lastSeq: 10, lotOpen: true });
+    await act(async () => {
+      sockets[0].subs.get("/topic/auctions/room-1")?.(JSON.stringify({ seq: 10, at: "x", kind: "lot_opened", lot: 4, payload: {} }));
+    });
+
+    await waitFor(() => expect(screen.queryByTestId("just-in")).toBeNull());
+    expect(screen.getAllByTestId("squad-player")).toHaveLength(3);
   });
 });
