@@ -155,8 +155,11 @@ class AuctionBidIT extends AbstractAuctionIT {
       advance(20);
       tick();
     }
-    assertThat(state(room, room.commissioner()).get("phase").asText()).isEqualTo("ended");
+    // Lot 3 closed unsold: in its gap the answer is the same, and after the gap the pool is done.
     assertThat(outcome(bid(room, room.manager(1), 3, 20))).isEqualTo("rejected:lot_closed");
+    advance(5);
+    tick();
+    assertThat(state(room, room.commissioner()).get("phase").asText()).isEqualTo("main_done");
   }
 
   @Test
@@ -200,9 +203,11 @@ class AuctionBidIT extends AbstractAuctionIT {
       advance(20);
       tick();
     }
-    var ended = bid(room, room.manager(0), 4, 20);
-    assertThat(ended.getStatusCode()).isEqualTo(HttpStatus.CONFLICT);
-    assertThat(body(ended).get("error").asText()).isEqualTo("ended");
+    advance(5);
+    tick();
+    var done = bid(room, room.manager(0), 4, 20);
+    assertThat(done.getStatusCode()).isEqualTo(HttpStatus.CONFLICT);
+    assertThat(body(done).get("error").asText()).isEqualTo("main_done");
   }
 
   @Test

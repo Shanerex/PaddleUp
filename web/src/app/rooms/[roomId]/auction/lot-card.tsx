@@ -20,6 +20,7 @@ export function LotCard({
   photoUrl,
   lastSeasonPoints,
   result,
+  pickedBy,
 }: {
   lot: AuctionLot;
   labels: PackLabels;
@@ -27,6 +28,8 @@ export function LotCard({
   photoUrl?: string | null;
   lastSeasonPoints?: number | null;
   result?: LotResult | null;
+  /** Accelerated round only: how many franchises picked this lot (mock 3y tag). */
+  pickedBy?: number | null;
 }) {
   const slot = roleSlot(labels, lot.role);
   const facts: { label: string; value: string }[] = [{ label: "BASE", value: formatMoney(lot.basePrice, config) }];
@@ -47,6 +50,11 @@ export function LotCard({
             {tagLabel(labels, t)}
           </span>
         ))}
+        {pickedBy != null && (
+          <span className={s.tagChip} data-testid="picked-by">
+            Picked by {pickedBy}
+          </span>
+        )}
       </div>
       <div className={s.nameBlock}>
         <div className={s.playerName} data-testid="lot-name">

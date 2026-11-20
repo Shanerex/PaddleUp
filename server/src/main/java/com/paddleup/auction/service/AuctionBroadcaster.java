@@ -48,7 +48,7 @@ public class AuctionBroadcaster {
     }
     for (AuctionEvent e : events) {
       try {
-        AuctionEventDto dto = AuctionViews.event(e, after, clock.instant());
+        AuctionEventDto dto = AuctionViews.event(e, after, clock.instant(), null);
         out.convertAndSend(topic(roomId), dto);
       } catch (RuntimeException ex) {
         log.warn("Broadcast of auction {} seq {} failed", roomId, e.seq(), ex);

@@ -30,10 +30,10 @@ public final class IntentRules {
     if (phase.isPresent()) {
       return phase.get();
     }
-    if (intent.lot() < s.currentLot() || now.compareTo(s.deadline()) >= 0) {
+    if (s.closed(intent.lot()) || now.compareTo(s.deadline()) >= 0) {
       return new Decision.Rejected(Reason.LOT_CLOSED);
     }
-    if (intent.lot() > s.currentLot()) {
+    if (intent.lot() != s.currentLot()) {
       return new Decision.PhaseError(Reason.NO_OPEN_LOT);
     }
     if (intent.franchiseId() == null || !s.purses().containsKey(intent.franchiseId())) {
@@ -61,20 +61,25 @@ public final class IntentRules {
   }
 
   /**
-   * True when the intent names a lot that has already closed while the auction is live (in the gap)
-   * or ended. It is too late for that lot, whether or not the tick has happened yet, so the answer
-   * is the same either way; only a lot that never opened is a phase error.
+   * True when the intent names a lot that has already closed, in any phase after the lobby: it is
+   * too late for that lot whether the auction is live, in the gap, held, between rounds or ended,
+   * and whether or not the tick has happened yet, so the answer is the same everywhere; only a lot
+   * that never opened (or is open and held) is a phase error. Closed means played, by the play
+   * queue: lot numbers do not follow play order once a lot is re-opened or accelerated.
    */
   private static boolean namesClosedLot(AuctionState s, Intent intent) {
-    return (s.phase() == Phase.LIVE || s.phase() == Phase.ENDED)
-        && !s.lotOpen()
-        && intent.lot() <= s.currentLot();
+    return s.phase() != Phase.NONE && s.phase() != Phase.SCHEDULED && s.closed(intent.lot());
   }
 
   private static Optional<Decision> phase(AuctionState s) {
     return switch (s.phase()) {
       case NONE, SCHEDULED -> Optional.of(new Decision.PhaseError(Reason.NOT_LIVE));
       case ENDED -> Optional.of(new Decision.PhaseError(Reason.ENDED));
+      case PAUSED -> Optional.of(new Decision.PhaseError(Reason.PAUSED));
+      case ADJOURNED -> Optional.of(new Decision.PhaseError(Reason.ADJOURNED));
+      case RESUME_LOBBY -> Optional.of(new Decision.PhaseError(Reason.RESUME_LOBBY));
+      case MAIN_DONE -> Optional.of(new Decision.PhaseError(Reason.MAIN_DONE));
+      case NOMINATING -> Optional.of(new Decision.PhaseError(Reason.NOMINATING));
       case LIVE ->
           s.lotOpen() ? Optional.empty() : Optional.of(new Decision.PhaseError(Reason.NO_OPEN_LOT));
     };

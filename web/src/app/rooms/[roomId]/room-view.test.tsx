@@ -447,6 +447,37 @@ describe("RoomView as the Commissioner (Room `setup`, `setupReady`, `setupAdmin`
   });
 });
 
+describe("RoomView auction controls card and audit link (Room commish, commishLive)", () => {
+  it("shows the live lot, a Go to auction link and the lit tiles to the Commissioner of a live auction", async () => {
+    vi.mocked(getRoom).mockResolvedValue(room("auction_live", { advanceTo: [] }));
+    vi.mocked(getAuction).mockResolvedValue({
+      phase: "live",
+      lotOpen: true,
+      currentBid: 0,
+      lot: { no: 42, name: "Jaden Okoro", basePrice: 200 },
+      unsold: [],
+    } as unknown as AuctionState);
+    render(<RoomView roomId="room-1" />);
+
+    const card = await screen.findByTestId("commish-controls");
+    expect(await within(card).findByText("Lot 42 · Jaden Okoro")).toBeTruthy();
+    expect(within(card).getByRole("link", { name: /Go to auction/ }).getAttribute("href")).toBe("/rooms/room-1/auction");
+    // A price that changes live is set in DM Mono tabular (the global .num class).
+    expect(card.querySelector(".num")?.textContent).toMatch(/\d/);
+    expect(card.querySelector('[data-on="true"]')).toBeTruthy();
+    expect(within(card).getByText("Accelerated round").closest("span")?.getAttribute("data-on")).toBe("false");
+    expect(screen.getByTestId("audit-link").getAttribute("href")).toBe("/rooms/room-1/audit");
+  });
+
+  it("gives a manager the audit link but not the controls", async () => {
+    vi.mocked(getRoom).mockResolvedValue(room("auction_live", { myRole: "manager", myFranchiseId: "f-ben", advanceTo: [] }));
+    render(<RoomView roomId="room-1" />);
+
+    expect(await screen.findByTestId("audit-link")).toBeTruthy();
+    expect(screen.queryByTestId("commish-controls")).toBeNull();
+  });
+});
+
 describe("RoomView player pool card and rail links (Room setup*)", () => {
   it("points the Commissioner at the editable pool and the set order", async () => {
     render(<RoomView roomId="room-1" />);

@@ -32,6 +32,10 @@ export type LobbyProps = {
   onRetry: () => void;
   /** Opens the change-time sheet. Given to the Commissioner only, with or without a franchise. */
   onChangeTime?: () => void;
+  /** Starts the auction now (audited). Given to the Commissioner only; locked while offline. */
+  onStartNow?: () => void;
+  /** A start-now request is waiting for the server. */
+  startBusy?: boolean;
 };
 
 type Status = "READY" | "IN LOBBY" | "NOT HERE";
@@ -224,6 +228,17 @@ export function Lobby(p: LobbyProps) {
               <button type="button" className={s.changeTime} data-testid="change-time" onClick={p.onChangeTime}>
                 <Icon name="edit_calendar" size={18} />
                 Change time
+              </button>
+            )}
+            {p.onStartNow && (
+              <button
+                type="button"
+                className={s.startNow}
+                data-testid="start-now"
+                disabled={p.offline || p.startBusy}
+                onClick={p.onStartNow}
+              >
+                Start now
               </button>
             )}
           </div>

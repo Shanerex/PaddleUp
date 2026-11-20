@@ -23,6 +23,14 @@ function state(over: Partial<AuctionState> = {}): AuctionState {
     connected: [],
     ready: [],
     bidLimits: [{ reason: "purse", above: 1000 }],
+    heldMs: 0,
+    round: "main",
+    unsoldPool: [],
+    pickCounts: [],
+    myPicks: [],
+    waiting: [],
+    resumeLobbySeconds: 120,
+    lotsClosed: 0,
     nextBid: 20,
     deadline: "2030-03-01T10:00:20Z",
     ...over,
@@ -423,5 +431,20 @@ describe("createLive", () => {
     expect(t.getTicket.mock.calls.length).toBe(tickets);
     await vi.advanceTimersByTimeAsync(500);
     expect(t.getTicket.mock.calls.length).toBe(tickets + 1);
+  });
+
+  it("carries the new lot number of a re-opened lot to the notice (CR3-4)", async () => {
+    const t = setup();
+    t.live.start();
+    const { socket } = await t.connectLatest();
+    socket.send(topicOf(ROOM), {
+      seq: 4,
+      at: "x",
+      kind: "lot_reopened",
+      franchiseId: A,
+      lot: 3,
+      payload: { newLot: 12, reason: "Wrong paddle", amount: 400 },
+    });
+    expect(t.live.snapshot().adminEvent).toMatchObject({ kind: "lot_reopened", lot: 3, newLot: 12, reason: "Wrong paddle" });
   });
 });

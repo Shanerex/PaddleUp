@@ -5,6 +5,7 @@ import com.paddleup.auction.model.AuctionState;
 import com.paddleup.auction.model.Events;
 import com.paddleup.auction.model.Lot;
 import com.paddleup.auction.model.Step;
+import java.time.Duration;
 import java.time.Instant;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -25,6 +26,14 @@ final class AuctionFixtures {
   static final List<UUID> PLAYERS =
       List.of(UUID.randomUUID(), UUID.randomUUID(), UUID.randomUUID());
   static final List<BidGuard> GUARDS = List.of(new PurseGuard());
+
+  /** What the lobby lasts in these tests; production reads paddleup.auction.resume-lobby. */
+  static final Duration RESUME_LOBBY = Duration.ofMinutes(2);
+
+  /** What the clock makes happen at {@code now}, with the test resume lobby length. */
+  static List<AuctionEvent> due(AuctionState s, Instant now) {
+    return TimerRules.due(s, now, RESUME_LOBBY);
+  }
 
   private AuctionFixtures() {}
 

@@ -663,6 +663,33 @@
   color: var(--ink);
 }
 
+.noticeAdmin {
+  align-items: flex-start;
+  background: var(--warn-tint);
+  color: var(--ink);
+}
+
+.noticeResume {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  height: 36px;
+  padding: 0 14px;
+  border: 0;
+  border-radius: 10px;
+  background: var(--ink);
+  color: var(--bg);
+  font: inherit;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.panelNote {
+  font-size: 12px;
+  color: var(--ink-2);
+}
+
 .noticeBad {
   align-items: flex-start;
   background: var(--bad-tint);
@@ -1121,6 +1148,28 @@
   font-size: 13px;
   font-weight: 700;
   cursor: pointer;
+}
+
+/* Lobby Start now (Room lobbyAdmin): the team colour, locked to surface-2 offline. */
+.startNow {
+  display: flex;
+  align-items: center;
+  height: 36px;
+  padding: 0 14px;
+  border: 0;
+  border-radius: 12px;
+  background: var(--team);
+  color: var(--on-team);
+  font: inherit;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.startNow:disabled {
+  background: var(--surface-2);
+  color: var(--ink-3);
+  cursor: not-allowed;
 }
 
 .commish {

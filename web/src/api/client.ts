@@ -37,6 +37,22 @@ export type Presence = components["schemas"]["PresenceDto"];
 export type IntentResult = components["schemas"]["IntentResultDto"];
 export type BidInput = components["schemas"]["BidRequest"];
 export type Ticket = components["schemas"]["TicketDto"];
+export type AuditPage = components["schemas"]["AuditDto"];
+export type AuditEntry = components["schemas"]["AuditEntryDto"];
+export type PickCount = components["schemas"]["PickCountDto"];
+/** What a Commissioner control can be: the server's action names. */
+export type ControlAction =
+  | "pause"
+  | "resume"
+  | "skip"
+  | "reopen"
+  | "adjourn"
+  | "change_time"
+  | "resume_now"
+  | "start_now"
+  | "open_round"
+  | "end_auction"
+  | "end_round";
 
 /** One logged auction event as the socket and the log deliver it. */
 export type AuctionEvent = {
@@ -277,6 +293,30 @@ export async function bid(id: string, input: BidInput): Promise<IntentResult> {
 /** Marks the caller's franchise ready (or not) in the lobby; answers with the lobby presence. */
 export async function setReady(id: string, ready: boolean): Promise<Presence> {
   return (await send("PUT", `${room(id)}/auction/ready`, { ready })).json();
+}
+
+/**
+ * A Commissioner control. The server answers 200 with `accepted` or a `rejected` reason (nothing
+ * changed), 403 for a manager and 409 when the auction cannot take it. `intentId` makes a resend safe.
+ */
+export async function sendControl(
+  id: string,
+  action: ControlAction,
+  extra: { lot?: number; reason?: string; resumeAt?: string } = {},
+  intentId: string = crypto.randomUUID(),
+): Promise<IntentResult> {
+  return (await send("POST", `${room(id)}/auction/controls`, { intentId, action, ...extra })).json();
+}
+
+/** My accelerated-round picks (unsold lot numbers), replacing the ones I sent before. */
+export async function sendPicks(id: string, lots: number[], intentId: string = crypto.randomUUID()): Promise<IntentResult> {
+  return (await send("PUT", `${room(id)}/auction/picks`, { intentId, lots })).json();
+}
+
+/** One page of the audit log, oldest first; pass the previous page's `lastSeq` as `after`. */
+export async function getAudit(id: string, kind: string = "all", after = 0, limit?: number): Promise<AuditPage> {
+  const query = new URLSearchParams({ kind, after: String(after), ...(limit ? { limit: String(limit) } : {}) });
+  return (await request(`${room(id)}/auction/audit?${query}`)).json();
 }
 
 /** A single-use ticket for the auction socket. */

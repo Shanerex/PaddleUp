@@ -64,7 +64,7 @@ class AuctionExceptionHandler {
   @ExceptionHandler(LogWriteException.class)
   ResponseEntity<Body> logWrite(LogWriteException e) {
     return ResponseEntity.status(HttpStatus.SERVICE_UNAVAILABLE)
-        .body(Body.of("log_unavailable", "The bid could not be recorded; try again"));
+        .body(Body.of("log_unavailable", "The change could not be recorded; try again"));
   }
 
   @ExceptionHandler(AuctionBusyException.class)

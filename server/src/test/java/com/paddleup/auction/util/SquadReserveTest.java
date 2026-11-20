@@ -8,6 +8,7 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import java.util.stream.Collectors;
 import org.junit.jupiter.api.Test;
 
 /** AC-3: the reserve is the cheapest legal set of base prices that fills the unmet minimums. */
@@ -27,7 +28,8 @@ class SquadReserveTest {
         remaining.stream()
             .sorted(Comparator.comparingLong(Lot::basePrice).thenComparingInt(Lot::no))
             .toList();
-    return SquadReserve.of(rules, held, open, byPrice);
+    return SquadReserve.of(
+        rules, held, open, byPrice, remaining.stream().map(Lot::no).collect(Collectors.toSet()));
   }
 
   private static SquadRules rules(int min, Map<String, Integer> roles, SquadRules.Quota... quotas) {
@@ -182,5 +184,33 @@ class SquadReserveTest {
     assertThat(result.blocked()).isFalse();
     assertThat(result.cost()).isEqualTo(25);
     assertThat(result.role()).isEqualTo("r");
+  }
+
+  @Test
+  void aLotNumberedBeforeTheOpenOneStillCountsWhenItIsQueuedToPlayLater() {
+    // A re-opened lot gets a new, higher number but a lot queued from before can be lower than
+    // the open one: only the upcoming set decides what is still to come.
+    var rules = rules(2, Map.of("a", 2));
+    var cheapA = lot("a", 10);
+    var open = lot("a", 50);
+
+    var result = of(rules, List.of(), open, List.of(cheapA));
+
+    assertThat(cheapA.no()).isLessThan(open.no());
+    assertThat(result.cost()).isEqualTo(10);
+  }
+
+  @Test
+  void aLotThatIsNotUpcomingIsNotCountedEvenWithAHigherNumber() {
+    var rules = rules(2, Map.of("a", 2));
+    var open = lot("a", 50);
+    var played = lot("a", 5);
+    var queued = lot("a", 30);
+    var byPrice = List.of(played, queued);
+
+    var result = SquadReserve.of(rules, List.of(), open, byPrice, java.util.Set.of(queued.no()));
+
+    assertThat(played.no()).isGreaterThan(open.no());
+    assertThat(result.cost()).isEqualTo(30);
   }
 }

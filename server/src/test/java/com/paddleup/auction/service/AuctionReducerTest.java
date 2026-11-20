@@ -3,6 +3,7 @@ package com.paddleup.auction.service;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
+import com.paddleup.auction.model.AccelSlot;
 import com.paddleup.auction.model.AuctionEvent;
 import com.paddleup.auction.model.AuctionState;
 import com.paddleup.auction.model.Events;
@@ -143,6 +144,152 @@ class AuctionReducerTest {
   }
 
   @Test
+  void theRoundStartAddsEveryAcceleratedLotAndKeepsTheByPriceListSortedWithTheQueueAsASet() {
+    var s = AuctionReducer.replay(AuctionState.initial(ROOM, catalog()), List.of(started(1)));
+    long seq = 2;
+    for (int lot = 1; lot <= 3; lot++) {
+      s = AuctionReducer.apply(s, Events.lotOpened(seq++, T0, lot, T0.plusSeconds(20)));
+      s = AuctionReducer.apply(s, Events.lotUnsold(seq++, T0.plusSeconds(20), lot));
+    }
+    s = AuctionReducer.apply(s, Events.mainDone(seq++, T0.plusSeconds(30), List.of(1, 2, 3)));
+    s = AuctionReducer.apply(s, Events.nominatingOpened(seq++, T0.plusSeconds(31), null, null));
+
+    s =
+        AuctionReducer.apply(
+            s, Events.roundStarted(seq, T0.plusSeconds(32), null, null, List.of(3, 1)));
+
+    assertThat(s.lots()).hasSize(5);
+    assertThat(s.queue()).containsExactly(4, 5);
+    assertThat(s.lots().get(3).playerId()).isEqualTo(s.lots().get(2).playerId());
+    assertThat(s.lotsByPrice()).containsExactlyInAnyOrderElementsOf(s.lots());
+    assertThat(s.lotsByPrice()).extracting(Lot::no).containsExactly(1, 2, 3, 4, 5);
+    assertThat(s.closed(4)).isFalse();
+    assertThat(s.closed(3)).isTrue();
+  }
+
+  @Test
+  void thePlayQueueHoldsTheLotsStillToComeAndOpeningALotTakesItOut() {
+    var live = AuctionReducer.replay(AuctionState.initial(ROOM, catalog()), List.of(started(1)));
+    assertThat(live.queue()).containsExactly(1, 2, 3);
+    assertThat(live.hasMoreLots()).isTrue();
+
+    var open = AuctionReducer.apply(live, Events.lotOpened(2, T0, 1, T0.plusSeconds(20)));
+    assertThat(open.queue()).containsExactly(2, 3);
+    assertThat(open.lot().no()).isEqualTo(1);
+    assertThat(open.nextLot()).isNull();
+
+    var gap = AuctionReducer.apply(open, Events.lotUnsold(3, T0.plusSeconds(20), 1));
+    assertThat(gap.nextLot().no()).isEqualTo(2);
+
+    var last = gap;
+    long seq = 4;
+    for (int lot = 2; lot <= 3; lot++) {
+      last = AuctionReducer.apply(last, Events.lotOpened(seq++, T0, lot, T0.plusSeconds(20)));
+      last = AuctionReducer.apply(last, Events.lotUnsold(seq++, T0.plusSeconds(20), lot));
+    }
+    assertThat(last.queue()).isEmpty();
+    assertThat(last.hasMoreLots()).isFalse();
+    assertThat(last.nextLot()).isNull();
+  }
+
+  /** Main round over, every lot unsold, picking open: A picks 3 and 1, B picks 3. */
+  private static AuctionState nominating() {
+    var s = AuctionReducer.replay(AuctionState.initial(ROOM, catalog()), List.of(started(1)));
+    long seq = 2;
+    for (int lot = 1; lot <= 3; lot++) {
+      s = AuctionReducer.apply(s, Events.lotOpened(seq++, T0, lot, T0.plusSeconds(20)));
+      s = AuctionReducer.apply(s, Events.lotUnsold(seq++, T0.plusSeconds(20), lot));
+    }
+    s = AuctionReducer.apply(s, Events.mainDone(seq++, T0, List.of(1, 2, 3)));
+    s =
+        AuctionReducer.apply(
+            s, Events.nominatingOpened(seq++, T0, COMMISSIONER, UUID.randomUUID()));
+    s =
+        AuctionReducer.apply(
+            s, Events.picksSubmitted(seq++, T0, A, A, UUID.randomUUID(), List.of(3, 1)));
+    return AuctionReducer.apply(
+        s, Events.picksSubmitted(seq, T0, B, B, UUID.randomUUID(), List.of(3)));
+  }
+
+  @Test
+  void theAcceleratedRoundKeepsEachLotsPositionAndPickCountOnceItStarts() {
+    var picking = nominating();
+    assertThat(picking.accelSize()).isZero();
+    assertThat(picking.accel()).isEmpty();
+
+    var live =
+        AuctionReducer.apply(
+            picking,
+            Events.roundStarted(
+                picking.lastSeq() + 1, T0, COMMISSIONER, UUID.randomUUID(), List.of(3, 1)));
+
+    // New lots 4 (player 3, two picks) and 5 (player 1, one pick) follow the three main lots.
+    assertThat(live.accelSize()).isEqualTo(2);
+    assertThat(live.accel()).containsOnlyKeys(4, 5);
+    assertThat(live.accel().get(4)).isEqualTo(new AccelSlot(1, 2));
+    assertThat(live.accel().get(5)).isEqualTo(new AccelSlot(2, 1));
+  }
+
+  @Test
+  void aReopenedAcceleratedLotKeepsThePositionAndCountOfTheLotItReplays() {
+    var picking = nominating();
+    var live =
+        AuctionReducer.apply(
+            picking,
+            Events.roundStarted(
+                picking.lastSeq() + 1, T0, COMMISSIONER, UUID.randomUUID(), List.of(3, 1)));
+    long seq = live.lastSeq() + 1;
+    var open = AuctionReducer.apply(live, Events.lotOpened(seq++, T0, 4, T0.plusSeconds(20)));
+    var closed = AuctionReducer.apply(open, Events.lotUnsold(seq++, T0.plusSeconds(20), 4));
+
+    var reopened =
+        AuctionReducer.apply(
+            closed,
+            Events.lotReopened(
+                seq, T0, 4, 6, "mis-click", null, 0, COMMISSIONER, UUID.randomUUID()));
+
+    assertThat(reopened.accelSize()).isEqualTo(2);
+    assertThat(reopened.accel().get(6)).isEqualTo(new AccelSlot(1, 2));
+    assertThat(reopened.accel().get(5)).isEqualTo(new AccelSlot(2, 1));
+  }
+
+  @Test
+  void lotsClosedCountsEveryClosedLotAndSurvivesTheAcceleratedRound() {
+    var picking = nominating();
+    // Three main lots closed unsold; none of them leaves the count when picked.
+    assertThat(picking.lotsClosed()).isEqualTo(3);
+
+    var live =
+        AuctionReducer.apply(
+            picking,
+            Events.roundStarted(
+                picking.lastSeq() + 1, T0, COMMISSIONER, UUID.randomUUID(), List.of(3, 1)));
+    assertThat(live.lotsClosed()).isEqualTo(3);
+
+    long seq = live.lastSeq() + 1;
+    var open = AuctionReducer.apply(live, Events.lotOpened(seq++, T0, 4, T0.plusSeconds(20)));
+    assertThat(open.lotsClosed()).isEqualTo(3);
+    var closed = AuctionReducer.apply(open, Events.lotUnsold(seq++, T0.plusSeconds(20), 4));
+    assertThat(closed.lotsClosed()).isEqualTo(4);
+
+    // Re-opening undoes that close.
+    var reopened =
+        AuctionReducer.apply(
+            closed,
+            Events.lotReopened(
+                seq, T0, 4, 6, "mis-click", null, 0, COMMISSIONER, UUID.randomUUID()));
+    assertThat(reopened.lotsClosed()).isEqualTo(3);
+  }
+
+  @Test
+  void aMainRoundLotHasNoAcceleratedSlot() {
+    var s = AuctionReducer.replay(AuctionState.initial(ROOM, catalog()), List.of(started(1)));
+    s = AuctionReducer.apply(s, Events.lotOpened(2, T0, 1, T0.plusSeconds(20)));
+    assertThat(s.accel()).isEmpty();
+    assertThat(s.accelSize()).isZero();
+  }
+
+  @Test
   void aStartRefusalIsKeptUntilARescheduleClearsIt() {
     var empty = AuctionState.initial(ROOM, Map.of());
     AuctionState refused =
@@ -164,6 +311,29 @@ class AuctionReducerTest {
     assertThat(again.startRefusal()).isNull();
     assertThat(again.startsAt()).isEqualTo(T0.plusSeconds(600));
     assertThat(again.phase()).isEqualTo(Phase.SCHEDULED);
+  }
+
+  /**
+   * CR4-1: Start now is a fresh go-live request, so it clears an earlier refusal (live or
+   * replayed).
+   */
+  @Test
+  void startNowFromTheLobbyClearsAnEarlierStartRefusal() {
+    var empty = AuctionState.initial(ROOM, Map.of());
+    List<AuctionEvent> log =
+        List.of(
+            Events.scheduled(1, T0, COMMISSIONER, T0.plusSeconds(60)),
+            Events.startRefused(2, T0.plusSeconds(60), "The pool is too small"),
+            Events.startNow(3, T0.plusSeconds(90), COMMISSIONER, UUID.randomUUID()));
+
+    AuctionState replayed = AuctionReducer.replay(empty, log);
+    AuctionState live = AuctionReducer.replay(empty, log.subList(0, 2));
+    live = AuctionReducer.apply(live, log.get(2));
+
+    assertThat(live.phase()).isEqualTo(Phase.SCHEDULED);
+    assertThat(live.startsAt()).isEqualTo(T0.plusSeconds(90));
+    assertThat(live.startRefusal()).isNull();
+    assertThat(replayed).isEqualTo(live);
   }
 
   @Test

@@ -8,6 +8,7 @@ import com.paddleup.auction.exception.LogWriteException;
 import com.paddleup.auction.model.AuctionEvent;
 import com.paddleup.auction.model.AuctionHeader;
 import com.paddleup.auction.model.AuctionState;
+import com.paddleup.auction.model.Control;
 import com.paddleup.auction.model.Decision;
 import com.paddleup.auction.model.EventKind;
 import com.paddleup.auction.model.Events;
@@ -15,6 +16,7 @@ import com.paddleup.auction.model.Intent;
 import com.paddleup.auction.model.Lot;
 import com.paddleup.auction.model.Outcome;
 import com.paddleup.auction.model.Phase;
+import com.paddleup.auction.model.Picks;
 import com.paddleup.auction.model.Reason;
 import com.paddleup.auction.model.SquadRules;
 import com.paddleup.auction.model.Step;
@@ -40,6 +42,8 @@ import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executor;
+import java.util.function.BiConsumer;
+import java.util.function.BiFunction;
 import java.util.function.Consumer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -120,6 +124,16 @@ final class AuctionRunner {
     return serial.submit(() -> handle(intent));
   }
 
+  /** A Commissioner control; the caller has already checked the role. */
+  CompletableFuture<Outcome> control(Control control) {
+    return serial.submit(() -> handleControl(control));
+  }
+
+  /** A franchise's accelerated-round nominations. */
+  CompletableFuture<Outcome> picks(Picks picks) {
+    return serial.submit(() -> handlePicks(picks));
+  }
+
   /**
    * Marks a franchise ready or not ready, on the serial queue so it cannot interleave with the
    * start of the auction that clears readiness. {@code onChange} is called there too, only when the
@@ -182,20 +196,100 @@ final class AuctionRunner {
   // ---- everything below happens on the serial queue ----
 
   private Outcome handle(Intent intent) {
+    return decideAndCommit(
+        intent.actor(),
+        intent.intentId(),
+        intent.lot(),
+        (state, now) -> IntentRules.decide(state, intent, now, d.guards()),
+        null);
+  }
+
+  /**
+   * A control is decided like a bid: by the pure rules, stored once under its intent id, then
+   * broadcast. Start now in the lobby is refused with no event when the room is not ready; else it
+   * logs {@code start_now} first and then goes live (a go-live that is refused later still logs
+   * {@code start_refused} after it).
+   */
+  private Outcome handleControl(Control control) {
+    return decideAndCommit(
+        control.actor(),
+        control.intentId(),
+        control.lot(),
+        (state, now) -> {
+          if (startsFromLobby(state, control)) {
+            // A Start now the room cannot honour logs nothing, so the schedule stands.
+            d.port()
+                .auctionRefusal(roomId)
+                .ifPresent(
+                    reason -> {
+                      throw new AuctionConflictException(
+                          AuctionConflictException.NOT_READY, reason);
+                    });
+          }
+          return ControlRules.decide(state, control, now, d.props().resumeLobby());
+        },
+        (before, now) -> {
+          if (startsFromLobby(before, control)) {
+            goLiveAfterStartNow(now);
+          }
+        });
+  }
+
+  private static boolean startsFromLobby(AuctionState state, Control control) {
+    return control.action() == Control.Action.START_NOW && state.phase() == Phase.SCHEDULED;
+  }
+
+  /**
+   * {@code start_now} is already stored, so the control has happened whatever the go-live does: a
+   * failed write must not turn the answer into an error, since a resend would then be answered as
+   * accepted anyway. The stored time is now, so the next tick goes live.
+   */
+  private void goLiveAfterStartNow(Instant now) {
+    try {
+      goLive(now);
+    } catch (LogWriteException e) {
+      log.warn("Auction {} start now is logged but going live failed; the tick retries", roomId, e);
+    }
+  }
+
+  private Outcome handlePicks(Picks picks) {
+    return decideAndCommit(
+        picks.actor(),
+        picks.intentId(),
+        0,
+        (state, now) -> ControlRules.decidePicks(state, picks, now),
+        null);
+  }
+
+  /**
+   * The one path every intent takes: answer a repeated intent id with its first answer, bring the
+   * timers up to date, decide with the pure {@code rule}, then store and apply the events (and only
+   * then {@code afterCommit}, given the state the rule saw) or store the refusal. A phase error is
+   * thrown and stores nothing.
+   */
+  private Outcome decideAndCommit(
+      UUID actor,
+      UUID intentId,
+      int lot,
+      BiFunction<AuctionState, Instant, Decision> rule,
+      BiConsumer<AuctionState, Instant> afterCommit) {
     Instant now = now();
     resumeIfPending(now);
-    Outcome prior = prior(intent);
+    Outcome prior = prior(actor, intentId);
     if (prior != null) {
       return prior;
     }
     advanceTimers(now);
-    Decision decision = IntentRules.decide(state, intent, now, d.guards());
-    return switch (decision) {
+    AuctionState before = state;
+    return switch (rule.apply(before, now)) {
       case Decision.Accepted accepted -> {
         commit(accepted.events(), scheduledBy, null);
+        if (afterCommit != null) {
+          afterCommit.accept(before, now);
+        }
         yield outcome(accepted.events().get(0));
       }
-      case Decision.Rejected rejected -> reject(intent, now, rejected.reason());
+      case Decision.Rejected rejected -> reject(actor, intentId, lot, now, rejected.reason());
       case Decision.PhaseError phase ->
           throw new AuctionConflictException(phase.code(), phase.code());
     };
@@ -205,10 +299,10 @@ final class AuctionRunner {
    * Stores the rejection, then answers with it, so a resend of this intent id gets the same answer
    * even after a restart. If it cannot be stored nothing is answered and the client may retry.
    */
-  private Outcome reject(Intent intent, Instant now, String reason) {
-    Outcome out = Outcome.rejected(intent.lot(), reason);
+  private Outcome reject(UUID actor, UUID intentId, int lot, Instant now, String reason) {
+    Outcome out = Outcome.rejected(lot, reason);
     try {
-      d.rejections().append(roomId, intent.actor(), intent.intentId(), out, now);
+      d.rejections().append(roomId, actor, intentId, out, now);
     } catch (DataAccessException e) {
       throw new LogWriteException(e);
     }
@@ -216,19 +310,22 @@ final class AuctionRunner {
   }
 
   /** The first answer to this intent id, if it was already decided. */
-  private Outcome prior(Intent intent) {
-    Optional<Outcome> rejected = d.rejections().find(roomId, intent.actor(), intent.intentId());
+  private Outcome prior(UUID actor, UUID intentId) {
+    Optional<Outcome> rejected = d.rejections().find(roomId, actor, intentId);
     if (rejected.isPresent()) {
       return rejected.get();
     }
-    Optional<AuctionEvent> logged = d.events().byIntent(roomId, intent.actor(), intent.intentId());
+    Optional<AuctionEvent> logged = d.events().byIntent(roomId, actor, intentId);
     return logged.map(AuctionRunner::outcome).orElse(null);
   }
 
   private static Outcome outcome(AuctionEvent e) {
     boolean bid = e.kind() == EventKind.BID_ACCEPTED;
     return Outcome.accepted(
-        e.lot(), e.seq(), bid ? e.number("amount") : null, bid ? e.instant("deadline") : null);
+        e.lot() == null ? 0 : e.lot(),
+        e.seq(),
+        bid ? e.number("amount") : null,
+        bid ? e.instant("deadline") : null);
   }
 
   private AuctionState doSchedule(UserId actor, Instant startsAt) {
@@ -237,7 +334,7 @@ final class AuctionRunner {
       throw new AuctionRequestException("startsAt", "The start must be in the future");
     }
     Phase phase = state.phase();
-    if (phase == Phase.LIVE || phase == Phase.ENDED) {
+    if (phase != Phase.NONE && phase != Phase.SCHEDULED) {
       throw new AuctionConflictException(
           AuctionConflictException.LOCKED,
           "The auction is already live, so it cannot be scheduled");
@@ -271,7 +368,7 @@ final class AuctionRunner {
           goLive(now);
         }
       }
-      case LIVE -> advanceTimers(now);
+      case LIVE, ADJOURNED, RESUME_LOBBY -> advanceTimers(now);
       default -> {}
     }
   }
@@ -290,7 +387,7 @@ final class AuctionRunner {
 
   private void advanceTimers(Instant now) {
     for (int i = 0; i < MAX_STEPS; i++) {
-      List<AuctionEvent> due = TimerRules.due(state, now);
+      List<AuctionEvent> due = TimerRules.due(state, now, d.props().resumeLobby());
       if (due.isEmpty()) {
         return;
       }

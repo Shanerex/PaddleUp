@@ -1,0 +1,250 @@
+// @vitest-environment jsdom
+import { cleanup, render, screen, waitFor } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+
+vi.mock("next/link", () => ({
+  default: ({ href, children, ...rest }: { href: string; children: React.ReactNode }) => (
+    <a href={href} {...rest}>
+      {children}
+    </a>
+  ),
+}));
+vi.mock("../../../../api/client", async (orig) => ({ ...(await orig<typeof import("../../../../api/client")>()), sendControl: vi.fn() }));
+
+import { sendControl, type AuctionState } from "../../../../api/client";
+import { Controls, type ControlsContext } from "./controls";
+import { AdjournedCard, Notices } from "./notices";
+
+afterEach(cleanup);
+beforeEach(() => vi.mocked(sendControl).mockReset());
+
+const lotCard = { no: 7, playerId: "p7", name: "Pat Reed", country: "C", role: "def", tags: [], set: "S", position: 1, basePrice: 200_000 };
+function state(over: Partial<AuctionState> = {}): AuctionState {
+  return {
+    phase: "live",
+    lotOpen: true,
+    currentBid: 0,
+    lot: lotCard,
+    unsold: [2, 3],
+    lastResult: { lot: 6, sold: true, franchiseId: "fa", amount: 400_000, card: { ...lotCard, no: 6, name: "Sam Cole" } },
+    ...over,
+  } as unknown as AuctionState;
+}
+function ctx(over: Partial<ControlsContext> = {}): ControlsContext {
+  return {
+    roomId: "r1",
+    state: state(),
+    money: (n) => `€${n / 1_000_000} M`,
+    labels: { roles: [{ id: "def", label: "Defender" }], tags: [] } as unknown as ControlsContext["labels"],
+    nameOf: (id) => (id === "fa" ? "Red FC" : null),
+    buyerOf: (id) => (id === "fa" ? { monogram: "RF", colour: "rose" } : null),
+    timeLeftMs: 12_000,
+    serverNow: () => Date.now(),
+    onNotice: vi.fn(),
+    onResync: vi.fn(),
+    ...over,
+  };
+}
+const open = async (c: ControlsContext) => {
+  render(<Controls ctx={c} />);
+  await userEvent.click(screen.getByTestId("controls-chip"));
+};
+
+describe("Controls sheets", () => {
+  it("draw a title row with a close button instead of the drag handle, and the X closes", async () => {
+    await open(ctx());
+    const dialog = screen.getByRole("dialog", { name: "Commissioner controls" });
+    expect(dialog.querySelector("h2")?.textContent).toBe("Commissioner controls");
+    await userEvent.click(screen.getByRole("button", { name: "Close" }));
+    expect(screen.queryByRole("dialog")).toBeNull();
+  });
+
+  it("skip, re-open and adjourn sheets use the same title row", async () => {
+    await open(ctx());
+    await userEvent.click(screen.getByTestId("control-skip"));
+    expect(screen.getByRole("dialog", { name: "Skip Lot 7?" }).querySelector("h2")?.textContent).toBe("Skip Lot 7?");
+    expect(screen.getByRole("button", { name: "Close" })).toBeTruthy();
+  });
+});
+
+describe("Controls re-open placement", () => {
+  const nextCard = { ...lotCard, no: 8, name: "Next Up" };
+
+  it("comes back after the lot on the block", async () => {
+    await open(ctx());
+    await userEvent.click(screen.getByTestId("control-reopen"));
+    expect(screen.getByTestId("reopen-sheet").textContent).toContain("It comes back next, after Lot 7,");
+  });
+
+  it("in a gap comes back before the lot that plays next, not after the one that just closed (CR2-3)", async () => {
+    await open(ctx({ state: state({ lotOpen: false, lot: { ...lotCard, no: 6, name: "Sam Cole" }, nextLot: nextCard }) }));
+    await userEvent.click(screen.getByTestId("control-reopen"));
+    const text = screen.getByTestId("reopen-sheet").textContent ?? "";
+    expect(text).toContain("It comes back next, before Lot 8,");
+    expect(text).not.toContain("after Lot 6");
+  });
+
+  it("in the last gap just says it comes back next", async () => {
+    await open(ctx({ state: state({ lotOpen: false, lot: { ...lotCard, no: 6, name: "Sam Cole" } }) }));
+    await userEvent.click(screen.getByTestId("control-reopen"));
+    expect(screen.getByTestId("reopen-sheet").textContent).toContain("It comes back next, from base");
+  });
+});
+
+describe("Controls", () => {
+  it("lists the controls with Skip available only on a lot with no bid", async () => {
+    await open(ctx());
+    expect((screen.getByTestId("control-skip") as HTMLButtonElement).disabled).toBe(false);
+    expect((screen.getByTestId("control-accel") as HTMLButtonElement).disabled).toBe(true);
+    cleanup();
+    await open(ctx({ state: state({ currentBid: 300_000 }) }));
+    expect((screen.getByTestId("control-skip") as HTMLButtonElement).disabled).toBe(true);
+    expect(screen.getByTestId("control-skip").textContent).toContain("bids stand");
+  });
+
+  it("pauses straight from the list and reads the state again", async () => {
+    vi.mocked(sendControl).mockResolvedValue({ outcome: "accepted", lot: 7, serverNow: "" });
+    const c = ctx();
+    await open(c);
+    await userEvent.click(screen.getByTestId("control-pause"));
+    expect(sendControl).toHaveBeenCalledWith("r1", "pause", {}, expect.any(String));
+    await waitFor(() => expect(c.onResync).toHaveBeenCalled());
+  });
+
+  it("a retry after a lost answer sends the same intent id, and a tap after an answer sends a new one", async () => {
+    vi.mocked(sendControl)
+      .mockRejectedValueOnce(new Error("offline"))
+      .mockResolvedValueOnce({ outcome: "accepted", lot: 7, serverNow: "" })
+      .mockResolvedValueOnce({ outcome: "rejected", reason: "wrong_phase", lot: 7, serverNow: "" });
+    await open(ctx());
+    // The sheet closes after every send, so each tap reopens it.
+    for (let tap = 1; tap <= 3; tap++) {
+      if (tap > 1) await userEvent.click(screen.getByTestId("controls-chip"));
+      await userEvent.click(screen.getByTestId("control-pause"));
+      await waitFor(() => expect(sendControl).toHaveBeenCalledTimes(tap));
+      await waitFor(() => expect(screen.queryByTestId("control-pause")).toBeNull());
+    }
+    const ids = vi.mocked(sendControl).mock.calls.map((call) => call[3]);
+    expect(ids[1]).toBe(ids[0]);
+    expect(ids[2]).not.toBe(ids[0]);
+  });
+
+  it("offers Resume while paused", async () => {
+    await open(ctx({ state: state({ phase: "paused" }) }));
+    expect(screen.getByTestId("control-pause").textContent).toContain("Resume");
+  });
+
+  it("confirms a skip, naming the lot, and shows the server's refusal when a bid landed first", async () => {
+    vi.mocked(sendControl).mockResolvedValue({ outcome: "rejected", reason: "has_bid", lot: 7, serverNow: "" });
+    const c = ctx({ state: state({ leaderFranchiseId: undefined }) });
+    await open(c);
+    await userEvent.click(screen.getByTestId("control-skip"));
+    expect(screen.getByTestId("skip-sheet").textContent).toContain("Pat Reed leaves the block");
+    expect(screen.getByTestId("skip-role").textContent).toBe("Defender");
+    await userEvent.click(screen.getByRole("button", { name: "Skip Lot 7" }));
+    expect(sendControl).toHaveBeenCalledWith("r1", "skip", { lot: 7 }, expect.any(String));
+    await waitFor(() => expect(c.onNotice).toHaveBeenLastCalledWith(expect.objectContaining({ title: "Couldn't skip Lot 7" })));
+  });
+
+  it("will not re-open without a reason, then sends the trimmed reason with the lot", async () => {
+    vi.mocked(sendControl).mockResolvedValue({ outcome: "accepted", lot: 6, serverNow: "" });
+    await open(ctx());
+    await userEvent.click(screen.getByTestId("control-reopen"));
+    const sheet = screen.getByTestId("reopen-sheet");
+    expect(sheet.textContent).toContain("Sam Cole leaves Red FC");
+    expect(sheet.textContent).toContain("€0.4 M goes back to their purse");
+    // The row names the buyer with its monogram, as drawn in 3r.
+    expect(sheet.textContent).toContain("Sold to Red FC");
+    expect(sheet.textContent).toContain("RF");
+    const button = screen.getByRole("button", { name: "Re-open Lot 6" }) as HTMLButtonElement;
+    expect(button.disabled).toBe(true);
+    await userEvent.type(screen.getByTestId("reopen-reason"), "  Wrong paddle ");
+    expect(button.disabled).toBe(false);
+    await userEvent.click(button);
+    expect(sendControl).toHaveBeenCalledWith("r1", "reopen", { lot: 6, reason: "Wrong paddle" }, expect.any(String));
+  });
+});
+
+describe("Notices for the control phases", () => {
+  const base = { reconnecting: false, paused: false, pausedLeftMs: null, toast: null, onRetry: () => {}, onDismiss: () => {} };
+
+  it("shows the manager's pause notice with the frozen time and no Resume", () => {
+    render(<Notices {...base} paused pausedLeftMs={9000} />);
+    expect(screen.getByTestId("notice-paused").textContent).toContain("Commish hit pause");
+    expect(screen.getByTestId("notice-paused").textContent).toContain("0:09");
+    expect(screen.queryByTestId("notice-resume")).toBeNull();
+  });
+
+  it("gives the Commissioner's own pause notice a Resume", async () => {
+    const onResume = vi.fn();
+    render(<Notices {...base} paused pausedLeftMs={9000} onResume={onResume} />);
+    expect(screen.getByTestId("notice-paused").textContent).toContain("You paused the auction");
+    await userEvent.click(screen.getByTestId("notice-resume"));
+    expect(onResume).toHaveBeenCalled();
+  });
+
+  it("counts down the resume lobby to the lot going live", () => {
+    render(<Notices {...base} resumeLobby={{ lot: 87, leftMs: 102_000 }} />);
+    const text = screen.getByTestId("notice-resume-lobby").textContent ?? "";
+    expect(text).toContain("Lot 87 goes live in");
+    expect(text).toContain("1:42");
+  });
+
+  it("says a pause between lots holds the gap, not a lot clock (CR3-3)", () => {
+    render(<Notices {...base} paused pausedLeftMs={3000} pausedBetween />);
+    const text = screen.getByTestId("notice-paused").textContent ?? "";
+    expect(text).toContain("Paused between lots");
+    expect(text).toContain("0:03");
+    expect(text).not.toContain("Timer frozen at");
+  });
+
+  it("shows the Commissioner's skip or re-open to every manager", () => {
+    render(<Notices {...base} toast={{ kind: "admin", notice: { title: "Lot 41 is back", body: 'The Commissioner re-opened it: "timer bug".' } }} />);
+    expect(screen.getByTestId("notice-admin").textContent).toContain("Lot 41 is back");
+  });
+});
+
+describe("AdjournedCard", () => {
+  it("says when bidding resumes in the viewer's time and gives managers no actions", () => {
+    render(<AdjournedCard lotsDone={86} squad={4} purse="€1 M" resumes="Sat 2 Nov, 8:00 PM" />);
+    expect(screen.getByTestId("adjourned-card").textContent).toContain("Bidding resumes Sat 2 Nov, 8:00 PM your time.");
+    expect(screen.queryByTestId("resume-now")).toBeNull();
+    expect(screen.getByTestId("adjourned-card").textContent).toContain("Adjourned after 86 lots.");
+  });
+
+  it("does not claim a Lot 0 when adjourned before any lot closed", () => {
+    render(<AdjournedCard lotsDone={0} squad={null} purse={null} resumes={null} />);
+    const text = screen.getByTestId("adjourned-card").textContent ?? "";
+    expect(text).toContain("Adjourned before the first lot closed.");
+    expect(text).not.toContain("Lot 0");
+  });
+
+  it("gives the Commissioner Resume now and Change time, and names the 2-minute lobby", async () => {
+    const onResumeNow = vi.fn();
+    const onChangeTime = vi.fn();
+    render(<AdjournedCard lotsDone={86} squad={null} purse={null} resumes="Sat" commish={{ onResumeNow, onStartNow: vi.fn(), onChangeTime, busy: false, nextLot: 87, lobbySeconds: 120, inLobby: false }} />);
+    await userEvent.click(screen.getByTestId("resume-now"));
+    await userEvent.click(screen.getByTestId("change-resume-time"));
+    expect(onResumeNow).toHaveBeenCalled();
+    expect(onChangeTime).toHaveBeenCalled();
+    expect(screen.getByTestId("adjourned-card").textContent).toContain("2-minute countdown, then Lot 87.");
+  });
+
+  it("says the lobby length the room is set to, in seconds when it is not whole minutes", () => {
+    render(<AdjournedCard lotsDone={86} squad={null} purse={null} resumes="Sat" commish={{ onResumeNow: vi.fn(), onStartNow: vi.fn(), onChangeTime: vi.fn(), busy: false, nextLot: 87, lobbySeconds: 90, inLobby: false }} />);
+    expect(screen.getByTestId("adjourned-card").textContent).toContain("90-second countdown, then Lot 87.");
+  });
+
+  it("in the resume lobby swaps Resume now for Start now and keeps Change time", async () => {
+    const onStartNow = vi.fn();
+    const onChangeTime = vi.fn();
+    render(<AdjournedCard lotsDone={86} squad={null} purse={null} resumes={null} commish={{ onResumeNow: vi.fn(), onStartNow, onChangeTime, busy: false, nextLot: 87, lobbySeconds: 120, inLobby: true }} />);
+    expect(screen.queryByTestId("resume-now")).toBeNull();
+    await userEvent.click(screen.getByTestId("start-now"));
+    await userEvent.click(screen.getByTestId("change-resume-time"));
+    expect(onStartNow).toHaveBeenCalled();
+    expect(onChangeTime).toHaveBeenCalled();
+    expect(screen.getByTestId("adjourned-card").textContent).toContain("Start now opens Lot 87 at once.");
+  });
+});

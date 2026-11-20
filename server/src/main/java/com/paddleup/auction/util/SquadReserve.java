@@ -8,6 +8,7 @@ import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.TreeMap;
 
 /**
@@ -38,15 +39,18 @@ public final class SquadReserve {
   /**
    * @param held the lots the franchise already holds
    * @param lot the open lot, counted as won
-   * @param byPrice every lot of the auction in base-price order; only those after {@code lot} in
-   *     play order are still to come
+   * @param byPrice every lot of the auction in base-price order
+   * @param upcoming the numbers of the lots still to be played; only those in {@code byPrice} are
+   *     still to come, whatever their numbers (a re-opened lot is numbered after lots queued before
+   *     it)
    */
-  public static Result of(SquadRules rules, List<Lot> held, Lot lot, List<Lot> byPrice) {
+  public static Result of(
+      SquadRules rules, List<Lot> held, Lot lot, List<Lot> byPrice, Set<Integer> upcoming) {
     List<Lot> won = new ArrayList<>(held);
     won.add(lot);
-    Fill with = fill(rules, won, byPrice, lot.no());
+    Fill with = fill(rules, won, byPrice, upcoming);
     if (with.shortfall() > 0) {
-      Fill without = fill(rules, held, byPrice, lot.no());
+      Fill without = fill(rules, held, byPrice, upcoming);
       if (with.shortfall() > without.shortfall()) {
         return new Result(0, worse(with, without), true);
       }
@@ -73,10 +77,9 @@ public final class SquadReserve {
         .orElse(null);
   }
 
-  /**
-   * The cheapest fill of {@code squad} from the lots after {@code after}, closest to legal first.
-   */
-  private static Fill fill(SquadRules rules, List<Lot> squad, List<Lot> byPrice, int after) {
+  /** The cheapest fill of {@code squad} from the upcoming lots, closest to legal first. */
+  private static Fill fill(
+      SquadRules rules, List<Lot> squad, List<Lot> byPrice, Set<Integer> upcoming) {
     List<String> roles = new ArrayList<>();
     List<Integer> needs = new ArrayList<>();
     for (var entry : rules.roleMinimums().entrySet()) {
@@ -103,7 +106,7 @@ public final class SquadReserve {
     // never needs more than its role's need plus the filler places, nor more than the room left.
     Map<List<Integer>, Group> groups = new LinkedHashMap<>();
     for (Lot candidate : byPrice) {
-      if (candidate.no() <= after) {
+      if (!upcoming.contains(candidate.no())) {
         continue;
       }
       int role = roles.indexOf(candidate.role());

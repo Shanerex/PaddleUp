@@ -142,6 +142,42 @@ public abstract class AbstractAuctionIT extends AbstractRoomsIT {
         Map.of("intentId", UUID.randomUUID().toString(), "lot", lot));
   }
 
+  /** A Commissioner control with a fresh intent id. */
+  protected ResponseEntity<String> control(Room room, String action, Object... extra) {
+    return control(room, UUID.randomUUID(), action, extra);
+  }
+
+  /** A Commissioner control; {@code extra} is key, value pairs such as {@code "lot", 2}. */
+  protected ResponseEntity<String> control(
+      Room room, UUID intentId, String action, Object... extra) {
+    return controlAs(room, room.commissioner(), intentId, action, extra);
+  }
+
+  protected ResponseEntity<String> controlAs(
+      Room room, Person who, UUID intentId, String action, Object... extra) {
+    var body = new java.util.LinkedHashMap<String, Object>();
+    body.put("intentId", intentId.toString());
+    body.put("action", action);
+    for (int i = 0; i < extra.length; i += 2) {
+      body.put((String) extra[i], extra[i + 1]);
+    }
+    return post(who, auction(room, "/controls"), body);
+  }
+
+  protected ResponseEntity<String> picks(Room room, Person who, List<Integer> lots) {
+    return put(
+        who,
+        auction(room, "/picks"),
+        Map.of("intentId", UUID.randomUUID().toString(), "lots", lots));
+  }
+
+  protected int rejectionCount(Room room) {
+    return jdbc.queryForObject(
+        "SELECT count(*) FROM auction_rejections WHERE room_id = ?",
+        Integer.class,
+        UUID.fromString(room.id()));
+  }
+
   /**
    * The lock the viewer's dock shows: the first bid limit that refuses the next bid, as the client
    * reads it; null when none does.

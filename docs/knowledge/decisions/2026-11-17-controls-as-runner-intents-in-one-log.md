@@ -1,0 +1,5 @@
+tags: [auction, controls, event-log]
+Commissioner controls (pause, resume, skip, re-open, adjourn, change time, resume now, start now, open round, end auction, end round) and accelerated-round picks are intents on the auction's single-writer runner, decided by the pure `ControlRules` and stored in the one append-only event log before they are broadcast. The role check (403) happens before the runner, so a manager's control writes nothing.
+Held time (pause, adjourn), the resume time and the picks live only in the log (`heldMs`, `resumeAt`, `picks_submitted`), so a restart rebuilds every phase exactly; an adjourned auction never goes live on its own, only into the 2-minute resume lobby.
+A control's refusal is stored once in `auction_rejections` under its intent id, so a resend gets the same answer. Start now logs `start_now` before go-live, so a refused go-live still logs `start_refused`.
+Rejected: a separate controls table the runner consults (two sources of truth, and replay would no longer rebuild the phase).

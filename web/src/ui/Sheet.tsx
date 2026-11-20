@@ -8,14 +8,19 @@ import s from "./Sheet.module.css";
 
 /**
  * A modal sheet (Room `sheet*` frames). Escape and the scrim close it; focus moves into it on open
- * and back to the opener on close; Tab stays inside.
+ * and back to the opener on close; Tab stays inside. With a `title` it draws the auction sheets'
+ * title row (title left, 36px close button right, Auction A Spotlight) instead of the drag handle;
+ * from 1024px those sheets are a full-height panel on the right, as the mock draws them (Explorations
+ * 3n-3v at 1440).
  */
 export function Sheet({
   label,
+  title,
   onClose,
   children,
 }: {
   label: string;
+  title?: string;
   onClose: () => void;
   children: ReactNode;
 }) {
@@ -56,9 +61,18 @@ export function Sheet({
   }, [close]);
 
   return (
-    <div className={s.scrim} onMouseDown={(e) => e.target === e.currentTarget && onClose()}>
-      <div ref={ref} className={s.sheet} role="dialog" aria-modal="true" aria-label={label} tabIndex={-1}>
-        <span className={s.handle} />
+    <div className={`${s.scrim} ${title ? s.scrimSide : ""}`} onMouseDown={(e) => e.target === e.currentTarget && onClose()}>
+      <div ref={ref} className={`${s.sheet} ${title ? s.sheetSide : ""}`} role="dialog" aria-modal="true" aria-label={label} tabIndex={-1}>
+        {title ? (
+          <div className={s.head}>
+            <h2 className={s.headTitle}>{title}</h2>
+            <button type="button" className={s.close} aria-label="Close" onClick={onClose}>
+              <Icon name="close" size={20} />
+            </button>
+          </div>
+        ) : (
+          <span className={s.handle} />
+        )}
         {children}
       </div>
     </div>

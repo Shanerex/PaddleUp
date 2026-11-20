@@ -49,6 +49,13 @@ const config = {
 const lot = { no: 3, playerId: "p", name: "Fake 3", country: "Spain", role: "gk", tags: ["foreign"], set: "Keepers", position: 2, basePrice: 300_000 };
 
 describe("LotCard", () => {
+  it("shows a Picked by tag after the lot's tags only when given a count", () => {
+    const { rerender } = render(<LotCard lot={lot} labels={labels} config={config} />);
+    expect(screen.queryByTestId("picked-by")).toBeNull();
+    rerender(<LotCard lot={lot} labels={labels} config={config} pickedBy={3} />);
+    expect(screen.getByTestId("picked-by").textContent).toBe("Picked by 3");
+  });
+
   it("shows role, tags, name, country and base price from the pack's labels and money", () => {
     render(<LotCard lot={lot} labels={labels} config={config} />);
     const card = within(screen.getByTestId("lot-card"));
@@ -101,6 +108,14 @@ function view(over: Partial<ViewInput> = {}, st: Record<string, unknown> = {}) {
       connected: [],
       ready: [],
       bidLimits: [],
+      heldMs: 0,
+      round: "main",
+      unsoldPool: [],
+      pickCounts: [],
+      myPicks: [],
+      waiting: [],
+      resumeLobbySeconds: 120,
+      lotsClosed: 0,
       nextBid: 400_000,
       deadline: "2030-01-01T00:00:10Z",
       config: { openSeconds: 30, bidSeconds: 15, gapSeconds: 5, ladder: [] },
@@ -236,7 +251,7 @@ describe("Notices", () => {
 
   it("adjourned says where it stopped, and closed links back to the room", () => {
     render(<AdjournedCard lotsDone={86} squad={4} purse="€12 M" resumes={null} />);
-    expect(screen.getByTestId("adjourned-card").textContent).toContain("Adjourned after Lot 86");
+    expect(screen.getByTestId("adjourned-card").textContent).toContain("Adjourned after 86 lots");
     cleanup();
     render(<ClosedCard roomHref="/rooms/r1" />);
     expect(screen.getByRole("link", { name: /Back to room/ }).getAttribute("href")).toBe("/rooms/r1");
@@ -271,6 +286,21 @@ function lobby(over: Partial<React.ComponentProps<typeof Lobby>> = {}) {
     />,
   );
 }
+
+describe("Lobby Start now", () => {
+  it("shows Start now to the Commissioner only, locks it offline and calls back", async () => {
+    const onStartNow = vi.fn();
+    const { unmount } = lobby();
+    expect(screen.queryByTestId("start-now")).toBeNull();
+    unmount();
+    const { unmount: again } = lobby({ onStartNow });
+    await userEvent.click(screen.getByTestId("start-now"));
+    expect(onStartNow).toHaveBeenCalledTimes(1);
+    again();
+    lobby({ onStartNow, offline: true });
+    expect((screen.getByTestId("start-now") as HTMLButtonElement).disabled).toBe(true);
+  });
+});
 
 describe("Lobby", () => {
   it("shows the timer rule from the server's auction config, and no invented numbers without it (review 7)", () => {

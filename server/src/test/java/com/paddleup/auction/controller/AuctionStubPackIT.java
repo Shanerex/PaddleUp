@@ -47,7 +47,7 @@ class AuctionStubPackIT extends AbstractAuctionIT {
   }
 
   @Test
-  void aScriptedAuctionRunsToEndedWithSoldAndUnsoldLotsOnTheSecondPack() throws Exception {
+  void aScriptedAuctionReachesMainDoneWithSoldAndUnsoldLotsOnTheSecondPack() throws Exception {
     assertThat(importSeason("stub-football", csv()).imported()).isEqualTo(20);
     Person commissioner = person();
     String roomId = createRoom(commissioner, "stub-football", "standard");
@@ -105,8 +105,10 @@ class AuctionStubPackIT extends AbstractAuctionIT {
       }
     }
 
+    advance(5);
+    tick();
     JsonNode end = state(room, commissioner);
-    assertThat(end.get("phase").asText()).isEqualTo("ended");
+    assertThat(end.get("phase").asText()).isEqualTo("main_done");
     assertThat(end.get("unsold")).hasSize(unsold);
     assertThat(unsold).isGreaterThan(0);
     assertThat(sold).isGreaterThan(0);
@@ -120,7 +122,7 @@ class AuctionStubPackIT extends AbstractAuctionIT {
     assertThat(purses).isEqualTo(2 * config.get("purse").asLong() - spent);
     assertThat(eventCount(room, "lot_sold")).isEqualTo(sold);
     assertThat(eventCount(room, "lot_unsold")).isEqualTo(unsold);
-    assertThat(eventCount(room, "auction_ended")).isEqualTo(1);
+    assertThat(eventCount(room, "main_done")).isEqualTo(1);
   }
 
   /**

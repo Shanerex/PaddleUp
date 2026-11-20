@@ -22,6 +22,20 @@ export type LiveSnapshot = {
   lastSeen: number | null;
   /** Ms left on the lot (or to the start, negative once past it) when the connection last dropped; null while live (R-10, the frozen timer). */
   frozenLeft: number | null;
+  /** The latest Commissioner skip or re-open that arrived live, for the notice every manager sees. */
+  adminEvent: AdminEvent | null;
+};
+
+/** A lot the Commissioner skipped or re-opened, as the broadcast says it (3s, 3t). */
+export type AdminEvent = {
+  seq: number;
+  kind: "lot_skipped" | "lot_reopened";
+  lot: number | null;
+  /** For a re-open: the number the lot plays under now (its old number is `lot`); null for a skip. */
+  newLot: number | null;
+  reason: string | null;
+  franchiseId: string | null;
+  amount: number | null;
 };
 
 /** One open socket: subscribe to a destination, close. */
@@ -81,6 +95,7 @@ export function createLive(deps: LiveDeps) {
     missing: false,
     lastSeen: null,
     frozenLeft: null,
+    adminEvent: null,
   };
   const listeners = new Set<() => void>();
   let stopped = true;
@@ -218,6 +233,19 @@ export function createLive(deps: LiveDeps) {
 
   const onEvent = (e: AuctionEvent) => {
     const s = snap.state;
+    if ((e.kind === "lot_skipped" || e.kind === "lot_reopened") && (!s || e.seq > s.lastSeq)) {
+      emit({
+        adminEvent: {
+          seq: e.seq,
+          kind: e.kind,
+          lot: e.lot ?? null,
+          newLot: typeof e.payload.newLot === "number" ? e.payload.newLot : null,
+          reason: typeof e.payload.reason === "string" ? e.payload.reason : null,
+          franchiseId: e.franchiseId ?? null,
+          amount: typeof e.payload.amount === "number" ? e.payload.amount : null,
+        },
+      });
+    }
     if (!s) {
       if (snap.missing) {
         // "No auction yet" and an event arrives: the auction now exists, so read it.

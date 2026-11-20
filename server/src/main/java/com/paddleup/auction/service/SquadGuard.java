@@ -40,7 +40,8 @@ public class SquadGuard implements BidGuard {
         return Optional.of(BidLock.any(Reason.QUOTA, null, quota.category(), quota.max()));
       }
     }
-    SquadReserve.Result reserve = SquadReserve.of(rules, held, lot, state.lotsByPrice());
+    SquadReserve.Result reserve =
+        SquadReserve.of(rules, held, lot, state.lotsByPrice(), state.queue());
     if (reserve.blocked()) {
       return Optional.of(BidLock.any(Reason.NO_ROOM, reserve.role(), null, null));
     }

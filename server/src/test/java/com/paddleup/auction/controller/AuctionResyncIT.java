@@ -148,10 +148,10 @@ class AuctionResyncIT extends AbstractAuctionIT {
     assertEqualToLog(state(room, room.manager(0)), fromLog(room));
   }
 
-  /** The state without the viewer's own bid limits. */
+  /** The state without the viewer's own bid limits, picks and open slots. */
   private static JsonNode shared(JsonNode state) {
-    var copy = state.deepCopy();
-    ((com.fasterxml.jackson.databind.node.ObjectNode) copy).remove("bidLimits");
+    var copy = (com.fasterxml.jackson.databind.node.ObjectNode) state.deepCopy();
+    copy.remove(java.util.List.of("bidLimits", "myPicks", "openSlots"));
     return copy;
   }
 }

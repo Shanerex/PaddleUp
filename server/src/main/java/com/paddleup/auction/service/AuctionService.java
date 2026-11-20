@@ -4,11 +4,15 @@ import com.paddleup.accounts.dto.UserId;
 import com.paddleup.auction.config.AuctionProperties;
 import com.paddleup.auction.dto.AuctionEventDto;
 import com.paddleup.auction.dto.AuctionStateDto;
+import com.paddleup.auction.dto.AuditDto;
+import com.paddleup.auction.dto.AuditEntryDto;
 import com.paddleup.auction.dto.BidLockDto;
 import com.paddleup.auction.dto.BidRequest;
+import com.paddleup.auction.dto.ControlRequest;
 import com.paddleup.auction.dto.EventsDto;
 import com.paddleup.auction.dto.IntentResultDto;
 import com.paddleup.auction.dto.PassRequest;
+import com.paddleup.auction.dto.PicksRequest;
 import com.paddleup.auction.dto.PresenceDto;
 import com.paddleup.auction.dto.ReadyRequest;
 import com.paddleup.auction.dto.ScheduleRequest;
@@ -18,8 +22,10 @@ import com.paddleup.auction.exception.AuctionNotFoundException;
 import com.paddleup.auction.exception.AuctionRequestException;
 import com.paddleup.auction.model.AuctionEvent;
 import com.paddleup.auction.model.AuctionState;
+import com.paddleup.auction.model.Control;
 import com.paddleup.auction.model.Intent;
 import com.paddleup.auction.model.Phase;
+import com.paddleup.auction.model.Picks;
 import com.paddleup.auction.repository.AuctionEventRepository;
 import com.paddleup.rooms.dto.RoomAccessDto;
 import com.paddleup.rooms.exception.RoomForbiddenException;
@@ -86,7 +92,13 @@ public class AuctionService {
     }
     AuctionState state = await(registry.runner(roomId).schedule(caller, request.startsAt()));
     return AuctionViews.state(
-        state, clock.instant(), presence.connected(roomId), readiness.ready(roomId), List.of());
+        state,
+        clock.instant(),
+        presence.connected(roomId),
+        readiness.ready(roomId),
+        List.of(),
+        access.franchiseId(),
+        props.resumeLobby());
   }
 
   /** Full state for a member; 404 until an auction is scheduled. */
@@ -101,7 +113,9 @@ public class AuctionService {
         clock.instant(),
         presence.connected(roomId),
         readiness.ready(roomId),
-        bidLimits(state, access.franchiseId()));
+        bidLimits(state, access.franchiseId()),
+        access.franchiseId(),
+        props.resumeLobby());
   }
 
   /**
@@ -125,7 +139,7 @@ public class AuctionService {
 
   /** Events with a seq above {@code after}, at most {@code limit}. */
   public EventsDto events(UserId caller, UUID roomId, long after, Integer limit) {
-    port.access(roomId, caller);
+    UUID viewer = port.access(roomId, caller).franchiseId();
     int max = props.eventsPageMax();
     int page = limit == null ? max : Math.max(1, Math.min(limit, max));
     if (after < 0) {
@@ -136,9 +150,34 @@ public class AuctionService {
     boolean more = found.size() > page;
     var now = clock.instant();
     List<AuctionEventDto> dtos =
-        found.stream().limit(page).map(e -> AuctionViews.event(e, state, null)).toList();
+        found.stream().limit(page).map(e -> AuctionViews.event(e, state, null, viewer)).toList();
     long last = dtos.isEmpty() ? Math.max(after, 0) : dtos.get(dtos.size() - 1).seq();
     return new EventsDto(dtos, last, more, now);
+  }
+
+  /**
+   * The audit log for any room member (a non-member gets 404): bids, passes, lifelines, RTM and
+   * admin actions in time order, filtered by {@code kind}. Empty before there is anything to show.
+   */
+  public AuditDto audit(UserId caller, UUID roomId, String kind, long after, Integer limit) {
+    UUID viewer = port.access(roomId, caller).franchiseId();
+    AuditViews.Filter filter =
+        AuditViews.Filter.fromValue(kind == null ? "all" : kind)
+            .orElseThrow(() -> new AuctionRequestException("kind", "Unknown filter"));
+    if (after < 0) {
+      throw new AuctionRequestException("after", "Must be 0 or more");
+    }
+    int max = props.eventsPageMax();
+    int page = limit == null ? max : Math.max(1, Math.min(limit, max));
+    List<String> kinds = AuditViews.kinds(filter);
+    List<AuctionEvent> found =
+        kinds.isEmpty() ? List.of() : events.afterOfKinds(roomId, kinds, after, page + 1);
+    boolean more = found.size() > page;
+    AuctionState state = registry.runner(roomId).state();
+    List<AuditEntryDto> entries =
+        found.stream().limit(page).map(e -> AuditViews.entry(e, state, viewer)).toList();
+    long last = entries.isEmpty() ? after : entries.get(entries.size() - 1).seq();
+    return new AuditDto(entries, last, more, clock.instant());
   }
 
   public IntentResultDto bid(UserId caller, UUID roomId, BidRequest request) {
@@ -160,6 +199,44 @@ public class AuctionService {
             request.lot(),
             request.amount());
     return AuctionViews.result(await(registry.runner(roomId).intent(intent)), clock.instant());
+  }
+
+  /**
+   * A Commissioner control. A manager is refused with 403 before anything reaches the runner, so no
+   * event is written and nothing is broadcast.
+   */
+  public IntentResultDto control(UserId caller, UUID roomId, ControlRequest request) {
+    if (request == null || request.intentId() == null || request.action() == null) {
+      throw new AuctionRequestException("body", "intentId and action are required");
+    }
+    Control.Action action =
+        Control.Action.fromValue(request.action())
+            .orElseThrow(() -> new AuctionRequestException("action", "Unknown action"));
+    int lot = request.lot() == null ? 0 : request.lot();
+    if (lot < 0) {
+      throw new AuctionRequestException("lot", "lot must be positive");
+    }
+    RoomAccessDto access = port.access(roomId, caller);
+    if (!access.commissioner()) {
+      throw new RoomForbiddenException("Only the Commissioner can do this");
+    }
+    var control =
+        new Control(
+            action, request.intentId(), caller.value(), lot, request.reason(), request.resumeAt());
+    return AuctionViews.result(await(registry.runner(roomId).control(control)), clock.instant());
+  }
+
+  /** A franchise's accelerated-round picks; only a franchise owner may send them. */
+  public IntentResultDto picks(UserId caller, UUID roomId, PicksRequest request) {
+    if (request == null || request.intentId() == null || request.lots() == null) {
+      throw new AuctionRequestException("body", "intentId and lots are required");
+    }
+    if (request.lots().stream().anyMatch(l -> l == null || l < 1)) {
+      throw new AuctionRequestException("lots", "lot numbers must be positive");
+    }
+    RoomAccessDto access = port.access(roomId, caller);
+    var picks = new Picks(request.intentId(), caller.value(), access.franchiseId(), request.lots());
+    return AuctionViews.result(await(registry.runner(roomId).picks(picks)), clock.instant());
   }
 
   public IntentResultDto pass(UserId caller, UUID roomId, PassRequest request) {

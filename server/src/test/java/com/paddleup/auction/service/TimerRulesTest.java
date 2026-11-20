@@ -32,14 +32,14 @@ class TimerRulesTest {
 
   @Test
   void nothingIsDueBeforeTheDeadline() {
-    assertThat(TimerRules.due(withBid(), T0.plusSeconds(11))).isEmpty();
+    assertThat(AuctionFixtures.due(withBid(), T0.plusSeconds(11))).isEmpty();
   }
 
   @Test
   void atTheDeadlineTheLeaderWinsAtTheBidPrice() {
     var s = withBid();
 
-    List<AuctionEvent> due = TimerRules.due(s, T0.plusSeconds(12));
+    List<AuctionEvent> due = AuctionFixtures.due(s, T0.plusSeconds(12));
 
     assertThat(due).hasSize(1);
     assertThat(due.get(0).kind()).isEqualTo(EventKind.LOT_SOLD);
@@ -54,34 +54,72 @@ class TimerRulesTest {
   void withNoBidsTheLotIsUnsoldAndTheNextOpensAfterTheGap() {
     var s = AuctionFixtures.lotOneOpen();
 
-    var closed = AuctionReducer.replay(s, TimerRules.due(s, T0.plusSeconds(20)));
+    var closed = AuctionReducer.replay(s, AuctionFixtures.due(s, T0.plusSeconds(20)));
 
     assertThat(closed.unsold()).containsExactly(1);
-    assertThat(TimerRules.due(closed, T0.plusSeconds(24))).isEmpty();
-    var due = TimerRules.due(closed, T0.plusSeconds(25));
+    assertThat(AuctionFixtures.due(closed, T0.plusSeconds(24))).isEmpty();
+    var due = AuctionFixtures.due(closed, T0.plusSeconds(25));
     assertThat(due).hasSize(1);
     assertThat(due.get(0).kind()).isEqualTo(EventKind.LOT_OPENED);
     assertThat(due.get(0).lot()).isEqualTo(2);
     assertThat(due.get(0).instant("deadline")).isEqualTo(T0.plusSeconds(45));
   }
 
-  @Test
-  void theLastCloseEndsTheAuctionWithUnsoldListed() {
+  /** Lot 3 open, with lots 1 and 2 closed unsold. */
+  private static AuctionState lastLotOpen() {
     var s = AuctionFixtures.lotOneOpen();
-    s = AuctionReducer.replay(s, TimerRules.due(s, s.deadline()));
-    s = AuctionReducer.replay(s, TimerRules.due(s, s.nextOpenAt()));
-    s = AuctionReducer.replay(s, TimerRules.due(s, s.deadline()));
-    s = AuctionReducer.replay(s, TimerRules.due(s, s.nextOpenAt()));
+    for (int lot = 1; lot <= 2; lot++) {
+      s = AuctionReducer.replay(s, AuctionFixtures.due(s, s.deadline()));
+      s = AuctionReducer.replay(s, AuctionFixtures.due(s, s.nextOpenAt()));
+    }
+    return s;
+  }
 
-    var due = TimerRules.due(s, s.deadline());
+  @Test
+  void theLastCloseWaitsTheGapThenGoesToMainDoneWithTheUnsoldPool() {
+    var s = lastLotOpen();
 
-    assertThat(due)
-        .extracting(AuctionEvent::kind)
-        .containsExactly(EventKind.LOT_UNSOLD, EventKind.AUCTION_ENDED);
-    var end = AuctionReducer.replay(s, due);
-    assertThat(end.phase()).isEqualTo(Phase.ENDED);
-    assertThat(end.unsold()).containsExactly(1, 2, 3);
-    assertThat(TimerRules.due(end, T0.plusSeconds(9999))).isEmpty();
+    var closing = AuctionFixtures.due(s, s.deadline());
+    assertThat(closing).extracting(AuctionEvent::kind).containsExactly(EventKind.LOT_UNSOLD);
+    var gap = AuctionReducer.replay(s, closing);
+    assertThat(gap.phase()).isEqualTo(Phase.LIVE);
+    assertThat(gap.hasMoreLots()).isFalse();
+    assertThat(AuctionFixtures.due(gap, gap.nextOpenAt().minusMillis(1))).isEmpty();
+
+    var due = AuctionFixtures.due(gap, gap.nextOpenAt());
+    assertThat(due).extracting(AuctionEvent::kind).containsExactly(EventKind.MAIN_DONE);
+    var done = AuctionReducer.replay(gap, due);
+    assertThat(done.phase()).isEqualTo(Phase.MAIN_DONE);
+    assertThat(done.unsold()).containsExactly(1, 2, 3);
+    assertThat(due.get(0).payload().get("pool")).isEqualTo(List.of(1, 2, 3));
+    assertThat(AuctionFixtures.due(done, T0.plusSeconds(9999))).isEmpty();
+  }
+
+  @Test
+  void withNothingUnsoldTheAuctionEndsAfterTheLastGap() {
+    var s = AuctionFixtures.lotOneOpen();
+    for (int lot = 1; lot <= 3; lot++) {
+      var open = s;
+      var bid =
+          (Decision.Accepted)
+              IntentRules.decide(
+                  open,
+                  Intent.bid(UUID.randomUUID(), USER_A, A, lot, 20),
+                  open.deadline().minusSeconds(1),
+                  AuctionFixtures.GUARDS);
+      s = AuctionReducer.replay(open, bid.events());
+      s = AuctionReducer.replay(s, AuctionFixtures.due(s, s.deadline()));
+      if (lot < 3) {
+        s = AuctionReducer.replay(s, AuctionFixtures.due(s, s.nextOpenAt()));
+      }
+    }
+    assertThat(s.unsold()).isEmpty();
+    assertThat(s.phase()).isEqualTo(Phase.LIVE);
+
+    var due = AuctionFixtures.due(s, s.nextOpenAt());
+
+    assertThat(due).extracting(AuctionEvent::kind).containsExactly(EventKind.AUCTION_ENDED);
+    assertThat(AuctionReducer.replay(s, due).phase()).isEqualTo(Phase.ENDED);
   }
 
   @Test
@@ -97,5 +135,20 @@ class TimerRulesTest {
     var after = AuctionReducer.replay(s, resume);
     assertThat(after.leader()).isEqualTo(A);
     assertThat(after.currentBid()).isEqualTo(20);
+  }
+
+  @Test
+  void theResumeLobbyLastsAsLongAsTheCallerSays() {
+    var open = AuctionFixtures.lotOneOpen();
+    var adjourned =
+        AuctionReducer.apply(
+            open,
+            com.paddleup.auction.model.Events.adjourned(
+                open.lastSeq() + 1, T0, null, null, T0.plusSeconds(60), 5000));
+
+    var lobby = TimerRules.due(adjourned, T0.plusSeconds(60), java.time.Duration.ofMinutes(3));
+
+    assertThat(lobby).extracting(AuctionEvent::kind).containsExactly(EventKind.RESUME_LOBBY_OPENED);
+    assertThat(lobby.get(0).instant("liveAt")).isEqualTo(T0.plusSeconds(60 + 180));
   }
 }

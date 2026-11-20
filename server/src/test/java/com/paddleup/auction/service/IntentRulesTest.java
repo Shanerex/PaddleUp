@@ -21,7 +21,7 @@ import java.util.List;
 import java.util.UUID;
 import org.junit.jupiter.api.Test;
 
-/** AC-4, AC-5, AC-6: the pure rules for a bid and a pass. */
+/** AC-1, AC-4, AC-5, AC-6: the pure rules for a bid and a pass. */
 class IntentRulesTest {
 
   private static final Instant NOW = T0.plusSeconds(3);
@@ -133,8 +133,8 @@ class IntentRulesTest {
     assertThat(passed.passedBy()).containsExactly(B);
 
     // Lot 1 closes unsold and lot 2 opens: the pass no longer applies.
-    var inGap = AuctionReducer.replay(passed, TimerRules.due(passed, T0.plusSeconds(20)));
-    var lotTwo = AuctionReducer.replay(inGap, TimerRules.due(inGap, T0.plusSeconds(25)));
+    var inGap = AuctionReducer.replay(passed, AuctionFixtures.due(passed, T0.plusSeconds(20)));
+    var lotTwo = AuctionReducer.replay(inGap, AuctionFixtures.due(inGap, T0.plusSeconds(25)));
     assertThat(lotTwo.currentLot()).isEqualTo(2);
     assertThat(lotTwo.passedBy()).isEmpty();
     assertThat(
@@ -174,7 +174,7 @@ class IntentRulesTest {
     assertThat(pass(none, A, USER_A, 1)).isEqualTo(new Decision.PhaseError(Reason.NOT_LIVE));
 
     var open = AuctionFixtures.lotOneOpen();
-    var gap = AuctionReducer.replay(open, TimerRules.due(open, T0.plusSeconds(20)));
+    var gap = AuctionReducer.replay(open, AuctionFixtures.due(open, T0.plusSeconds(20)));
     assertThat(bid(gap, A, USER_A, 2, 20)).isEqualTo(new Decision.PhaseError(Reason.NO_OPEN_LOT));
     assertThat(pass(gap, A, USER_A, 2)).isEqualTo(new Decision.PhaseError(Reason.NO_OPEN_LOT));
 
@@ -182,31 +182,133 @@ class IntentRulesTest {
     for (int lot = 1; lot <= 3; lot++) {
       var s = last;
       Instant at = s.deadline();
-      last = AuctionReducer.replay(s, TimerRules.due(s, at));
+      last = AuctionReducer.replay(s, AuctionFixtures.due(s, at));
       if (lot < 3) {
-        last = AuctionReducer.replay(last, TimerRules.due(last, last.nextOpenAt()));
+        last = AuctionReducer.replay(last, AuctionFixtures.due(last, last.nextOpenAt()));
       }
     }
+    // The last gap runs first, then the pool is done: bids wait for the Commissioner's choice.
+    var done = AuctionReducer.replay(last, AuctionFixtures.due(last, last.nextOpenAt()));
+    assertThat(done.phase().value()).isEqualTo("main_done");
+    assertThat(bid(done, A, USER_A, 4, 20)).isEqualTo(new Decision.PhaseError(Reason.MAIN_DONE));
+    last =
+        AuctionReducer.apply(
+            done, com.paddleup.auction.model.Events.auctionEnded(done.lastSeq() + 1, T0));
     assertThat(last.phase().value()).isEqualTo("ended");
     assertThat(bid(last, A, USER_A, 4, 20)).isEqualTo(new Decision.PhaseError(Reason.ENDED));
   }
 
   @Test
+  void bidsAndPassesAreRefusedInEveryPhaseThatIsNotLive() {
+    var open = AuctionFixtures.lotOneOpen();
+    for (var phase :
+        List.of(
+            com.paddleup.auction.model.Phase.PAUSED,
+            com.paddleup.auction.model.Phase.ADJOURNED,
+            com.paddleup.auction.model.Phase.RESUME_LOBBY,
+            com.paddleup.auction.model.Phase.MAIN_DONE,
+            com.paddleup.auction.model.Phase.NOMINATING)) {
+      var edit = open.edit();
+      edit.phase = phase;
+      var s = edit.build();
+      var expected = new Decision.PhaseError(phase.value());
+
+      assertThat(bid(s, A, USER_A, 1, 20)).as("bid in %s", phase).isEqualTo(expected);
+      assertThat(pass(s, B, USER_B, 1)).as("pass in %s", phase).isEqualTo(expected);
+    }
+  }
+
+  @Test
+  void aLateIntentOnAClosedLotIsLotClosedInEveryHeldPhaseButAQueuedLotStaysAPhaseError() {
+    var open = AuctionFixtures.lotOneOpen();
+    var gap = AuctionReducer.replay(open, AuctionFixtures.due(open, T0.plusSeconds(20)));
+    for (var phase :
+        List.of(
+            com.paddleup.auction.model.Phase.PAUSED,
+            com.paddleup.auction.model.Phase.ADJOURNED,
+            com.paddleup.auction.model.Phase.RESUME_LOBBY,
+            com.paddleup.auction.model.Phase.MAIN_DONE,
+            com.paddleup.auction.model.Phase.NOMINATING)) {
+      var edit = gap.edit();
+      edit.phase = phase;
+      var s = edit.build();
+
+      assertRejected(bid(s, A, USER_A, 1, 20), Reason.LOT_CLOSED);
+      assertRejected(pass(s, B, USER_B, 1), Reason.LOT_CLOSED);
+      assertThat(bid(s, A, USER_A, 2, 20))
+          .as("queued lot in %s", phase)
+          .isEqualTo(new Decision.PhaseError(phase.value()));
+    }
+    // A lot that is open while paused is not closed: the phase answers.
+    var edit = open.edit();
+    edit.phase = com.paddleup.auction.model.Phase.PAUSED;
+    assertThat(bid(edit.build(), A, USER_A, 1, 20))
+        .isEqualTo(new Decision.PhaseError(Reason.PAUSED));
+  }
+
+  @Test
   void anIntentNamingALotThatAlreadyClosedIsLotClosedInTheGapAndAfterTheEnd() {
     var open = AuctionFixtures.lotOneOpen();
-    var gap = AuctionReducer.replay(open, TimerRules.due(open, T0.plusSeconds(20)));
+    var gap = AuctionReducer.replay(open, AuctionFixtures.due(open, T0.plusSeconds(20)));
     assertRejected(bid(gap, A, USER_A, 1, 20), Reason.LOT_CLOSED);
     assertRejected(pass(gap, A, USER_A, 1), Reason.LOT_CLOSED);
 
     var last = AuctionFixtures.lotOneOpen();
     for (int lot = 1; lot <= 3; lot++) {
       var s = last;
-      last = AuctionReducer.replay(s, TimerRules.due(s, s.deadline()));
+      last = AuctionReducer.replay(s, AuctionFixtures.due(s, s.deadline()));
       if (lot < 3) {
-        last = AuctionReducer.replay(last, TimerRules.due(last, last.nextOpenAt()));
+        last = AuctionReducer.replay(last, AuctionFixtures.due(last, last.nextOpenAt()));
       }
     }
     assertRejected(bid(last, A, USER_A, 3, 20), Reason.LOT_CLOSED);
     assertRejected(bid(last, A, USER_A, 1, 20), Reason.LOT_CLOSED);
+  }
+
+  /**
+   * Lot 1 closes unsold, lot 2 opens, then lot 1 is re-opened as lot 4 (queue 4, 3) and plays
+   * before lot 3, so lot numbers no longer follow play order.
+   */
+  private static AuctionState reopenedBeforeLotThree(boolean lotFourOpen) {
+    var events =
+        new java.util.ArrayList<>(
+            List.of(
+                AuctionFixtures.started(1),
+                com.paddleup.auction.model.Events.lotOpened(2, T0, 1, T0.plusSeconds(20)),
+                com.paddleup.auction.model.Events.lotUnsold(3, T0.plusSeconds(20), 1),
+                com.paddleup.auction.model.Events.lotOpened(
+                    4, T0.plusSeconds(25), 2, T0.plusSeconds(45)),
+                com.paddleup.auction.model.Events.lotReopened(
+                    5, T0.plusSeconds(30), 1, 4, "Nobody was ready", null, 0, USER_A, null),
+                com.paddleup.auction.model.Events.lotUnsold(6, T0.plusSeconds(45), 2),
+                com.paddleup.auction.model.Events.lotOpened(
+                    7, T0.plusSeconds(50), 4, T0.plusSeconds(70))));
+    if (!lotFourOpen) {
+      events.add(com.paddleup.auction.model.Events.lotUnsold(8, T0.plusSeconds(70), 4));
+    }
+    return AuctionReducer.replay(
+        AuctionState.initial(AuctionFixtures.ROOM, AuctionFixtures.catalog()), events);
+  }
+
+  @Test
+  void aLotThatHasNotPlayedYetIsNotOpenEvenWhenItsNumberIsBelowTheCurrentLot() {
+    for (boolean lotFourOpen : new boolean[] {true, false}) {
+      var s = reopenedBeforeLotThree(lotFourOpen);
+      assertThat(s.queue()).containsExactly(3);
+      var at = T0.plusSeconds(lotFourOpen ? 55 : 71);
+
+      var bid3 = IntentRules.decide(s, Intent.bid(UUID.randomUUID(), USER_A, A, 3, 20), at, GUARDS);
+      var pass3 = IntentRules.decide(s, Intent.pass(UUID.randomUUID(), USER_A, A, 3), at, GUARDS);
+      // Lots that did play are closed, however their numbers compare with the current lot.
+      var bid1 = IntentRules.decide(s, Intent.bid(UUID.randomUUID(), USER_A, A, 1, 20), at, GUARDS);
+      var bid2 = IntentRules.decide(s, Intent.bid(UUID.randomUUID(), USER_A, A, 2, 20), at, GUARDS);
+
+      assertThat(bid3)
+          .as("bid on queued lot 3, lot 4 open=%s", lotFourOpen)
+          .isEqualTo(new Decision.PhaseError(Reason.NO_OPEN_LOT));
+      assertThat(pass3).isEqualTo(new Decision.PhaseError(Reason.NO_OPEN_LOT));
+      assertRejected(bid1, Reason.LOT_CLOSED);
+      assertRejected(bid2, Reason.LOT_CLOSED);
+    }
   }
 }

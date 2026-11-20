@@ -2,10 +2,13 @@ package com.paddleup.auction.controller;
 
 import com.paddleup.accounts.service.CurrentUser;
 import com.paddleup.auction.dto.AuctionStateDto;
+import com.paddleup.auction.dto.AuditDto;
 import com.paddleup.auction.dto.BidRequest;
+import com.paddleup.auction.dto.ControlRequest;
 import com.paddleup.auction.dto.EventsDto;
 import com.paddleup.auction.dto.IntentResultDto;
 import com.paddleup.auction.dto.PassRequest;
+import com.paddleup.auction.dto.PicksRequest;
 import com.paddleup.auction.dto.PresenceDto;
 import com.paddleup.auction.dto.ReadyRequest;
 import com.paddleup.auction.dto.ScheduleRequest;
@@ -56,6 +59,15 @@ class AuctionController {
     return auction.events(currentUser.require(), roomId, after, limit);
   }
 
+  @GetMapping("/audit")
+  AuditDto audit(
+      @PathVariable UUID roomId,
+      @RequestParam(defaultValue = "all") String kind,
+      @RequestParam(defaultValue = "0") long after,
+      @RequestParam(required = false) Integer limit) {
+    return auction.audit(currentUser.require(), roomId, kind, after, limit);
+  }
+
   @PostMapping(value = "/bids", consumes = MediaType.APPLICATION_JSON_VALUE)
   IntentResultDto bid(@PathVariable UUID roomId, @RequestBody BidRequest request) {
     return auction.bid(currentUser.require(), roomId, request);
@@ -64,6 +76,16 @@ class AuctionController {
   @PostMapping(value = "/passes", consumes = MediaType.APPLICATION_JSON_VALUE)
   IntentResultDto pass(@PathVariable UUID roomId, @RequestBody PassRequest request) {
     return auction.pass(currentUser.require(), roomId, request);
+  }
+
+  @PostMapping(value = "/controls", consumes = MediaType.APPLICATION_JSON_VALUE)
+  IntentResultDto control(@PathVariable UUID roomId, @RequestBody ControlRequest request) {
+    return auction.control(currentUser.require(), roomId, request);
+  }
+
+  @PutMapping(value = "/picks", consumes = MediaType.APPLICATION_JSON_VALUE)
+  IntentResultDto picks(@PathVariable UUID roomId, @RequestBody PicksRequest request) {
+    return auction.picks(currentUser.require(), roomId, request);
   }
 
   @PutMapping(value = "/ready", consumes = MediaType.APPLICATION_JSON_VALUE)

@@ -2,8 +2,10 @@
 
 import Link from "next/link";
 import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties } from "react";
-import { ApiError, getMembers, getRoom, setReady, type Member, type Room } from "../../../../api/client";
+import { useIntentRetry } from "../../../../api/intent";
+import { ApiError, getMembers, getRoom, sendControl, sendPicks, setReady, type Member, type Room } from "../../../../api/client";
 import { formatLotTime, pageClock } from "../../../../auction/clock";
+import { controlRefusal, reopenedNotice, skippedNotice, type Notice } from "../../../../auction/copy";
 import { useBid } from "../../../../auction/useBid";
 import { useLive, useTicker } from "../../../../auction/useLive";
 import { buildView } from "../../../../auction/view";
@@ -17,7 +19,9 @@ import { Icon } from "../../../../ui/Icon";
 import { stateChipLabel } from "../../../../ui/kit";
 import { Button, ButtonLink } from "../../../../ui/Button";
 import s from "./auction.module.css";
+import { MainDoneCard, NominatingPanel, SendPicksBar } from "./accelerated";
 import { BidDock } from "./bid-dock";
+import { Controls } from "./controls";
 import { Lobby } from "./lobby";
 import { LotCard, type LotResult } from "./lot-card";
 import { AdjournedCard, ClosedCard, NoAuctionCard, Notices, hueStyle, type Toast, type Who } from "./notices";
@@ -150,14 +154,7 @@ function Auction({ roomId, data, reloadRoom }: { roomId: string; data: Data; rel
     serverNow,
     sending: bidder.snapshot.sending,
   };
-  const draft = buildView({ ...baseInput, frozenLeft: snapshot.frozenLeft });
-
-  // The lot clock is held at its value when paused or adjourned.
-  const holdable = draft.status === "paused" || draft.status === "adjourned";
-  const [held, setHeld] = useState<{ status: string; ms: number } | null>(null);
-  if (holdable && (!held || held.status !== draft.status)) setHeld({ status: draft.status, ms: draft.timeLeftMs ?? 0 });
-  else if (!holdable && held) setHeld(null);
-  const view = holdable && held ? buildView({ ...baseInput, frozenLeft: held.ms }) : draft;
+  const view = buildView({ ...baseInput, frozenLeft: snapshot.frozenLeft });
 
   // Notices: outbid when the lead moves off me (cleared by my next accepted bid); a refusal or a
   // bid with no answer shows the server's reply or the lack of one. Each fades after a few seconds.
@@ -177,22 +174,47 @@ function Auction({ roomId, data, reloadRoom }: { roomId: string; data: Data; rel
     if (outcome?.kind === "accepted") setOutbid(null);
   }
   const refusal: Toast | null = outcome && outcome.kind !== "accepted" ? { kind: "rejected", notice: outcome.notice } : null;
-  const toast: Toast | null = refusal ?? outbid;
+  // A refused control, and the Commissioner's skip or re-open as every manager sees it (3q, 3s, 3t).
+  const [controlNotice, setControlNotice] = useState<Notice | null>(null);
+  const adminEvent = snapshot.adminEvent;
+  const [seenAdmin, setSeenAdmin] = useState(adminEvent?.seq ?? 0);
+  const [adminToast, setAdminToast] = useState<Notice | null>(null);
+  if (adminEvent && adminEvent.seq !== seenAdmin) {
+    setSeenAdmin(adminEvent.seq);
+    const closedName = state?.lastResult?.card?.name ?? null;
+    if (adminEvent.kind === "lot_skipped") {
+      setAdminToast(skippedNotice(adminEvent.lot, state?.lot?.no === adminEvent.lot ? (state?.lot?.name ?? null) : closedName));
+    } else {
+      setAdminToast(
+        reopenedNotice(adminEvent.newLot, adminEvent.reason, adminEvent.franchiseId && adminEvent.amount !== null ? { name: whoOf(adminEvent.franchiseId)?.name ?? "The buyer", amount: money(adminEvent.amount) } : null),
+      );
+    }
+  }
+  // The Commissioner's notice has a slot of its own: the outbid toast neither hides nor clears it.
+  const toast: Toast | null = refusal ?? (controlNotice ? { kind: "rejected", notice: controlNotice } : null) ?? outbid;
+  const adminNotice: Toast | null = adminToast ? { kind: "admin", notice: adminToast } : null;
   const { dismiss } = bidder;
   const dismissToast = useCallback(() => {
     setOutbid(null);
+    setControlNotice(null);
     dismiss();
   }, [dismiss]);
+  const dismissAdmin = useCallback(() => setAdminToast(null), []);
   // A refusal means the screen was behind the server (say a lot closed as the bid went): read again.
   const refused = outcome?.kind === "rejected";
   useEffect(() => {
     if (refused) live.resync();
   }, [refused, outcome, live]);
   useEffect(() => {
-    if (!outbid && !outcome) return;
+    if (!outbid && !outcome && !controlNotice) return;
     const id = setTimeout(dismissToast, TOAST_MS);
     return () => clearTimeout(id);
-  }, [outbid, outcome, dismissToast]);
+  }, [outbid, outcome, controlNotice, dismissToast]);
+  useEffect(() => {
+    if (!adminToast) return;
+    const id = setTimeout(dismissAdmin, TOAST_MS);
+    return () => clearTimeout(id);
+  }, [adminToast, dismissAdmin]);
 
   // Ready toggle: only the server's answer changes what shows.
   const [readyBusy, setReadyBusy] = useState(false);
@@ -213,14 +235,56 @@ function Auction({ roomId, data, reloadRoom }: { roomId: string; data: Data; rel
   const hue = mine ? hueOf(mine.colour) : BRAND_HUE;
 
   // The Commissioner sets or moves the start. The sheet only asks; what shows is the server's reply.
-  const [sheet, setSheet] = useState<"new" | "move" | null>(null);
+  const [sheet, setSheet] = useState<"new" | "move" | "retime" | null>(null);
   const commish = room.myRole === "commissioner";
+
+  // Commissioner intents that need no form: each only asks, and the server's answer or a refusal shows.
+  // One intent id per tap, kept if the answer is lost so a retry is not read as a new action.
+  const intents = useIntentRetry();
+  const [controlBusy, setControlBusy] = useState(false);
+  const control = async (action: "start_now" | "resume" | "resume_now" | "open_round" | "end_auction" | "end_round") => {
+    if (controlBusy) return;
+    setControlBusy(true);
+    try {
+      const answer = await intents.run(action, (id) => sendControl(roomId, action, {}, id));
+      if (answer.outcome === "rejected") setControlNotice(controlRefusal(action, answer.reason, state?.lot?.no ?? null, null));
+      live.resync();
+    } catch (e) {
+      setControlNotice({ title: "Couldn't do that", body: `${explainRoomError(e).message} Nothing changed.` });
+    } finally {
+      setControlBusy(false);
+    }
+  };
+
+  // The accelerated round's picks (Explorations 3w): what I have ticked until I send them. Once sent
+  // (the server no longer lists me as waiting) the server's copy shows and the list is read-only.
+  const [ticked, setTicked] = useState<number[] | null>(null);
+  const [picksBusy, setPicksBusy] = useState(false);
+  const picking = phase === "nominating";
+  const sentPicks = picking && me !== null && !!state && !state.waiting.includes(me);
+  const selected = sentPicks ? (state?.myPicks ?? []) : (ticked ?? state?.myPicks ?? []);
+  const togglePick = (no: number) => setTicked(selected.includes(no) ? selected.filter((x) => x !== no) : [...selected, no]);
+  const sendMyPicks = async () => {
+    if (picksBusy || selected.length === 0) return;
+    setPicksBusy(true);
+    try {
+      const answer = await intents.run(`picks:${selected.join(",")}`, (id) => sendPicks(roomId, selected, id));
+      if (answer.outcome === "rejected") setControlNotice(controlRefusal("picks", answer.reason, null, null));
+      live.resync();
+    } catch (e) {
+      setControlNotice({ title: "Couldn't send your picks", body: `${explainRoomError(e).message} Nothing changed.` });
+    } finally {
+      setPicksBusy(false);
+    }
+  };
+
   const scheduleSheet = sheet && (
     <div className="team" style={{ "--h": hue } as CSSProperties}>
       <ScheduleSheet
         roomId={roomId}
         mode={sheet}
-        startsAt={state?.startsAt}
+        startsAt={sheet === "retime" ? (state?.resumeAt ?? undefined) : state?.startsAt}
+        send={sheet === "retime" ? (iso) => intents.run(`change_time:${iso}`, (id) => sendControl(roomId, "change_time", { resumeAt: iso }, id)) : undefined}
         // With no auction there is no state to sample; the page clock is fed by every request's Date header.
         serverNow={() => (clock.ready ? clock.now() : pageClock.ready ? pageClock.now() : null)}
         poolHref={`/rooms/${roomId}/pool`}
@@ -279,6 +343,8 @@ function Auction({ roomId, data, reloadRoom }: { roomId: string; data: Data; rel
           onToggleReady={() => void toggleReady()}
           onRetry={live.retry}
           onChangeTime={commish ? () => setSheet("move") : undefined}
+          onStartNow={commish ? () => void control("start_now") : undefined}
+          startBusy={controlBusy}
         />
         {scheduleSheet}
       </>
@@ -297,12 +363,31 @@ function Auction({ roomId, data, reloadRoom }: { roomId: string; data: Data; rel
   }
 
   const lot = state.lot ?? null;
+  // The lot that plays next: the open (held) lot, or in a gap the one the server queued after it.
+  const playsNext = state.lotOpen ? lot : (state.nextLot ?? null);
   const result: LotResult | null =
-    view.result && (view.status === "sold" || view.status === "unsold")
+    view.result
       ? { sold: view.result.sold, who: whoOf(view.result.franchiseId), amount: view.result.amount, youWon: !!me && view.result.franchiseId === me }
       : null;
   const leader = whoOf(view.leaderId);
   const myStanding = me ? state.standings.find((x) => x.franchiseId === me) : undefined;
+  const accelerated = state.round === "accelerated";
+  const headSub =
+    view.status === "main_done"
+      ? "Main pool done"
+      : view.status === "nominating"
+        ? "Accelerated round · picking"
+        : lot
+          ? accelerated
+            ? state.accelPosition != null && state.accelSize != null
+              ? `Accelerated round · ${state.accelPosition} of ${state.accelSize}`
+              : `Accelerated round · Lot ${lot.no}`
+            : `${lot.set} · Lot ${lot.no}`
+          : "Auction";
+  const franchiseChips = state.standings.map((x) => {
+    const who = whoOf(x.franchiseId);
+    return { id: x.franchiseId, name: who?.name ?? "Franchise", monogram: who?.monogram ?? "", colour: who?.colour ?? "", done: !state.waiting.includes(x.franchiseId) };
+  });
   const timeText = view.timeLeftMs === null ? "–:––" : formatLotTime(view.timeLeftMs);
 
   return (
@@ -310,25 +395,82 @@ function Auction({ roomId, data, reloadRoom }: { roomId: string; data: Data; rel
       <Header
         roomName={room.config.name}
         pill="LIVE"
-        sub={lot ? `${lot.set} · Lot ${lot.no}` : "Auction"}
+        sub={headSub}
         roomHref={roomHref}
         purse={view.hasFranchise ? { label: "YOUR PURSE", value: view.purse !== null ? money(view.purse) : "" } : null}
         observer={!view.hasFranchise}
         mono={mine?.monogram ?? null}
       />
       <div className={s.main}>
+        {commish && (
+          <Controls
+            ctx={{
+              roomId,
+              state,
+              money,
+              labels: room.packLabels,
+              nameOf: (id) => whoOf(id)?.name ?? null,
+              buyerOf: (id) => {
+                const who = whoOf(id);
+                return who ? { monogram: who.monogram, colour: who.colour } : null;
+              },
+              timeLeftMs: view.timeLeftMs,
+              serverNow: () => (clock.ready ? clock.now() : null),
+              onNotice: setControlNotice,
+              onResync: () => live.resync(),
+            }}
+          />
+        )}
         <div className={s.scroll}>
-          {view.status === "adjourned" ? (
+          {view.status === "main_done" ? (
+            <MainDoneCard
+              sold={state.standings.reduce((n, x) => n + x.squad.length, 0)}
+              unsold={state.unsoldPool.length}
+              franchises={state.standings.length}
+              commish={commish ? { busy: controlBusy, onOpenRound: () => void control("open_round"), onEnd: () => void control("end_auction") } : undefined}
+            />
+          ) : view.status === "nominating" ? (
+            <NominatingPanel
+              pool={state.unsoldPool}
+              counts={new Map(state.pickCounts.map((c) => [c.lot, c.count]))}
+              openSlots={state.openSlots}
+              selected={selected}
+              sent={sentPicks}
+              onToggle={togglePick}
+              labels={room.packLabels}
+              config={room.config}
+              franchises={franchiseChips}
+              doneCount={franchiseChips.filter((f) => f.done).length}
+              commish={
+                commish
+                  ? { queued: state.pickCounts.length, waiting: state.waiting.length, busy: controlBusy, onEndRound: () => void control("end_round") }
+                  : undefined
+              }
+            />
+          ) : view.status === "adjourned" || view.status === "resume_lobby" ? (
             <AdjournedCard
-              lotsDone={Math.max(0, (lot?.no ?? 1) - 1)}
+              lotsDone={state.lotsClosed}
               squad={myStanding ? myStanding.squad.length : null}
               purse={view.purse !== null ? money(view.purse) : null}
-              resumes={null}
+              resumes={view.status === "adjourned" && state.resumeAt ? resumeLabel(state.resumeAt) : null}
+              commish={
+                commish
+                  ? {
+                      onResumeNow: () => void control("resume_now"),
+                      onStartNow: () => void control("start_now"),
+                      onChangeTime: () => setSheet("retime"),
+                      busy: controlBusy,
+                      nextLot: playsNext?.no ?? null,
+                      lobbySeconds: state.resumeLobbySeconds,
+                      inLobby: view.status === "resume_lobby",
+                    }
+                  : undefined
+              }
             />
           ) : (
             lot && (
               <div className={s.grid}>
-                <LotCard lot={lot} labels={room.packLabels} config={room.config} result={result} />
+                <LotCard lot={lot} labels={room.packLabels} config={room.config} result={result} pickedBy={accelerated ? state.lotPicks : null} />
                 <div className={s.col}>
                   <section className={s.bidPanel} aria-label="Current bid">
                     <div className={s.bidHead}>
@@ -375,20 +517,39 @@ function Auction({ roomId, data, reloadRoom }: { roomId: string; data: Data; rel
             )
           )}
         </div>
-        <div className={s.dockBar}>
-          <BidDock view={view} config={room.config} labels={room.packLabels} onBid={() => state.lot && view.nextBid !== null && void bidder.press(state.lot.no, view.nextBid)} />
-        </div>
+        {view.status === "nominating" ? (
+          me !== null &&
+          state.openSlots !== undefined && <SendPicksBar picked={selected.length} sent={sentPicks} noSlots={state.openSlots === 0} waiting={state.waiting.length} busy={picksBusy} onSend={() => void sendMyPicks()} />
+        ) : (
+          view.status !== "main_done" && (
+            <div className={s.dockBar}>
+              <BidDock view={view} config={room.config} labels={room.packLabels} onBid={() => state.lot && view.nextBid !== null && void bidder.press(state.lot.no, view.nextBid)} />
+            </div>
+          )
+        )}
         <Notices
           reconnecting={offline}
           paused={view.status === "paused"}
-          pausedLeftMs={held?.ms ?? null}
+          pausedLeftMs={state.heldMs}
+          pausedBetween={view.betweenLots}
+          onResume={commish ? () => void control("resume") : undefined}
+          resumeLobby={view.status === "resume_lobby" && state.liveAt && serverNow !== null ? { lot: playsNext?.no ?? null, leftMs: Math.max(0, Date.parse(state.liveAt) - serverNow) } : null}
           toast={toast}
+          adminToast={adminNotice}
           onRetry={live.retry}
           onDismiss={dismissToast}
+          onDismissAdmin={dismissAdmin}
         />
       </div>
+      {scheduleSheet}
     </div>
   );
+}
+
+/** "Sat 2 Nov, 8:00 PM" in the viewer's own time. */
+function resumeLabel(iso: string): string {
+  const d = new Date(iso);
+  return `${d.toLocaleDateString(undefined, { weekday: "short", day: "numeric", month: "short" })}, ${d.toLocaleTimeString(undefined, { hour: "numeric", minute: "2-digit" })}`;
 }
 
 function Header({

@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useState } from "react";
-import { ApiError, scheduleAuction, type AuctionState } from "../api/client";
+import { ApiError, scheduleAuction, type AuctionState, type IntentResult } from "../api/client";
 import { useTicker } from "../auction/useLive";
 import { Button } from "../ui/Button";
 import { Icon } from "../ui/Icon";
@@ -68,21 +68,30 @@ export function ScheduleSheet({
   poolHref,
   onClose,
   onDone,
+  send,
+  titleRow,
 }: {
   roomId: string;
   /** `new` sets the first start from the room; `move` changes it from the lobby. */
-  mode: "new" | "move";
+  mode: "new" | "move" | "adjourn" | "retime";
+  /** Auction sheets: the title and a close button in a title row, no tile or handle (Auction A Spotlight). */
+  titleRow?: boolean;
   /** The current start (ISO) to prefill when moving it. */
   startsAt?: string;
   /** The estimated server time in epoch ms, or null before the first sample. */
   serverNow: () => number | null;
   poolHref: string;
   onClose: () => void;
-  /** Called with the server's state after it accepted the time. */
-  onDone: (state: AuctionState) => void;
+  /** Called with the server's state after it accepted the time (nothing for a resume time). */
+  onDone: (state?: AuctionState) => void;
+  /**
+   * `adjourn` and `retime` send the picked instant through this instead of scheduling: a Commissioner
+   * control, answered `accepted` or `rejected` with a reason.
+   */
+  send?: (iso: string) => Promise<IntentResult>;
 }) {
   const [initial] = useState(() => {
-    if (mode === "move" && startsAt) return fields(new Date(startsAt));
+    if ((mode === "move" || mode === "retime") && startsAt) return fields(new Date(startsAt));
     const now = serverNow();
     if (now === null) return { date: "", time: "" };
     return { date: fields(new Date(now + DAY_MS)).date, time: DEFAULT_HOUR };
@@ -95,6 +104,7 @@ export function ScheduleSheet({
   useTicker(10_000);
 
   const move = mode === "move";
+  const resume = mode === "adjourn" || mode === "retime";
   const picked = pickedInstant(date, time);
   const now = serverNow();
   const ahead = picked !== null && now !== null ? picked.getTime() - now : null;
@@ -115,6 +125,19 @@ export function ScheduleSheet({
     setBusy(true);
     setProblem(null);
     try {
+      if (resume && send) {
+        const answer = await send(picked.toISOString());
+        if (answer.outcome === "rejected") {
+          setProblem(
+            answer.reason === "time_invalid"
+              ? { kind: "past", message: "That time has already gone. Pick a later one." }
+              : { kind: "other", message: "The auction moved on before that landed. Nothing changed." },
+          );
+        } else {
+          onDone();
+        }
+        return;
+      }
       onDone(await scheduleAuction(roomId, picked.toISOString()));
     } catch (e) {
       const body = e instanceof ApiError ? (e.body as { error?: string; message?: string; field?: string } | null) : null;
@@ -130,30 +153,37 @@ export function ScheduleSheet({
     }
   }
 
-  const title = move ? "Change the start time?" : "Schedule the auction";
+  const title =
+    mode === "adjourn" ? "Adjourn the auction" : mode === "retime" ? "Change the resume time?" : move ? "Change the start time?" : "Schedule the auction";
   return (
-    <Sheet label={title} onClose={onClose}>
-      <span className={sheetStyles.tile} style={{ background: "var(--team-tint)", color: "var(--team-ink)" }}>
-        <Icon name={move ? "edit_calendar" : "event"} size={28} />
-      </span>
+    <Sheet label={title} title={titleRow ? title : undefined} onClose={onClose}>
+      {!titleRow && (
+        <span className={sheetStyles.tile} style={{ background: "var(--team-tint)", color: "var(--team-ink)" }}>
+          <Icon name={mode === "adjourn" ? "bedtime" : move || resume ? "edit_calendar" : "event"} size={28} />
+        </span>
+      )}
       <div className={sheetStyles.text}>
-        <h2 className={sheetStyles.title}>{title}</h2>
+        {!titleRow && <h2 className={sheetStyles.title}>{title}</h2>}
         <p className={sheetStyles.body}>
-          {move
+          {mode === "adjourn"
+            ? "Bidding stops now. The lot on the block keeps its bids and its remaining time, and squads and purses stay as they are until you resume."
+            : mode === "retime"
+              ? "Everyone sees the new resume time right away."
+              : move
             ? "Everyone's countdown moves right away. Ready taps stay as they are."
             : "Pick when bidding opens. The room moves to the lobby, and rooms only move forward. Rules and the pool stay editable until it goes live."}
         </p>
       </div>
       <div className={s.pickers}>
         <label className={s.pick}>
-          <span className={s.pickLabel}>Date</span>
+          <span className={s.pickLabel}>{resume ? "Resume date" : "Date"}</span>
           <span className={s.well}>
             <input type="date" className={s.input} value={date} onChange={(e) => edit(setDate, e.target.value)} aria-label="Date" />
             <Icon name="calendar_month" size={20} className={s.wellIcon} />
           </span>
         </label>
         <label className={s.pick}>
-          <span className={s.pickLabel}>Start time</span>
+          <span className={s.pickLabel}>{resume ? "Resume time" : "Start time"}</span>
           <span className={`${s.well} ${past ? s.wellBad : ""}`}>
             <input type="time" className={`${s.input} ${s.mono}`} value={time} onChange={(e) => edit(setTime, e.target.value)} aria-label="Start time" />
             <Icon name="schedule" size={20} className={s.wellIcon} />
@@ -168,7 +198,7 @@ export function ScheduleSheet({
       <span className={s.zone}>{zone}</span>
       <div className={s.preview}>
         <div className={s.previewText}>
-          <span className={s.previewLabel}>BIDDING OPENS</span>
+          <span className={s.previewLabel}>{resume ? "BIDDING RESUMES" : "BIDDING OPENS"}</span>
           <span className={s.previewWhen} data-testid="schedule-when">
             {when}
           </span>
@@ -196,7 +226,7 @@ export function ScheduleSheet({
           Cancel
         </Button>
         <Button variant="primary" size="L" busy={busy} disabled={!picked} onClick={() => void submit()}>
-          {move ? "Change start time" : "Schedule auction"}
+          {mode === "adjourn" ? "Adjourn" : mode === "retime" ? "Change resume time" : move ? "Change start time" : "Schedule auction"}
         </Button>
       </div>
     </Sheet>

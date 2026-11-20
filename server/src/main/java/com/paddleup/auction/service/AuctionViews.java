@@ -7,9 +7,11 @@ import com.paddleup.auction.dto.BidLockDto;
 import com.paddleup.auction.dto.IntentResultDto;
 import com.paddleup.auction.dto.LastResultDto;
 import com.paddleup.auction.dto.LotDto;
+import com.paddleup.auction.dto.PickCountDto;
 import com.paddleup.auction.dto.SquadEntryDto;
 import com.paddleup.auction.dto.StandingDto;
 import com.paddleup.auction.dto.StepDto;
+import com.paddleup.auction.model.AccelSlot;
 import com.paddleup.auction.model.AuctionEvent;
 import com.paddleup.auction.model.AuctionState;
 import com.paddleup.auction.model.EventKind;
@@ -17,6 +19,7 @@ import com.paddleup.auction.model.Lot;
 import com.paddleup.auction.model.Outcome;
 import com.paddleup.auction.model.Phase;
 import com.paddleup.auction.util.Ladder;
+import java.time.Duration;
 import java.time.Instant;
 import java.util.Collection;
 import java.util.LinkedHashMap;
@@ -49,8 +52,10 @@ final class AuctionViews {
       Instant serverNow,
       Collection<UUID> connected,
       Collection<UUID> ready,
-      List<BidLockDto> bidLimits) {
-    boolean started = s.phase() == Phase.LIVE || s.phase() == Phase.ENDED;
+      List<BidLockDto> bidLimits,
+      UUID viewerFranchise,
+      Duration resumeLobby) {
+    boolean started = s.phase() != Phase.NONE && s.phase() != Phase.SCHEDULED;
     AuctionConfigDto config =
         started
             ? new AuctionConfigDto(
@@ -70,6 +75,7 @@ final class AuctionViews {
                             .map(x -> new SquadEntryDto(x.lot(), x.playerId(), x.price()))
                             .toList()))
             .toList();
+    AccelSlot slot = s.lot() == null ? null : s.accel().get(s.lot().no());
     return new AuctionStateDto(
         s.phase().value(),
         s.startsAt(),
@@ -93,12 +99,49 @@ final class AuctionViews {
                 s.lastResult().lot(),
                 s.lastResult().sold(),
                 s.lastResult().franchiseId(),
-                s.lastResult().amount()),
+                s.lastResult().amount(),
+                lot(s.lots().get(s.lastResult().lot() - 1))),
         lot(s.nextLot()),
         List.copyOf(connected),
         s.phase() == Phase.SCHEDULED ? List.copyOf(ready) : List.of(),
         nextBid(s),
-        bidLimits);
+        bidLimits,
+        s.heldMs(),
+        s.resumeAt(),
+        s.liveAt(),
+        s.round(),
+        s.unsold().stream().map(no -> lot(s.lots().get(no - 1))).toList(),
+        ControlRules.pickCounts(s).entrySet().stream()
+            .map(e -> new PickCountDto(e.getKey(), e.getValue()))
+            .toList(),
+        s.picks().getOrDefault(viewerFranchise, List.of()),
+        viewerFranchise != null && s.purses().containsKey(viewerFranchise)
+            ? ControlRules.openSlots(s, viewerFranchise)
+            : null,
+        waiting(s),
+        slot == null ? null : slot.position(),
+        s.accelSize() > 0 ? s.accelSize() : null,
+        slot == null ? null : slot.picks(),
+        lobbySeconds(resumeLobby),
+        s.lotsClosed());
+  }
+
+  /** Whole seconds, rounded up, so a lobby shorter than a second never reads as 0 seconds. */
+  static long lobbySeconds(Duration lobby) {
+    return lobby.plusMillis(999).toSeconds();
+  }
+
+  /**
+   * The franchises the accelerated round still waits for: those that have open slots to fill and
+   * have not sent picks. A franchise that cannot pick (no open slots) is not waited for.
+   */
+  private static List<UUID> waiting(AuctionState s) {
+    if (s.phase() != Phase.NOMINATING) {
+      return List.of();
+    }
+    return s.purses().keySet().stream()
+        .filter(f -> !s.picks().containsKey(f) && ControlRules.openSlots(s, f) > 0)
+        .toList();
   }
 
   /** The only amount the next bid may have, or null when no lot is open. */
@@ -111,9 +154,13 @@ final class AuctionViews {
 
   /**
    * An event as members see it. A lot_opened event also carries the lot's card, so a client needs
-   * nothing else to show the lot. {@code state} is any state at or after the event.
+   * nothing else to show the lot. {@code state} is any state at or after the event. A franchise's
+   * picks are private: only the viewer who is that franchise sees the lot list ({@code
+   * viewerFranchise} is null for a broadcast to the whole room, which never carries it); the stored
+   * event keeps the lots for replay.
    */
-  static AuctionEventDto event(AuctionEvent e, AuctionState state, Instant serverNow) {
+  static AuctionEventDto event(
+      AuctionEvent e, AuctionState state, Instant serverNow, UUID viewerFranchise) {
     Map<String, Object> payload = e.payload();
     boolean opened =
         e.kind() == EventKind.LOT_OPENED && e.lot() != null && e.lot() <= state.lots().size();
@@ -125,9 +172,16 @@ final class AuctionViews {
     } else if (e.kind() == EventKind.BID_ACCEPTED) {
       payload = new LinkedHashMap<>(payload);
       payload.put("nextBid", Ladder.next(state.ladder(), e.number("amount")));
+    } else if (e.kind() == EventKind.PICKS_SUBMITTED && !isOwn(e, viewerFranchise)) {
+      payload = Map.of();
     }
     return new AuctionEventDto(
         e.seq(), e.at(), e.kind().value(), e.franchiseId(), e.lot(), payload, serverNow);
+  }
+
+  /** True when the viewer is the franchise the event belongs to. */
+  static boolean isOwn(AuctionEvent e, UUID viewerFranchise) {
+    return viewerFranchise != null && viewerFranchise.equals(e.franchiseId());
   }
 
   static IntentResultDto result(Outcome o, Instant serverNow) {

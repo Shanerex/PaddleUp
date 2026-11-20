@@ -118,7 +118,7 @@ class AuctionLifecycleIT extends AbstractAuctionIT {
   }
 
   @Test
-  void aLotWithNoBidsIsUnsoldAndTheLastCloseEndsTheAuctionWithUnsoldListed() {
+  void aLotWithNoBidsIsUnsoldAndTheLastCloseWaitsItsGapThenGoesToMainDoneWithUnsoldListed() {
     Room room = room(2, 3);
     goLive(room);
 
@@ -135,23 +135,54 @@ class AuctionLifecycleIT extends AbstractAuctionIT {
     advance(20);
     tick();
 
+    // Lot 3 has closed but its gap has not ended: still live, nothing is done yet (R-14).
+    JsonNode gap = state(room, room.commissioner());
+    assertThat(gap.get("phase").asText()).isEqualTo("live");
+    assertThat(gap.get("lotOpen").asBoolean()).isFalse();
+    assertThat(eventCount(room, "main_done")).isZero();
+    advance(5);
+    tick();
+
     JsonNode end = state(room, room.commissioner());
-    assertThat(end.get("phase").asText()).isEqualTo("ended");
+    assertThat(end.get("phase").asText()).isEqualTo("main_done");
     assertThat(end.get("lotOpen").asBoolean()).isFalse();
     assertThat(end.get("unsold")).hasSize(2);
     assertThat(end.get("unsold").get(0).asInt()).isEqualTo(2);
     assertThat(end.get("unsold").get(1).asInt()).isEqualTo(3);
     assertThat(eventCount(room, "lot_sold")).isEqualTo(1);
     assertThat(eventCount(room, "lot_unsold")).isEqualTo(2);
-    assertThat(eventCount(room, "auction_ended")).isEqualTo(1);
+    assertThat(eventCount(room, "main_done")).isEqualTo(1);
+    assertThat(eventCount(room, "auction_ended")).isZero();
     long seq = lastSeq(room);
     advance(1000);
     tick();
     assertThat(lastSeq(room)).isEqualTo(seq);
     // The room stays auction_live: season start belongs to a later spec.
     assertThat(roomState(room)).isEqualTo("auction_live");
-    // Lot 3 closed with the auction: a late bid on it is too late; a lot past the end is a 409.
+    // Lot 3 closed already, so a late bid on it says so; a lot that never opened is a phase error.
     assertThat(outcome(bid(room, room.manager(0), 3, 20))).isEqualTo("rejected:lot_closed");
     assertThat(bid(room, room.manager(0), 4, 20).getStatusCode().value()).isEqualTo(409);
+  }
+
+  @Test
+  void aPoolWithNothingUnsoldEndsAfterTheLastGap() {
+    Room room = room(2, 2);
+    goLive(room);
+
+    for (int lot = 1; lot <= 2; lot++) {
+      bid(room, room.manager(0), lot, 20);
+      advance(10);
+      tick();
+      advance(5);
+      tick();
+    }
+
+    JsonNode end = state(room, room.commissioner());
+    assertThat(end.get("phase").asText()).isEqualTo("ended");
+    assertThat(end.get("unsold")).isEmpty();
+    assertThat(eventCount(room, "main_done")).isZero();
+    assertThat(eventCount(room, "auction_ended")).isEqualTo(1);
+    assertThat(outcome(bid(room, room.manager(0), 2, 20))).isEqualTo("rejected:lot_closed");
+    assertThat(bid(room, room.manager(0), 3, 20).getStatusCode().value()).isEqualTo(409);
   }
 }

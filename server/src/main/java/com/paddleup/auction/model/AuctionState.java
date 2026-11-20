@@ -7,6 +7,7 @@ import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.SequencedSet;
 import java.util.Set;
 import java.util.UUID;
 
@@ -20,6 +21,18 @@ import java.util.UUID;
  * gap, when {@code nextOpenAt} says when the next lot opens, and {@code lastResult} says how the
  * last one closed. {@code lotsByPrice} holds the same lots by base price, then lot number, sorted
  * once at go-live so the squad reserve never sorts on the bid path.
+ *
+ * <p>{@code queue} holds the lot numbers still to be played, in play order (a set, so membership is
+ * one lookup); the lot after the current one is its head. A re-opened or accelerated lot is a new
+ * lot number (the next one, built from the original card) put in the queue, so a lot number in the
+ * log never changes meaning. {@code heldMs} is the time frozen by pause or adjourn (the open lot's
+ * remaining time, or the rest of the gap), {@code resumeAt} the adjourn time, {@code liveAt} the
+ * end of the resume lobby. {@code round} is {@code main} or {@code accelerated}; {@code picks} are
+ * the accelerated-round nominations by franchise, in lot numbers. {@code accel} holds, by lot
+ * number, the position and pick count of each lot the accelerated round plays (fixed when the round
+ * starts; a re-opened lot keeps those of the lot it replays) and {@code accelSize} how many lots
+ * the round has. {@code lotsClosed} counts every lot that has closed, sold, unsold or skipped (a
+ * main-round lot picked for the accelerated round stays counted; a re-opened lot is taken off).
  */
 public record AuctionState(
     UUID roomId,
@@ -45,7 +58,19 @@ public record AuctionState(
     List<Integer> unsold,
     Instant nextOpenAt,
     LastResult lastResult,
-    long lastSeq) {
+    long lastSeq,
+    SequencedSet<Integer> queue,
+    long heldMs,
+    Instant resumeAt,
+    Instant liveAt,
+    String round,
+    Map<UUID, List<Integer>> picks,
+    Map<Integer, AccelSlot> accel,
+    int accelSize,
+    int lotsClosed) {
+
+  public static final String MAIN = "main";
+  public static final String ACCELERATED = "accelerated";
 
   public AuctionState {
     ladder = List.copyOf(ladder);
@@ -58,6 +83,11 @@ public record AuctionState(
     squads.forEach((id, entries) -> copy.put(id, List.copyOf(entries)));
     squads = Collections.unmodifiableMap(copy);
     unsold = List.copyOf(unsold);
+    queue = Collections.unmodifiableSequencedSet(new LinkedHashSet<>(queue));
+    var pickCopy = new LinkedHashMap<UUID, List<Integer>>();
+    picks.forEach((id, nos) -> pickCopy.put(id, List.copyOf(nos)));
+    picks = Collections.unmodifiableMap(pickCopy);
+    accel = Collections.unmodifiableMap(new LinkedHashMap<>(accel));
   }
 
   /** A room with no auction yet. {@code catalog} may be empty until the lots are frozen. */
@@ -86,6 +116,15 @@ public record AuctionState(
         List.of(),
         null,
         null,
+        0,
+        new LinkedHashSet<>(),
+        0,
+        null,
+        null,
+        MAIN,
+        Map.of(),
+        Map.of(),
+        0,
         0);
   }
 
@@ -94,14 +133,27 @@ public record AuctionState(
     return currentLot >= 1 && currentLot <= lots.size() ? lots.get(currentLot - 1) : null;
   }
 
-  /** The lot that opens after the gap; null unless the auction is in a gap with a lot to come. */
+  /**
+   * The lot that opens after the gap; null unless the auction is in a gap (held or not) with a lot
+   * to come.
+   */
   public Lot nextLot() {
-    boolean inGap = phase == Phase.LIVE && !lotOpen && nextOpenAt != null;
-    return inGap && currentLot < lots.size() ? lots.get(currentLot) : null;
+    boolean held = phase == Phase.PAUSED || phase == Phase.ADJOURNED || phase == Phase.RESUME_LOBBY;
+    boolean inGap = (phase == Phase.LIVE || held) && !lotOpen && currentLot >= 1;
+    return inGap && !queue.isEmpty() ? lots.get(queue.getFirst() - 1) : null;
+  }
+
+  /**
+   * True when lot {@code no} has been played and is no longer open: it exists, has left the play
+   * queue and is not the lot open now. Decided by the queue, never by comparing lot numbers, since
+   * a re-opened or accelerated lot is numbered after lots that play later.
+   */
+  public boolean closed(int no) {
+    return no >= 1 && no <= lots.size() && !queue.contains(no) && !(lotOpen && no == currentLot);
   }
 
   public boolean hasMoreLots() {
-    return currentLot < lots.size();
+    return !queue.isEmpty();
   }
 
   public Builder edit() {
@@ -134,6 +186,15 @@ public record AuctionState(
     public Instant nextOpenAt;
     public LastResult lastResult;
     public long lastSeq;
+    public SequencedSet<Integer> queue;
+    public long heldMs;
+    public Instant resumeAt;
+    public Instant liveAt;
+    public String round;
+    public Map<UUID, List<Integer>> picks;
+    public Map<Integer, AccelSlot> accel;
+    public int accelSize;
+    public int lotsClosed;
 
     private Builder(AuctionState s) {
       roomId = s.roomId;
@@ -160,6 +221,15 @@ public record AuctionState(
       nextOpenAt = s.nextOpenAt;
       lastResult = s.lastResult;
       lastSeq = s.lastSeq;
+      queue = new LinkedHashSet<>(s.queue);
+      heldMs = s.heldMs;
+      resumeAt = s.resumeAt;
+      liveAt = s.liveAt;
+      round = s.round;
+      picks = new LinkedHashMap<>(s.picks);
+      accel = new LinkedHashMap<>(s.accel);
+      accelSize = s.accelSize;
+      lotsClosed = s.lotsClosed;
     }
 
     public AuctionState build() {
@@ -187,7 +257,16 @@ public record AuctionState(
           unsold,
           nextOpenAt,
           lastResult,
-          lastSeq);
+          lastSeq,
+          queue,
+          heldMs,
+          resumeAt,
+          liveAt,
+          round,
+          picks,
+          accel,
+          accelSize,
+          lotsClosed);
     }
   }
 }
