@@ -26,15 +26,21 @@ class ReasonTextTest {
   }
 
   @Test
-  void theCapIs140CodePointsAndInputBeyondTheParseLimitIsTooLong() {
+  void theCapIs140CodePointsOfCleanedText() {
     assertThat(ReasonText.MAX_LENGTH).isEqualTo(140);
-    assertThat(ReasonText.tooLong("x".repeat(140))).isFalse();
-    assertThat(ReasonText.tooLong("x".repeat(141))).isTrue();
+    assertThat(ReasonText.overCap("x".repeat(140))).isFalse();
+    assertThat(ReasonText.overCap("x".repeat(141))).isTrue();
     // 140 table tennis emoji are 140 code points, though 280 UTF-16 units.
-    assertThat(ReasonText.tooLong("\uD83C\uDFD3".repeat(140))).isFalse();
-    assertThat(ReasonText.tooLong("\uD83C\uDFD3".repeat(141))).isTrue();
-    assertThat(ReasonText.tooLong("a".repeat(4001))).isTrue();
-    assertThat(ReasonText.tooLong(null)).isFalse();
-    assertThat(ReasonText.tooLong("   ")).isFalse();
+    assertThat(ReasonText.overCap("\uD83C\uDFD3".repeat(140))).isFalse();
+    assertThat(ReasonText.overCap("\uD83C\uDFD3".repeat(141))).isTrue();
+    assertThat(ReasonText.overCap("")).isFalse();
+  }
+
+  @Test
+  void inputBeyondTheParseLimitIsOversizedAndNeverParsed() {
+    assertThat(ReasonText.oversized("a".repeat(4000))).isFalse();
+    assertThat(ReasonText.oversized("a".repeat(4001))).isTrue();
+    assertThat(ReasonText.oversized(null)).isFalse();
+    assertThat(ReasonText.oversized("   ")).isFalse();
   }
 }

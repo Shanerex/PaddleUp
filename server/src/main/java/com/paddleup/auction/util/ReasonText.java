@@ -21,24 +21,24 @@ public final class ReasonText {
   private ReasonText() {}
 
   /**
-   * True when the reason is longer than the cap once cleaned, counted in code points as the form
-   * counts characters, or too long to be parsed at all. Missing or blank is not too long.
+   * True when the raw input is too long to be parsed at all. The caller asks this before {@link
+   * #sanitise}, so oversized input is never taken for a missing reason.
    */
-  public static boolean tooLong(String raw) {
-    if (raw == null) {
-      return false;
-    }
-    if (raw.length() > MAX_INPUT) {
-      return true;
-    }
-    String text = sanitise(raw);
-    return text.codePointCount(0, text.length()) > MAX_LENGTH;
+  public static boolean oversized(String raw) {
+    return raw != null && raw.length() > MAX_INPUT;
+  }
+
+  /**
+   * True when already-cleaned text is longer than the cap, counted in code points as the form
+   * counts characters. A length check only: clean once with {@link #sanitise}, then ask this.
+   */
+  public static boolean overCap(String cleaned) {
+    return cleaned.codePointCount(0, cleaned.length()) > MAX_LENGTH;
   }
 
   /**
    * The reason without markup, control characters or repeated spaces; empty when it is missing or
-   * far too long to be a reason. The caller asks {@link #tooLong} first, so oversized input is
-   * never taken for a missing reason.
+   * far too long to be a reason (ask {@link #oversized} first).
    */
   public static String sanitise(String raw) {
     if (raw == null || raw.length() > MAX_INPUT) {
