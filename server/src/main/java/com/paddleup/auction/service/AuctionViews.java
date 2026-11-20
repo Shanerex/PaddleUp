@@ -122,8 +122,13 @@ final class AuctionViews {
         slot == null ? null : slot.position(),
         s.accelSize() > 0 ? s.accelSize() : null,
         slot == null ? null : slot.picks(),
-        resumeLobby.toSeconds(),
+        lobbySeconds(resumeLobby),
         s.lotsClosed());
+  }
+
+  /** Whole seconds, rounded up, so a lobby shorter than a second never reads as 0 seconds. */
+  static long lobbySeconds(Duration lobby) {
+    return lobby.plusMillis(999).toSeconds();
   }
 
   /**
