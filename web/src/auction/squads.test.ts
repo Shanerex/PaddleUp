@@ -20,7 +20,7 @@ const room = {
     stats: [],
     terminology: {},
   },
-  config: { squadMin: 3, squadMax: 5, roleMinimums: { gk: 1, def: 2 }, categoryQuotas: { "foreign-cap": 2 } },
+  config: { purse: 1000, squadMin: 3, squadMax: 5, roleMinimums: { gk: 1, def: 2 }, categoryQuotas: { "foreign-cap": 2 } },
 } as unknown as Pick<Room, "config" | "packLabels">;
 
 const players = [
@@ -55,6 +55,18 @@ describe("squadView", () => {
     const v = squadView(state(), { players }, room);
     expect(v.map((x) => x.franchiseId)).toEqual(["fa", "fb"]);
     expect(v[1]).toMatchObject({ empty: true, count: 0, spent: 0, purse: 1000, groups: [] });
+  });
+
+  it("shows a franchise the state does not list yet with an empty squad and the room's full purse", () => {
+    const before = squadView(state({ standings: [] }), { players }, room, ["fa", "fb"]);
+    expect(before.map((x) => [x.franchiseId, x.purse, x.empty, x.spent])).toEqual([
+      ["fa", 1000, true, 0],
+      ["fb", 1000, true, 0],
+    ]);
+    expect(before[0].roles.map((r) => r.need)).toEqual([1, 2]);
+    const listed = squadView(state(), { players }, room, ["fb", "fc"]);
+    expect(listed.map((x) => x.franchiseId)).toEqual(["fa", "fb", "fc"]);
+    expect(listed[1].purse).toBe(1000);
   });
 
   it("groups by pack role in pack order and lists the newest hammer first", () => {

@@ -23,6 +23,7 @@ import { MainDoneCard, NominatingPanel, SendPicksBar } from "./accelerated";
 import { BidDock } from "./bid-dock";
 import { Controls } from "./controls";
 import { Lobby } from "./lobby";
+import { SquadChip, SquadSheet } from "./my-squad";
 import { LotCard, type LotResult } from "./lot-card";
 import { AdjournedCard, ClosedCard, NoAuctionCard, Notices, hueStyle, type Toast, type Who } from "./notices";
 
@@ -236,6 +237,7 @@ function Auction({ roomId, data, reloadRoom }: { roomId: string; data: Data; rel
 
   // The Commissioner sets or moves the start. The sheet only asks; what shows is the server's reply.
   const [sheet, setSheet] = useState<"new" | "move" | "retime" | null>(null);
+  const [squadOpen, setSquadOpen] = useState(false);
   const commish = room.myRole === "commissioner";
 
   // Commissioner intents that need no form: each only asks, and the server's answer or a refusal shows.
@@ -419,7 +421,14 @@ function Auction({ roomId, data, reloadRoom }: { roomId: string; data: Data; rel
               onNotice: setControlNotice,
               onResync: () => live.resync(),
             }}
-          />
+          >
+            {me ? <SquadChip onClick={() => setSquadOpen(true)} /> : null}
+          </Controls>
+        )}
+        {!commish && me && (
+          <div className={s.chipRow}>
+            <SquadChip onClick={() => setSquadOpen(true)} />
+          </div>
         )}
         <div className={s.scroll}>
           {view.status === "main_done" ? (
@@ -541,6 +550,16 @@ function Auction({ roomId, data, reloadRoom }: { roomId: string; data: Data; rel
           onDismissAdmin={dismissAdmin}
         />
       </div>
+      {squadOpen && me && (
+        <SquadSheet
+          roomId={roomId}
+          state={state}
+          room={room}
+          me={me}
+          who={mine ? { ...mine, manager: null, mine: true } : null}
+          onClose={() => setSquadOpen(false)}
+        />
+      )}
       {scheduleSheet}
     </div>
   );

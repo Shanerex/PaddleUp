@@ -57,9 +57,15 @@ type Source = { room: Pick<Room, "config" | "packLabels">; pool: Pick<Pool, "pla
  * Every franchise's squad, read from the auction state's `standings`. Player names, roles and tags
  * come from the room's pool (the lot cards the state carries fill in for a pool not loaded yet);
  * role labels, minimums, restricted tags and their caps come from the pack's labels and the room's
- * config. Nothing here names a role, tag or currency.
+ * config. Before go-live the state has no standings; a franchise in `franchiseIds` that the state
+ * does not list shows an empty squad and the room's full purse. Nothing here names a role, tag or currency.
  */
-export function squadView(state: Pick<AuctionState, "standings" | "lastResult" | "lotOpen" | "lot" | "nextLot" | "unsoldPool">, pool: Source["pool"], room: Source["room"]): FranchiseSquad[] {
+export function squadView(
+  state: Pick<AuctionState, "standings" | "lastResult" | "lotOpen" | "lot" | "nextLot" | "unsoldPool">,
+  pool: Source["pool"],
+  room: Source["room"],
+  franchiseIds: string[] = [],
+): FranchiseSquad[] {
   const { config, packLabels: labels } = room;
   const known = new Map<string, { name: string; role: string; tags: string[] }>();
   for (const c of [state.lot, state.nextLot, state.lastResult?.card, ...(state.unsoldPool ?? [])]) if (c) known.set(c.playerId, c);
@@ -68,7 +74,10 @@ export function squadView(state: Pick<AuctionState, "standings" | "lastResult" |
   const last = state.lastResult;
   const fresh = !state.lotOpen && last?.sold && last.franchiseId ? { franchiseId: last.franchiseId, lot: last.lot } : null;
 
-  return state.standings.map((st) => {
+  const listed = new Set(state.standings.map((x) => x.franchiseId));
+  const standings = [...state.standings, ...franchiseIds.filter((id) => !listed.has(id)).map((franchiseId) => ({ franchiseId, purse: config.purse, squad: [] }))];
+
+  return standings.map((st) => {
     const players = st.squad.map((e, order) => {
       const p = known.get(e.playerId ?? "");
       return {

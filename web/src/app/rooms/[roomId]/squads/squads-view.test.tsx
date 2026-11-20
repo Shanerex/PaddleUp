@@ -32,7 +32,8 @@ vi.mock("../../../../auction/live", async (importOriginal) => ({
 }));
 
 import { getAuction, getMembers, getPool, getRoom, getTicket, type AuctionState, type Member, type Pool, type Room } from "../../../../api/client";
-import { SquadsView } from "./squads-view";
+import { startText } from "./squad-panel";
+import { FALLBACK_MS, SquadsView } from "./squads-view";
 
 afterEach(() => {
   cleanup();
@@ -282,6 +283,89 @@ describe("SquadsView live updates", () => {
     });
 
     await waitFor(() => expect(screen.queryByTestId("just-in")).toBeNull());
+    expect(screen.getAllByTestId("squad-player")).toHaveLength(3);
+  });
+});
+
+
+describe("SquadsView before the first hammer and offline", () => {
+  const scheduled = () =>
+    auction({
+      phase: "scheduled",
+      lotOpen: false,
+      lotsClosed: 0,
+      lastSeq: 1,
+      standings: [
+        { franchiseId: "fa", purse: 100_000_000, squad: [] },
+        { franchiseId: "fb", purse: 100_000_000, squad: [] },
+      ],
+    });
+
+  it("shows the empty state with the scheduled start for every franchise before the first hammer", async () => {
+    setup(scheduled());
+    render(<SquadsView roomId="room-1" />);
+
+    for (const who of [null, /Bea/]) {
+      if (who) await userEvent.click(await screen.findByRole("button", { name: who }));
+      const empty = await screen.findByTestId("squad-empty");
+      expect(empty.textContent).toContain("No players yet");
+      expect(empty.textContent).toContain(`The first hammer falls ${startText("2031-01-02T20:00:00Z")} your time.`);
+      expect(screen.getByTestId("squad-pill").textContent).toMatch(/^AUCTION /);
+      expect(screen.getByTestId("squad-purse").textContent).toBe("€100 M");
+      expect(screen.getByTestId("squad-spent").textContent).toBe("—");
+      expect(screen.getByTestId("squad-role-gk").textContent).toContain("Needs 1");
+      expect(screen.getByTestId("squad-restricted-foreign-cap").textContent).toBe("0/2");
+    }
+  });
+
+  it("takes the franchises and the full purse from the room when the state lists none yet", async () => {
+    setup({ ...scheduled(), standings: [] });
+    render(<SquadsView roomId="room-1" />);
+
+    const chips = within(await screen.findByRole("group", { name: "Franchises" })).getAllByRole("button");
+    expect(chips.map((c) => c.textContent)).toEqual(["AUYou", "BRBea"]);
+    expect((await screen.findByTestId("squad-empty")).textContent).toContain("The first hammer falls");
+    expect(screen.getByTestId("squad-purse").textContent).toBe("€100 M");
+  });
+
+  it("says nothing bought yet, not the start line, for an empty squad once the auction is under way", async () => {
+    setup();
+    render(<SquadsView roomId="room-1" />);
+
+    await userEvent.click(await screen.findByRole("button", { name: /Bea/ }));
+
+    expect(screen.getByTestId("squad-empty").textContent).toContain("Nothing bought yet.");
+    expect(screen.getByTestId("squad-pill").textContent).toBe("LIVE");
+  });
+
+  it("falls back to fetching the state on a lost connection and says so, then stops when the feed is back", async () => {
+    setup();
+    render(<SquadsView roomId="room-1" />);
+    await screen.findAllByTestId("squad-player");
+    expect(screen.queryByTestId("squads-offline")).toBeNull();
+    const reads = vi.mocked(getAuction).mock.calls.length;
+
+    // The socket drops and no ticket can be had, so the feed stays down.
+    vi.mocked(getTicket).mockRejectedValue(new Error("down"));
+    vi.mocked(getAuction).mockResolvedValue({
+      ...auction(),
+      lastSeq: 9,
+      standings: [
+        { franchiseId: "fa", purse: 70_000_000, squad: [...auction().standings[0].squad, { lot: 3, playerId: "p3", price: 5_000_000 }] },
+        { franchiseId: "fb", purse: 100_000_000, squad: [] },
+      ],
+    });
+    await act(async () => sockets[0].handlers.onClose());
+
+    expect(await screen.findByTestId("squads-offline")).toBeTruthy();
+    await waitFor(() => expect(screen.getAllByTestId("squad-player")).toHaveLength(3));
+    expect(vi.mocked(getAuction).mock.calls.length).toBeGreaterThan(reads);
+    expect(FALLBACK_MS).toBe(5000);
+
+    // The feed comes back: the note goes away and the screen keeps the newest state.
+    vi.mocked(getTicket).mockResolvedValue({ ticket: "t2" });
+    await userEvent.click(screen.getByRole("button", { name: "Retry" }));
+    await waitFor(() => expect(screen.queryByTestId("squads-offline")).toBeNull());
     expect(screen.getAllByTestId("squad-player")).toHaveLength(3);
   });
 });

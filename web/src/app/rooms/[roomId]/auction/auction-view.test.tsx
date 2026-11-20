@@ -14,6 +14,7 @@ vi.mock("../../../../api/client", async (importOriginal) => ({
   ...(await importOriginal<typeof import("../../../../api/client")>()),
   getRoom: vi.fn(),
   getMembers: vi.fn(),
+  getPool: vi.fn(),
   bid: vi.fn(),
   setReady: vi.fn(),
   scheduleAuction: vi.fn(),
@@ -50,7 +51,7 @@ vi.mock("../../../../auction/useLive", async () => {
   };
 });
 
-import { ApiError, bid, getMembers, getRoom, scheduleAuction, sendControl, sendPicks, setReady, type AuctionState, type Member, type Room } from "../../../../api/client";
+import { ApiError, bid, getMembers, getPool, getRoom, scheduleAuction, sendControl, sendPicks, setReady, type AuctionState, type Member, type Room } from "../../../../api/client";
 import { AuctionView } from "./auction-view";
 
 const NOW = Date.parse("2030-03-01T10:00:00Z");
@@ -632,5 +633,78 @@ describe("AuctionView", () => {
       await screen.findByTestId("no-auction-card");
       expect(screen.queryByTestId("schedule-from-card")).toBeNull();
     });
+  });
+});
+
+describe("AuctionView squad chip and sheet", () => {
+  const players = [
+    { id: "p1", name: "Fake 1", role: "gk", tags: [], basePrice: 1, set: "S", country: "X", origin: "source" },
+    { id: "p2", name: "Fake 2", role: "gk", tags: [], basePrice: 1, set: "S", country: "X", origin: "source" },
+  ];
+  const withSquad = (n: number, purse: number): AuctionState =>
+    live({
+      lastSeq: 3 + n,
+      standings: [
+        { franchiseId: "fa", purse, squad: players.slice(0, n).map((p, i) => ({ lot: i + 1, playerId: p.id, price: 5_000_000 })) },
+        { franchiseId: "fb", purse: 100_000_000, squad: [] },
+      ],
+    });
+  const squadRoom = () =>
+    room({
+      config: { ...config, roleMinimums: { gk: 2 } },
+      packLabels: { ...labels, roles: [{ id: "gk", label: "Goalkeeper", short: "GK" }], restrictedCategories: [] },
+    });
+
+  beforeEach(() => {
+    vi.mocked(getPool).mockResolvedValue({ players } as never);
+    vi.mocked(getRoom).mockResolvedValue(squadRoom());
+  });
+
+  it("opens the viewer's own squad in a sheet built from the squad panel, and closes it", async () => {
+    feed.set(snap(withSquad(1, 95_000_000)));
+    const user = userEvent.setup();
+    render(<AuctionView roomId="r1" />);
+
+    await user.click(await screen.findByTestId("squad-chip"));
+
+    const sheet = await screen.findByRole("dialog", { name: "My squad" });
+    const body = await within(sheet).findByTestId("squad-sheet");
+    expect(body.getAttribute("data-franchise")).toBe("fa");
+    expect(within(sheet).getByRole("heading", { name: "Ace FC" })).toBeTruthy();
+    expect(within(body).getByTestId("squad-purse").textContent).toBe("€95 M");
+    expect(within(body).getByTestId("sheet-role-gk").textContent).toContain("1/2");
+    expect(within(body).getByTestId("squad-player").textContent).toContain("Fake 1");
+
+    await user.click(within(sheet).getByRole("button", { name: "Close" }));
+    expect(screen.queryByRole("dialog", { name: "My squad" })).toBeNull();
+  });
+
+  it("updates the open sheet when a hammer changes the state, with no reload", async () => {
+    feed.set(snap(withSquad(1, 95_000_000)));
+    const user = userEvent.setup();
+    render(<AuctionView roomId="r1" />);
+    await user.click(await screen.findByTestId("squad-chip"));
+    await screen.findByTestId("squad-sheet");
+
+    act(() => feed.set(snap(withSquad(2, 90_000_000))));
+
+    await waitFor(() => expect(screen.getAllByTestId("squad-player")).toHaveLength(2));
+    expect(screen.getByTestId("squad-purse").textContent).toBe("€90 M");
+    expect(screen.getByTestId("sheet-role-gk").textContent).toContain("2/2");
+    expect(getPool).toHaveBeenCalledTimes(1);
+  });
+
+  it("puts the chip in the Commissioner's row beside Controls, and gives no chip without a franchise", async () => {
+    feed.set(snap(withSquad(0, 100_000_000)));
+    vi.mocked(getRoom).mockResolvedValue({ ...squadRoom(), myRole: "commissioner" } as Room);
+    const { unmount } = render(<AuctionView roomId="r1" />);
+    const controls = await screen.findByTestId("controls-chip");
+    expect(controls.parentElement?.contains(screen.getByTestId("squad-chip"))).toBe(true);
+    unmount();
+
+    vi.mocked(getRoom).mockResolvedValue({ ...squadRoom(), myRole: "commissioner", myFranchiseId: null } as Room);
+    render(<AuctionView roomId="r1" />);
+    await screen.findByTestId("controls-chip");
+    expect(screen.queryByTestId("squad-chip")).toBeNull();
   });
 });

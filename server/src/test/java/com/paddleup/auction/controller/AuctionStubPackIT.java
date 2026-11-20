@@ -148,6 +148,56 @@ class AuctionStubPackIT extends AbstractAuctionIT {
         roomId, commissioner, List.of(a, b), List.of(franchise(roomId, a), franchise(roomId, b)));
   }
 
+  /**
+   * 10-squads AC-6 on the second pack: every member reads every franchise's squad from the state's
+   * standings, and the room's own pool, labels and config hold what the squad view names (roles,
+   * tags, role minimums, the restricted category and its cap), so it renders with no core change.
+   */
+  @Test
+  void theSquadViewHasEverythingItNeedsOnTheStubPack() throws Exception {
+    Room room = stubRoom(3, 6, 100_000_000, 2);
+    goLive(room);
+    assertThat(outcome(bid(room, room.manager(0), 1, 300_000))).isEqualTo("accepted");
+    advance(10);
+    tick();
+
+    JsonNode pool = body(get(room.manager(1), "/api/rooms/" + room.id() + "/pool"));
+    JsonNode lot1 = null;
+    for (JsonNode p : pool.get("players")) {
+      if (p.get("name").asText().equals("Fake 1")) {
+        lot1 = p;
+      }
+    }
+    assertThat(lot1).isNotNull();
+    assertThat(lot1.get("role").asText()).isEqualTo("gk");
+    assertThat(lot1.get("tags").get(0).asText()).isEqualTo("local");
+
+    JsonNode roomJson = body(get(room.manager(1), "/api/rooms/" + room.id()));
+    assertThat(roomJson.get("config").get("categoryQuotas").get("foreign-cap").asInt())
+        .isEqualTo(2);
+    assertThat(roomJson.get("packLabels").get("roles").findValuesAsText("id"))
+        .containsExactly("gk", "def", "mid", "fwd");
+    assertThat(roomJson.get("packLabels").get("restrictedCategories").get(0).get("tag").asText())
+        .isEqualTo("foreign");
+
+    for (Person who : List.of(room.manager(0), room.manager(1), room.commissioner())) {
+      JsonNode standings = state(room, who).get("standings");
+      assertThat(standings).hasSize(2);
+      JsonNode mine = null;
+      for (JsonNode st : standings) {
+        if (st.get("franchiseId").asText().equals(room.franchise(0).toString())) {
+          mine = st;
+        }
+      }
+      assertThat(mine).isNotNull();
+      assertThat(mine.get("purse").asLong()).isEqualTo(100_000_000 - 300_000);
+      assertThat(mine.get("squad")).hasSize(1);
+      assertThat(mine.get("squad").get(0).get("playerId").asText())
+          .isEqualTo(lot1.get("id").asText());
+      assertThat(mine.get("squad").get(0).get("price").asLong()).isEqualTo(300_000);
+    }
+  }
+
   /** Lot {@code lot} closes with no bid and the next one opens. */
   private void skipLot() {
     advance(20);

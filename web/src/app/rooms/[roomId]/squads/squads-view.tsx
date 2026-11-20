@@ -1,8 +1,8 @@
 "use client";
 
 import Link from "next/link";
-import { useMemo, useState } from "react";
-import type { Member } from "../../../../api/client";
+import { useEffect, useMemo, useState } from "react";
+import { getAuction, type AuctionState, type Member } from "../../../../api/client";
 import { squadView } from "../../../../auction/squads";
 import { useLive } from "../../../../auction/useLive";
 import { HOME } from "../../../../auth/redirect";
@@ -15,6 +15,32 @@ import { frameOf, usePoolData } from "../use-pool-data";
 import { SquadChips, SquadPanel, type SquadPhase, type SquadWho } from "./squad-panel";
 import s from "./squads.module.css";
 
+/** How often the page asks for the state itself while the live feed is down. */
+export const FALLBACK_MS = 5000;
+
+/**
+ * The state fetched directly while the live feed is down or stale, so the squads still move on a
+ * lost connection. Nothing is fetched while the feed is live; the answer is dropped once it is.
+ */
+function useFallbackState(roomId: string, active: boolean): AuctionState | null {
+  const [fetched, setFetched] = useState<AuctionState | null>(null);
+  useEffect(() => {
+    if (!active) return;
+    let stopped = false;
+    const pull = () =>
+      getAuction(roomId)
+        .then((next) => !stopped && setFetched(next))
+        .catch(() => {});
+    void pull();
+    const id = setInterval(() => void pull(), FALLBACK_MS);
+    return () => {
+      stopped = true;
+      clearInterval(id);
+    };
+  }, [roomId, active]);
+  return active ? fetched : null;
+}
+
 /**
  * Squads (docs/design Room `squadLive`, `squadEmpty`): one chip per franchise and the picked
  * franchise's squad. The auction state's `standings` carry every franchise's squad and purse; the
@@ -22,8 +48,11 @@ import s from "./squads.module.css";
  */
 export function SquadsView({ roomId }: { roomId: string }) {
   const { data, missing, loadFailed, load } = usePoolData(roomId);
-  const { snapshot } = useLive(roomId);
-  const state = snapshot.state;
+  const { live, snapshot } = useLive(roomId);
+  // A lost or stale connection falls back to fetching the state until the feed is back.
+  const offline = snapshot.connection === "reconnecting";
+  const fetched = useFallbackState(roomId, offline);
+  const state = fetched && (!snapshot.state || fetched.lastSeq >= snapshot.state.lastSeq) ? fetched : snapshot.state;
   const [picked, setPicked] = useState<string | null>(null);
 
   const f = frameOf(data);
@@ -39,7 +68,7 @@ export function SquadsView({ roomId }: { roomId: string }) {
     return byId;
   }, [members, room?.myFranchiseId]);
 
-  const squads = useMemo(() => (state && room && pool ? squadView(state, pool, room) : null), [state, room, pool]);
+  const squads = useMemo(() => (state && room && pool ? squadView(state, pool, room, [...whoOf.keys()]) : null), [state, room, pool, whoOf]);
 
   if (missing) {
     return (
@@ -82,17 +111,30 @@ export function SquadsView({ roomId }: { roomId: string }) {
       pre={f.pre}
       active="squads"
       banners={
-        loadFailed && data ? (
-          <div className={r.banner} role="alert" style={{ background: "var(--bad-tint)" }}>
-            <Icon name="error" style={{ color: "var(--bad)" }} />
-            <span className={r.bannerText}>
-              <b>Couldn&apos;t refresh the room.</b> <span className={r.bannerSub}>Showing what we had. {loadFailed}</span>
-            </span>
-            <Button size="S" variant="outline" onClick={() => void load()}>
-              Retry
-            </Button>
-          </div>
-        ) : undefined
+        <>
+          {offline && (
+            <div className={r.banner} role="status" style={{ background: "var(--warn-tint)" }} data-testid="squads-offline">
+              <Icon name="sync_problem" style={{ color: "var(--warn-ink)" }} />
+              <span className={r.bannerText}>
+                <b>Live updates paused.</b> <span className={r.bannerSub}>Checking for new buys every few seconds.</span>
+              </span>
+              <Button size="S" variant="outline" onClick={live.retry}>
+                Retry
+              </Button>
+            </div>
+          )}
+          {loadFailed && data && (
+            <div className={r.banner} role="alert" style={{ background: "var(--bad-tint)" }}>
+              <Icon name="error" style={{ color: "var(--bad)" }} />
+              <span className={r.bannerText}>
+                <b>Couldn&apos;t refresh the room.</b> <span className={r.bannerSub}>Showing what we had. {loadFailed}</span>
+              </span>
+              <Button size="S" variant="outline" onClick={() => void load()}>
+                Retry
+              </Button>
+            </div>
+          )}
+        </>
       }
     >
       <div className={s.page}>
