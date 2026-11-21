@@ -10,12 +10,12 @@ export function clearBody(sheet: StatSheet): string {
   const owner = sheet.owner;
   const to = sheet.providerOnly;
   const title = matchTitle({ n: sheet.match.n, label: null });
-  if (to === null || to === undefined) {
-    const drop = owner ? `, and ${owner.name} ${now > 0 ? `drop ${now}` : "stay level"}` : "";
-    return `${title} has no provider data for ${sheet.name}, so clearing leaves nothing: ${now} pts to none${drop}. The audit log keeps both entries.`;
-  }
-  const delta = to - now;
+  // Rounded like the toast's signed(), so decimal points never show float noise.
+  const delta = Math.round(((to ?? 0) - now) * 100) / 100;
   const ownerLine = owner ? `, and ${owner.name} ${delta < 0 ? `drop ${Math.abs(delta)}` : delta > 0 ? `gain ${delta}` : "stay level"}` : "";
+  if (to === null || to === undefined) {
+    return `${title} has no provider data for ${sheet.name}, so clearing leaves nothing: ${now} pts to none${ownerLine}. The audit log keeps both entries.`;
+  }
   return `${title} goes back to provider data for ${sheet.name}: ${now} to ${to} pts${ownerLine}. The audit log keeps both entries.`;
 }
 

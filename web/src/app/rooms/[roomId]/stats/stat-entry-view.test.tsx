@@ -37,6 +37,7 @@ import {
   type StatMatch,
   type StatSheet,
 } from "../../../../api/client";
+import { clearBody } from "./clear-confirm";
 import { StatEntryView } from "./stat-entry-view";
 
 const room = (over: Record<string, unknown> = {}) =>
@@ -262,6 +263,13 @@ describe("StatEntryView clear (App Screens 9j)", () => {
     expect(screen.queryByRole("dialog")).toBeNull();
   });
 
+  it("rounds the owner's change and names the gain when there is no provider data (PR 18 review)", () => {
+    expect(clearBody(sheet({ points: 40.2, providerOnly: 46.5 } as never))).toContain("40.2 to 46.5 pts, and Kochi Kites gain 6.3.");
+    expect(clearBody(sheet({ points: -2, providerOnly: null } as never))).toContain("-2 pts to none, and Kochi Kites gain 2.");
+    expect(clearBody(sheet({ points: 7.1, providerOnly: null } as never))).toContain("7.1 pts to none, and Kochi Kites drop 7.1.");
+    expect(clearBody(sheet({ points: 0, providerOnly: null } as never))).toContain("0 pts to none, and Kochi Kites stay level.");
+  });
+
   it("offers Clear override only when the player has a manual value", async () => {
     vi.mocked(getStatSheet).mockResolvedValue(sheet({ fields: [field({ provider: 46 })] } as never));
     await open();
@@ -272,6 +280,25 @@ describe("StatEntryView clear (App Screens 9j)", () => {
 });
 
 describe("StatEntryView stale tab (AC-19)", () => {
+  it("keeps the newly picked player's sheet when an earlier save answers late (PR 18 review)", async () => {
+    let answer: (r: SheetResult) => void = () => {};
+    vi.mocked(saveStatSheet).mockReturnValue(new Promise<SheetResult>((resolve) => (answer = resolve)));
+    const user = userEvent.setup();
+    await open();
+
+    await user.type(screen.getByLabelText("Typed · Kind a"), "2");
+    await user.click(screen.getByTestId("stat-save"));
+    vi.mocked(getStatSheet).mockResolvedValue(sheet({ poolPlayerId: "p2", name: "Kiran Desai", owner: null, points: null, providerOnly: null, fields: [field({ provider: 7 })] } as never));
+    await user.click(screen.getAllByTestId("stat-player")[1]);
+    await waitFor(() => expect((screen.getByLabelText("Score") as HTMLInputElement).value).toBe("7"));
+    await user.type(screen.getByLabelText("Score"), "1");
+
+    await act(async () => answer(result()));
+
+    expect((await screen.findByRole("status")).textContent).toContain("Sid Rao 52 to 58 pts.");
+    expect((screen.getByLabelText("Score") as HTMLInputElement).value).toBe("71");
+    expect(screen.queryByText("Kochi Kites · ATT · provider said 46 pts")).toBeNull();
+  });
   it("reads again when the tab comes back and shows the provider's new values; a save still works", async () => {
     await open();
     vi.mocked(getStatSheet).mockResolvedValue(sheet({ fields: [field({ provider: 99, manual: 52 }), field({ stat: "extra", label: "Extra", provider: 9 })] } as never));

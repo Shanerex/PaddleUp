@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
 import {
   ApiError,
   clearStatFields,
@@ -147,6 +147,13 @@ export function StatEntryView({ roomId }: { roomId: string }) {
   // The open match: the one picked, else the newest that has started.
   const activeMatch = matchId ?? (matches ? ([...matches].reverse().find((m) => m.chip !== "UPCOMING")?.matchId ?? null) : null);
 
+  // The match and player on screen now, so a save or clear that answers after the pick changed leaves the form alone.
+  const selection = useRef({ match: activeMatch, player: playerId });
+  useLayoutEffect(() => {
+    selection.current = { match: activeMatch, player: playerId };
+  }, [activeMatch, playerId]);
+  const stillOn = (match: string, player: string) => selection.current.match === match && selection.current.player === player;
+
   // A match opens its players; the first one (players with a value come first) opens its sheet.
   useEffect(() => {
     if (activeMatch === null) return;
@@ -198,11 +205,14 @@ export function StatEntryView({ roomId }: { roomId: string }) {
   const mine = members.find((m) => m.franchise && m.franchise.id === room?.myFranchiseId)?.franchise;
 
   /** Shows what a save or clear answered with, and refreshes the lists behind it. */
-  function applied(result: SheetResult, cleared: boolean) {
-    setSheet(result.sheet);
-    setDraft({});
-    setHints({});
-    setBanner(null);
+  function applied(result: SheetResult, cleared: boolean, match: string, player: string) {
+    if (stillOn(match, player)) {
+      reads.current.sheet++; // a sheet read sent before the save answered is older than this sheet
+      setSheet(result.sheet);
+      setDraft({});
+      setHints({});
+      setBanner(null);
+    }
     const owner = result.franchise && result.sheet.owner ? { name: result.sheet.owner.name, delta: result.franchise.delta } : null;
     const title = matchTitle({ n: result.sheet.match.n, label: null });
     setToast(
@@ -214,7 +224,8 @@ export function StatEntryView({ roomId }: { roomId: string }) {
     if (activeMatch) void readPlayers(activeMatch);
   }
 
-  function refused(e: unknown) {
+  function refused(e: unknown, match: string, player: string) {
+    if (!stillOn(match, player)) return;
     const refusal = sheet && e instanceof ApiError && e.status === 422 ? refusalOf(sheet, e.body) : null;
     if (refusal) {
       setHints(refusal.hints);
@@ -244,9 +255,10 @@ export function StatEntryView({ roomId }: { roomId: string }) {
       return;
     }
     setBusy(true);
-    saveStatSheet(roomId, activeMatch, playerId, built.body.fields)
-      .then((result) => applied(result, false))
-      .catch(refused)
+    const [match, player] = [activeMatch, playerId];
+    saveStatSheet(roomId, match, player, built.body.fields)
+      .then((result) => applied(result, false, match, player))
+      .catch((e) => refused(e, match, player))
       .finally(() => setBusy(false));
   }
 
@@ -254,10 +266,11 @@ export function StatEntryView({ roomId }: { roomId: string }) {
     if (!sheet || !activeMatch || !playerId || busy) return;
     setBusy(true);
     setClearError(null);
-    clearStatFields(roomId, activeMatch, playerId, overriddenFields(sheet))
+    const [match, player] = [activeMatch, playerId];
+    clearStatFields(roomId, match, player, overriddenFields(sheet))
       .then((result) => {
         setClearing(false);
-        applied(result, true);
+        applied(result, true, match, player);
       })
       .catch((e) => setClearError(explainStat(e).message))
       .finally(() => setBusy(false));
