@@ -15,6 +15,9 @@ import { frameOf, usePoolData } from "../use-pool-data";
 import { pillText, SquadChips, SquadPanel, type SquadPhase, type SquadWho } from "./squad-panel";
 import s from "./squads.module.css";
 
+/** The state the squad view reads for a room with no auction yet: no standings, no lot. */
+const NO_AUCTION: Parameters<typeof squadView>[0] = { standings: [], lotOpen: false, unsoldPool: [] };
+
 /** How often the page asks for the state itself while the live feed is down. */
 export const FALLBACK_MS = 5000;
 
@@ -76,7 +79,12 @@ export function SquadsView({ roomId }: { roomId: string }) {
     return byId;
   }, [members, room?.myFranchiseId]);
 
-  const squads = useMemo(() => (state && room && pool ? squadView(state, pool, room, [...whoOf.keys()]) : null), [state, room, pool, whoOf]);
+  // No auction yet (the state read is a 404): every franchise still shows its empty squad and full purse.
+  const noAuction = !state && snapshot.missing;
+  const squads = useMemo(
+    () => (room && pool && (state || noAuction) ? squadView(state ?? NO_AUCTION, pool, room, [...whoOf.keys()]) : null),
+    [state, noAuction, room, pool, whoOf],
+  );
 
   if (missing) {
     return (
@@ -155,7 +163,19 @@ export function SquadsView({ roomId }: { roomId: string }) {
           Room
         </Link>
         {!room || !pool ? (
-          <div aria-busy="true" className={s.skeleton} />
+          loadFailed ? (
+            <div className={r.card} role="alert">
+              <b>Couldn&apos;t load the squads.</b>
+              <span className={r.note}>{loadFailed}</span>
+              <div>
+                <Button variant="primary" onClick={() => void load()}>
+                  Try again
+                </Button>
+              </div>
+            </div>
+          ) : (
+            <div aria-busy="true" className={s.skeleton} />
+          )
         ) : (
           <>
             {chips.length > 0 && <SquadChips items={chips} pickedId={shownId} onPick={setPicked} />}

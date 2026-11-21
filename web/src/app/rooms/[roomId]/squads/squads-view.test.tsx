@@ -355,6 +355,29 @@ describe("SquadsView before the first hammer and offline", () => {
     expect(screen.getByTestId("squad-purse").textContent).toBe("€100 M");
   });
 
+  it("shows every franchise's empty squad and full purse when the room has no auction yet", async () => {
+    const { ApiError } = await import("../../../../api/client");
+    setup();
+    vi.mocked(getAuction).mockRejectedValue(new ApiError(404, null));
+    render(<SquadsView roomId="room-1" />);
+
+    const empty = await screen.findByTestId("squad-empty");
+    expect(empty.textContent).toContain("The auction isn't scheduled yet.");
+    expect(screen.getByTestId("squad-pill").textContent).toBe("NOT SCHEDULED");
+    expect(screen.getByTestId("squad-purse").textContent).toBe("€100 M");
+  });
+
+  it("says it couldn't load the squads, with a retry, when the first room read fails", async () => {
+    const { ApiError } = await import("../../../../api/client");
+    setup();
+    vi.mocked(getRoom).mockRejectedValueOnce(new ApiError(500, null));
+    render(<SquadsView roomId="room-1" />);
+
+    expect((await screen.findByRole("alert")).textContent).toContain("Couldn't load the squads.");
+    await userEvent.click(screen.getByRole("button", { name: "Try again" }));
+    expect(await screen.findByTestId("squad-panel")).toBeTruthy();
+  });
+
   it("says nothing bought yet, not the start line, for an empty squad once the auction is under way", async () => {
     setup();
     render(<SquadsView roomId="room-1" />);

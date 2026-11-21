@@ -19,7 +19,7 @@ for root in "${ROOTS[@]}"; do
     --exclude='*.png' --exclude='*.ico' 2>/dev/null || true)
   # Allowlist: SpringApplication.run( and the web intent helper (intents.run( and its definition), and two design-source lines that
   # use "run" as a verb, "Run the auction" (Home.dc.html) and "You run this one" (Room.dc.html lobbyAdmin).
-  hits=$(printf '%s\n' "$hits" | sed -e "s/SpringApplication\.run(//" -e "s/intents\.run(//" -e "s/async run<T>(//" -e 's/Run the auction\.//' -e "s/You run this one,//" \
+  hits=$(printf '%s\n' "$hits" | sed -e "s/SpringApplication\.run(//g" -e "s/intents\.run(//g" -e "s/async run<T>(//g" -e 's/Run the auction\.//g' -e "s/You run this one,//g" \
     | grep -iE -w "$WORDS" || true)
   sym=$(grep -rn "$SYMBOLS" "$root" --exclude='*.test.*' --exclude-dir=test 2>/dev/null || true)
   if [ -n "$hits$sym" ]; then

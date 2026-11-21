@@ -13,7 +13,7 @@ Design refs: Room.dc.html `squadLive`, `squadEmpty` (App Screens 9d-9e); Auction
 - AC-3: After a hammer the open view shows the new player, count, purse and bars within one live update, with no reload; a just-bought player is marked until the next lot opens.
 - AC-4: Before the first hammer every franchise shows the `squadEmpty` state with the scheduled start, and a stale or lost connection falls back to a fetch of the state.
 - AC-5: The auction screen's squad chip opens the viewer's own squad in a sheet built from the same component, matching AuctionSquad.dc.html at 390 and 1440.
-- AC-6: Every franchise's squad is visible to every room member; a non-member gets the existing 403. The stub football pack renders AC-1 to AC-2 with zero core changes.
+- AC-6: Every franchise's squad is visible to every room member; a non-member gets the existing 404 (architecture.md: non-members get 404 on auction routes). The stub football pack renders AC-1 to AC-2 with zero core changes.
 
 ## Tasks
 - [x] T-1 (AC-1, AC-2): Pure `squadView(state, pool, config)` in `web/src/auction/squads.ts` with unit tests: grouping, newest first, role bars, restricted count, empty squad.

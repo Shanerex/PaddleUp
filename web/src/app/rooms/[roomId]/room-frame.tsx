@@ -93,7 +93,7 @@ export function RoomFrame({
           )}
           {item("room", `/rooms/${roomId}`, "home", "Room")}
           {loaded && item("pool", `/rooms/${roomId}/pool`, "groups", "Player pool")}
-          {loaded && item("squads", `/rooms/${roomId}/squads`, "shield", "Squads")}
+          {loaded && item("squads", `/rooms/${roomId}/squads`, "groups", "Squad")}
           {loaded && item("sets", `/rooms/${roomId}/sets`, "format_list_numbered", "Set order")}
           {commish && pre && (
             <Link href={`/rooms/${roomId}/setup?section=basics`} className={s.navItem}>
