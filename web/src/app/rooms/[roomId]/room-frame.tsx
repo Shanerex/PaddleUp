@@ -8,7 +8,7 @@ import { Icon } from "../../../ui/Icon";
 import { Monogram, StateChip } from "../../../ui/kit";
 import s from "./room.module.css";
 
-export type RoomNav = "room" | "pool" | "sets";
+export type RoomNav = "room" | "pool" | "sets" | "squads";
 
 /**
  * The team-coloured room page frame (docs/design Room `setup*`, `pool*`, `sets*`): header, the
@@ -65,7 +65,7 @@ export function RoomFrame({
             <h1 className={s.roomName}>{roomName}</h1>
             {loaded && state && <StateChip state={state} onTeam label={chip} />}
           </div>
-          <span className={s.headerSub}>{active === "pool" ? "Player pool" : active === "sets" ? "Set order" : sub}</span>
+          <span className={s.headerSub}>{active === "pool" ? "Player pool" : active === "sets" ? "Set order" : active === "squads" ? "Squads" : sub}</span>
         </div>
         {loaded &&
           (mine ? (
@@ -93,6 +93,7 @@ export function RoomFrame({
           )}
           {item("room", `/rooms/${roomId}`, "home", "Room")}
           {loaded && item("pool", `/rooms/${roomId}/pool`, "groups", "Player pool")}
+          {loaded && item("squads", `/rooms/${roomId}/squads`, "groups", "Squad")}
           {loaded && item("sets", `/rooms/${roomId}/sets`, "format_list_numbered", "Set order")}
           {commish && pre && (
             <Link href={`/rooms/${roomId}/setup?section=basics`} className={s.navItem}>

@@ -1,0 +1,521 @@
+/*
+ * Squads: Room.dc.html `squadLive`, `squadEmpty` (App Screens 9d-9e) and AuctionSquad.dc.html.
+ * Team world: --team tokens come from the `.team` element. Colours only from tokens. Every number
+ * that changes live is DM Mono tabular (`.num`).
+ */
+.page {
+  max-width: 1040px;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.chips {
+  display: flex;
+  gap: 8px;
+  overflow-x: auto;
+  padding: 2px;
+}
+
+.chip {
+  display: flex;
+  flex-shrink: 0;
+  align-items: center;
+  gap: 8px;
+  padding: 5px 12px 5px 5px;
+  border: 0;
+  border-radius: 12px;
+  background: var(--surface-2);
+  font: inherit;
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--ink);
+  cursor: pointer;
+}
+
+.chip[aria-pressed="true"] {
+  background: var(--surface);
+  box-shadow: 0 0 0 2px var(--ink);
+}
+
+.panel {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+  align-items: flex-start;
+}
+
+.summary {
+  flex: 1 1 280px;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  padding: 18px;
+  border-radius: 24px;
+  background: var(--surface);
+  box-shadow: var(--shadow);
+}
+
+.who {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.whoText {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.whoName {
+  font-size: 17px;
+  font-weight: 800;
+}
+
+.whoSub {
+  font-size: 12px;
+  color: var(--ink-2);
+}
+
+.pill {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  padding: 3px 8px;
+  border-radius: 999px;
+  background: var(--surface-2);
+  color: var(--ink-2);
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.05em;
+  white-space: nowrap;
+}
+
+.pillLive {
+  background: var(--bad-tint);
+  color: var(--bad);
+}
+
+.pillDot {
+  width: 6px;
+  height: 6px;
+  border-radius: 3px;
+  background: currentColor;
+}
+
+.tiles {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+
+.tile {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+  padding: 10px 12px;
+  border-radius: 14px;
+  background: var(--surface-2);
+}
+
+.tileLabel,
+.sectionLabel {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  color: var(--ink-2);
+}
+
+.sectionLabel {
+  font-size: 11px;
+}
+
+.tileValue {
+  font-size: 17px;
+  white-space: nowrap;
+}
+
+.tileOf {
+  font-size: 13px;
+  color: var(--ink-2);
+}
+
+.minimums {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.minRow {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.minRole {
+  flex-shrink: 0;
+  width: 44px;
+  padding: 3px 0;
+  border-radius: 6px;
+  font-size: 11px;
+  font-weight: 800;
+  text-align: center;
+}
+
+.track {
+  flex: 1;
+  height: 8px;
+  border-radius: 4px;
+  background: var(--surface-2);
+  overflow: hidden;
+}
+
+.trackFill {
+  height: 100%;
+  background: var(--team);
+}
+
+.fillMet {
+  background: var(--ok);
+}
+
+.minValue {
+  width: 36px;
+  text-align: right;
+  font-size: 13px;
+}
+
+.minNote {
+  width: 64px;
+  text-align: right;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.footnote {
+  font-size: 12px;
+  color: var(--ink-2);
+}
+
+.players {
+  flex: 2 1 380px;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.emptyCard {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  padding: 28px;
+  border-radius: 24px;
+  background: var(--surface);
+  box-shadow: var(--shadow);
+  text-align: center;
+}
+
+.emptyTile {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 56px;
+  height: 56px;
+  border-radius: 17px;
+  background: var(--team-tint);
+  color: var(--team-ink);
+  font-family: "Material Symbols Rounded";
+  font-size: 28px;
+}
+
+.emptyTitle {
+  font-size: 17px;
+  font-weight: 700;
+}
+
+.emptyBody {
+  max-width: 36ch;
+  font-size: 14px;
+  line-height: 1.5;
+  color: var(--ink-2);
+}
+
+.group {
+  padding: 6px 6px 4px;
+  border-radius: 24px;
+  background: var(--surface);
+  box-shadow: var(--shadow);
+}
+
+.groupHead {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 10px 6px;
+}
+
+.groupRole {
+  padding: 4px 9px;
+  border-radius: 7px;
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.groupPaid {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--ink-2);
+}
+
+.row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px;
+  border-top: 1px solid var(--line);
+}
+
+.rowNew {
+  border-radius: 12px;
+  background: var(--team-tint);
+}
+
+.rowText {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.rowName {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.rowSub {
+  font-size: 12px;
+  color: var(--ink-2);
+}
+
+.rowPrice {
+  font-size: 14px;
+  font-weight: 500;
+  white-space: nowrap;
+}
+
+.justIn {
+  padding: 2px 6px;
+  border-radius: 5px;
+  background: var(--team);
+  color: var(--on-team);
+  font-size: 9px;
+  font-weight: 800;
+  letter-spacing: 0.05em;
+}
+
+/* The connection notes above the panel. */
+.note {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 14px;
+  border-radius: 16px;
+  background: var(--warn-tint);
+  color: var(--warn-ink);
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.noteText {
+  flex: 1;
+}
+
+.skeleton {
+  height: 320px;
+  border-radius: 24px;
+  background: var(--surface-2);
+}
+
+/* The auction screen's squad sheet (AuctionSquad.dc.html). */
+.sheet {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  width: 100%;
+  color: var(--ink);
+}
+
+.sheetBlock {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.sheetRow {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+}
+
+.sheetOf {
+  font-size: 12px;
+  color: var(--ink-2);
+}
+
+.sheetPurse {
+  font-size: 26px;
+  font-weight: 500;
+  letter-spacing: -0.03em;
+}
+
+.sheetBar {
+  display: flex;
+  height: 10px;
+  border-radius: 5px;
+  background: var(--team);
+  overflow: hidden;
+}
+
+.sheetSpent {
+  background: var(--ink-3);
+}
+
+.legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  font-size: 11px;
+  color: var(--ink-2);
+}
+
+.legendItem {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.legendDot {
+  width: 8px;
+  height: 8px;
+  border-radius: 2px;
+}
+
+.roleGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(64px, 1fr));
+  gap: 6px;
+}
+
+.roleChip {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  padding: 8px 4px;
+  border-radius: 12px;
+}
+
+.roleChipLabel {
+  font-size: 10px;
+  font-weight: 800;
+}
+
+.roleChipValue {
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.sheetLine {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 13px;
+}
+
+.sheetMuted {
+  color: var(--ink-2);
+}
+
+.slots {
+  display: flex;
+  gap: 3px;
+}
+
+.slot {
+  width: 14px;
+  height: 14px;
+  border-radius: 4px;
+}
+
+.sheetPlayers {
+  display: flex;
+  flex-direction: column;
+  border-top: 1px solid var(--line);
+  padding-top: 6px;
+}
+
+.sheetPlayer {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 0;
+  border-bottom: 1px solid var(--line);
+}
+
+.sheetRole {
+  width: 34px;
+  padding: 3px 6px;
+  border-radius: 6px;
+  font-size: 10px;
+  font-weight: 800;
+  text-align: center;
+  box-sizing: border-box;
+}
+
+.sheetName {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 2px 6px;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.sheetTags {
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--ink-2);
+}
+
+.back {
+  align-self: flex-start;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  height: 36px;
+  margin: -6px 0 -6px -6px;
+  padding: 0 12px 0 6px;
+  border-radius: 12px;
+  color: var(--team-ink);
+  font-size: 14px;
+  font-weight: 700;
+  text-decoration: none;
+}
+
+@media (min-width: 1100px) {
+  .back {
+    display: none;
+  }
+}

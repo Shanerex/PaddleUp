@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useState } from "react";
+import { useState, type ReactNode } from "react";
 import { useIntentRetry } from "../../../../api/intent";
 import { sendControl, type AuctionState, type ControlAction, type IntentResult } from "../../../../api/client";
 import { controlRefusal, type Notice } from "../../../../auction/copy";
@@ -43,7 +43,7 @@ type Mode = "list" | "skip" | "reopen" | "adjourn" | null;
  * adjourn). Shown to the Commissioner only, with or without a franchise. Each button only asks: the
  * server decides, and what shows afterwards is the server's reply.
  */
-export function Controls({ ctx }: { ctx: ControlsContext }) {
+export function Controls({ ctx, children }: { ctx: ControlsContext; children?: ReactNode }) {
   const [mode, setMode] = useState<Mode>(null);
   const [busy, setBusy] = useState(false);
   const [reason, setReason] = useState("");
@@ -137,6 +137,7 @@ export function Controls({ ctx }: { ctx: ControlsContext }) {
           <Icon name="shield_person" size={18} />
           Controls
         </button>
+        {children}
       </div>
       {mode === "list" && (
         <Sheet label="Commissioner controls" title="Commissioner controls" onClose={closeAll}>
