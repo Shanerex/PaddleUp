@@ -20,9 +20,9 @@ describe("IntentRetry", () => {
   it("run reuses the id after a failed send and takes a new one after any answer", async () => {
     const retry = new IntentRetry();
     const seen: string[] = [];
-    await expect(retry.run("pause", async (id) => { seen.push(id); throw new Error("offline"); })).rejects.toThrow("offline");
-    await retry.run("pause", async (id) => { seen.push(id); return "rejected"; });
-    await retry.run("pause", async (id) => { seen.push(id); return "accepted"; });
+    await expect(retry.submit("pause", async (id) => { seen.push(id); throw new Error("offline"); })).rejects.toThrow("offline");
+    await retry.submit("pause", async (id) => { seen.push(id); return "rejected"; });
+    await retry.submit("pause", async (id) => { seen.push(id); return "accepted"; });
     expect(seen[1]).toBe(seen[0]);
     expect(seen[2]).not.toBe(seen[0]);
   });

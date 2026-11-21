@@ -246,7 +246,7 @@ function Auction({ roomId, data, reloadRoom }: { roomId: string; data: Data; rel
     if (controlBusy) return;
     setControlBusy(true);
     try {
-      const answer = await intents.run(action, (id) => sendControl(roomId, action, {}, id));
+      const answer = await intents.submit(action, (id) => sendControl(roomId, action, {}, id));
       if (answer.outcome === "rejected") setControlNotice(controlRefusal(action, answer.reason, state?.lot?.no ?? null, null));
       live.resync();
     } catch (e) {
@@ -268,7 +268,7 @@ function Auction({ roomId, data, reloadRoom }: { roomId: string; data: Data; rel
     if (picksBusy || selected.length === 0) return;
     setPicksBusy(true);
     try {
-      const answer = await intents.run(`picks:${selected.join(",")}`, (id) => sendPicks(roomId, selected, id));
+      const answer = await intents.submit(`picks:${selected.join(",")}`, (id) => sendPicks(roomId, selected, id));
       if (answer.outcome === "rejected") setControlNotice(controlRefusal("picks", answer.reason, null, null));
       live.resync();
     } catch (e) {
@@ -284,7 +284,7 @@ function Auction({ roomId, data, reloadRoom }: { roomId: string; data: Data; rel
         roomId={roomId}
         mode={sheet}
         startsAt={sheet === "retime" ? (state?.resumeAt ?? undefined) : state?.startsAt}
-        send={sheet === "retime" ? (iso) => intents.run(`change_time:${iso}`, (id) => sendControl(roomId, "change_time", { resumeAt: iso }, id)) : undefined}
+        send={sheet === "retime" ? (iso) => intents.submit(`change_time:${iso}`, (id) => sendControl(roomId, "change_time", { resumeAt: iso }, id)) : undefined}
         // With no auction there is no state to sample; the page clock is fed by every request's Date header.
         serverNow={() => (clock.ready ? clock.now() : pageClock.ready ? pageClock.now() : null)}
         poolHref={`/rooms/${roomId}/pool`}
