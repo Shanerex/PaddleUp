@@ -1,0 +1,6 @@
+tags: [scoring, manual-entry, packs, event-log]
+Each field a manual save or clear changes is one row in `scoring_override_log` (append-only by trigger: seq, actor, UTC instant, match, player, stat, event type, old, new; a clear has new = NULL), written in the same transaction as the override and the recompute. `scoring_rule_log` was not reused: its before/after columns hold whole rule sets and mixing shapes worsens both reads.
+`scoring_matches.label` is an optional display name (60 characters); the screens show "Match n · label", n being the rank by start then match id, because the dataset carries no team names.
+A pack stat may declare optional `min` and `max` (0 <= min <= max <= 1,000,000, whole bounds for whole stats; absent means 0 to 1,000,000). No shipped pack uses them yet, so the cricket pack is unchanged and its flag stats render as counts; yes/no is drawn only for a whole stat with max 1.
+Save and clear work per field under the room's rule row lock, taken before the overrides are read; owners come from the read-only `AuctionResultsPort`, built from the auction log.
+Rejected: a JSONB sheet per save with overrides derived from the latest (breaks per-field upsert and clear and the `EffectiveStats` merge).

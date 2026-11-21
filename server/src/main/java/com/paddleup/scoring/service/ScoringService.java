@@ -72,6 +72,53 @@ public class ScoringService {
     return new Rules(row.rules(), row.version());
   }
 
+  /**
+   * Takes the room's rule row lock (creating the row first) and holds it to the end of the
+   * transaction. Every write that changes stats or points takes it before reading what it changes,
+   * so two writes for one room go one after the other.
+   */
+  void lockRoom(UUID roomId) {
+    ruleSets.insertIfAbsent(roomId, clock.instant());
+    ruleSets.lock(roomId).orElseThrow();
+  }
+
+  /**
+   * The points one pool player's stats give in a match under the room's current rules; null when
+   * the player has no value. With {@code withOverrides} false only the provider values count. It
+   * writes nothing and takes no lock.
+   */
+  @Transactional(readOnly = true)
+  EvaluationDto evaluate(UUID roomId, String matchId, UUID poolPlayerId, boolean withOverrides) {
+    ScoringInputsDto inputs = roomPort.ruleInputs(roomId);
+    ScoringPlayerDto player =
+        roomPort.players(roomId).stream()
+            .filter(p -> p.poolPlayerId().equals(poolPlayerId))
+            .findFirst()
+            .orElse(null);
+    if (player == null) {
+      return null;
+    }
+    var provider =
+        inputs.datasetId() == null || player.sourcePlayerId() == null
+            ? List.<com.paddleup.scoring.model.ProviderValue>of()
+            : stats.providerValues(inputs.datasetId(), matchId).stream()
+                .filter(v -> v.seasonPlayerId().equals(player.sourcePlayerId()))
+                .toList();
+    var overrides =
+        withOverrides
+            ? stats.overridesFor(roomId, matchId, poolPlayerId)
+            : List.<com.paddleup.scoring.model.OverrideValue>of();
+    StatLine line =
+        EffectiveStats.forPlayers(List.of(player), provider, overrides).get(poolPlayerId);
+    if (line == null) {
+      return null;
+    }
+    RuleSetRow row = ruleSets.find(roomId).orElse(null);
+    RuleSetDto rules = row == null || row.rules() == null ? inputs.defaultRules() : row.rules();
+    return PointsEvaluator.evaluate(
+        rules, inputs.appearanceRule(), inputs.stats(), player.role(), line);
+  }
+
   /** Scores every pool player that has a stat in this match, replacing the stored rows. */
   @Transactional
   public void recompute(UUID roomId, String matchId) {

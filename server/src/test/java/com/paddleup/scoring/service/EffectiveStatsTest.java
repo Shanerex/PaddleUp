@@ -19,9 +19,9 @@ class EffectiveStatsTest {
   final UUID quiet = UUID.randomUUID();
   final List<ScoringPlayerDto> players =
       List.of(
-          new ScoringPlayerDto(sourced, season, "BAT"),
-          new ScoringPlayerDto(added, null, "BAT"),
-          new ScoringPlayerDto(quiet, UUID.randomUUID(), "BAT"));
+          new ScoringPlayerDto(sourced, season, "P", "BAT"),
+          new ScoringPlayerDto(added, null, "P", "BAT"),
+          new ScoringPlayerDto(quiet, UUID.randomUUID(), "P", "BAT"));
 
   ProviderValue provider(String stat, String type, String value) {
     return new ProviderValue(season, stat, type, new BigDecimal(value));

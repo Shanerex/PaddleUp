@@ -79,6 +79,23 @@ public class PointsRepository {
         });
   }
 
+  /** The stored row of one player in one match; empty when the player has none. */
+  public java.util.Optional<PointsRow> find(UUID roomId, String matchId, UUID poolPlayerId) {
+    return jdbc.sql(
+            "SELECT * FROM scoring_points WHERE room_id = ? AND match_id = ?"
+                + " AND pool_player_id = ?")
+        .params(roomId, matchId, poolPlayerId)
+        .query(
+            (rs, n) ->
+                new PointsRow(
+                    rs.getObject("pool_player_id", UUID.class),
+                    rs.getBigDecimal("total"),
+                    json.read(rs.getString("lines"), LINES),
+                    rs.getInt("rule_set_version"),
+                    Sql.instant(rs, "computed_at")))
+        .optional();
+  }
+
   /** The room's rows for one match, by pool player id. */
   public List<PointsRow> forMatch(UUID roomId, String matchId) {
     return jdbc.sql(

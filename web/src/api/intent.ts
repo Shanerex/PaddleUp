@@ -28,7 +28,7 @@ export class IntentRetry {
   }
 
   /** Sends with this action's id; any answer settles it, a thrown error keeps it for the retry. */
-  async run<T>(key: string, send: (intentId: string) => Promise<T>): Promise<T> {
+  async submit<T>(key: string, send: (intentId: string) => Promise<T>): Promise<T> {
     const answer = await send(this.id(key));
     this.settle();
     return answer;

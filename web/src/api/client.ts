@@ -40,6 +40,15 @@ export type Ticket = components["schemas"]["TicketDto"];
 export type AuditPage = components["schemas"]["AuditDto"];
 export type AuditEntry = components["schemas"]["AuditEntryDto"];
 export type PickCount = components["schemas"]["PickCountDto"];
+export type StatMatch = components["schemas"]["StatMatchDto"];
+export type StatMatchPlayer = components["schemas"]["StatMatchPlayerDto"];
+export type MatchPlayers = components["schemas"]["MatchPlayersDto"];
+export type StatSheet = components["schemas"]["StatSheetViewDto"];
+export type SheetField = components["schemas"]["SheetFieldDto"];
+/** One refused field in a 422 `invalid_stat_sheet` body (error bodies are not in the OpenAPI schema). */
+export type SheetFieldError = { stat: string; eventType: string; min?: number | null; max?: number | null; reason: string };
+export type SheetResult = components["schemas"]["SheetResultDto"];
+export type StatOwner = components["schemas"]["OwnerDto"];
 /** What a Commissioner control can be: the server's action names. */
 export type ControlAction =
   | "pause"
@@ -322,4 +331,46 @@ export async function getAudit(id: string, kind: string = "all", after = 0, limi
 /** A single-use ticket for the auction socket. */
 export async function getTicket(id: string): Promise<Ticket> {
   return (await send("POST", `${room(id)}/auction/ticket`)).json();
+}
+
+const statEntry = (id: string) => `${room(id)}/stat-entry`;
+const statPlayer = (id: string, matchId: string, playerId: string) =>
+  `${statEntry(id)}/matches/${encodeURIComponent(matchId)}/players/${encodeURIComponent(playerId)}`;
+
+/** The room's dataset matches in play order with their source chip. Commissioner only. */
+export async function getStatMatches(id: string): Promise<StatMatch[]> {
+  return (await request(`${statEntry(id)}/matches`)).json();
+}
+
+/** The whole pool for one match, players with a value first. 409 `match_not_started` for an upcoming match. */
+export async function getStatMatchPlayers(id: string, matchId: string): Promise<MatchPlayers> {
+  return (await request(`${statEntry(id)}/matches/${encodeURIComponent(matchId)}/players`)).json();
+}
+
+/** One player's sheet with the provider and manual value of every field. */
+export async function getStatSheet(id: string, matchId: string, playerId: string): Promise<StatSheet> {
+  return (await request(statPlayer(id, matchId, playerId))).json();
+}
+
+/**
+ * Saves the filled fields (blank fields are left out by the caller). A refused sheet is a 422
+ * whose body names every bad field and writes nothing; points recompute in the same request.
+ */
+export async function saveStatSheet(
+  id: string,
+  matchId: string,
+  playerId: string,
+  fields: { stat: string; eventType: string; value: number }[],
+): Promise<SheetResult> {
+  return (await send("PUT", statPlayer(id, matchId, playerId), { fields })).json();
+}
+
+/** Removes the manual value of each named field and recomputes. */
+export async function clearStatFields(
+  id: string,
+  matchId: string,
+  playerId: string,
+  fields: { stat: string; eventType: string }[],
+): Promise<SheetResult> {
+  return (await send("POST", `${statPlayer(id, matchId, playerId)}/clear`, { fields })).json();
 }

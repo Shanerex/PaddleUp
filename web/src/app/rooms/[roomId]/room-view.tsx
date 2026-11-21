@@ -41,6 +41,7 @@ import { Icon } from "../../../ui/Icon";
 import { Monogram } from "../../../ui/kit";
 import { ConfirmSheet, Sheet, sheetStyles, Toast } from "../../../ui/Sheet";
 import { AuctionControlsCard, AuditLink } from "./auction-controls-card";
+import { StatEntryCard } from "./stat-entry-card";
 import { RoomFrame } from "./room-frame";
 import s from "./room.module.css";
 
@@ -253,6 +254,8 @@ export function RoomView({ roomId, note }: { roomId: string; note?: string }) {
   const sub = !room ? "" : mine ? `${mine.name}${commish ? " · Commissioner" : ""}` : "Commissioner · no franchise";
   const advanceTo = (room?.advanceTo ?? []).filter((t) => ADVANCE[t]);
   const noAuction = data?.noAuction ?? false;
+  // Manual stat entry needs the room's season data and an auction that is live or later.
+  const hasStatEntry = !!room && !isPreAuction(room.state) && data?.pool?.hasPool === true && data.pool.datasetVersion != null;
   const canSchedule = !!room && (room.advanceTo.includes("auction_scheduled") || (room.state === "auction_scheduled" && noAuction));
   const nextSteps = [
     ...advanceTo.map((to) => ({ key: to, ...ADVANCE[to]!, onClick: () => open({ kind: "advance", to }) })),
@@ -611,6 +614,8 @@ export function RoomView({ roomId, note }: { roomId: string; note?: string }) {
               {commish && (room.state === "auction_live" || room.state === "auction_scheduled") && <AuctionControlsCard room={room} members={members} />}
 
               {room.state === "auction_live" && <AuditLink roomId={roomId} />}
+
+              {commish && hasStatEntry && <StatEntryCard roomId={roomId} />}
 
               {commish && !mine && pre && (
                 <div className={s.callout}>

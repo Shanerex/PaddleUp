@@ -673,3 +673,96 @@
 .auditChevron {
   color: var(--ink-3);
 }
+
+/* MANUAL STAT ENTRY card (Room `commishLive`, App Screens 9a). */
+.statHead {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.statTag {
+  font-size: 10px;
+  font-weight: 800;
+  padding: 3px 7px;
+  border-radius: 6px;
+  background: var(--warn-tint);
+  color: var(--warn-ink);
+}
+
+.statRows {
+  display: flex;
+  flex-direction: column;
+}
+
+.statRow {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 4px;
+  border-top: 1px solid var(--line);
+  color: var(--ink);
+  text-decoration: none;
+}
+
+.statRow:first-child {
+  border-top: 0;
+}
+
+.statN {
+  width: 28px;
+  font-family: "DM Mono", monospace;
+  font-variant-numeric: tabular-nums;
+  font-size: 12px;
+  color: var(--ink-2);
+}
+
+.statName {
+  flex: 1;
+  min-width: 0;
+  font-weight: 700;
+  font-size: 14px;
+}
+
+.statChip {
+  font-size: 10px;
+  font-weight: 800;
+  padding: 3px 7px;
+  border-radius: 6px;
+  white-space: nowrap;
+}
+
+.chip_info {
+  background: var(--info-tint);
+  color: var(--info);
+}
+
+.chip_warn {
+  background: var(--warn-tint);
+  color: var(--warn-ink);
+}
+
+.chip_bad {
+  background: var(--bad-tint);
+  color: var(--bad);
+}
+
+.chip_quiet,
+.chip_empty {
+  background: var(--surface-2);
+  color: var(--ink-3);
+}
+
+.statOpen {
+  height: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  border-radius: 12px;
+  background: var(--team);
+  color: var(--on-team);
+  font-size: 14px;
+  font-weight: 700;
+  text-decoration: none;
+}

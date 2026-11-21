@@ -4,6 +4,7 @@ import com.fasterxml.jackson.annotation.JsonInclude;
 import com.paddleup.rooms.dto.Violation;
 import com.paddleup.rooms.exception.RoomForbiddenException;
 import com.paddleup.rooms.exception.RoomNotFoundException;
+import com.paddleup.scoring.dto.SheetFieldErrorDto;
 import java.util.List;
 import org.springframework.beans.TypeMismatchException;
 import org.springframework.http.HttpStatus;
@@ -20,9 +21,10 @@ import org.springframework.web.bind.annotation.RestControllerAdvice;
 class ScoringExceptionHandler {
 
   @JsonInclude(JsonInclude.Include.NON_NULL)
-  record Body(String error, String message, List<Violation> violations) {
+  record Body(
+      String error, String message, List<Violation> violations, List<SheetFieldErrorDto> fields) {
     static Body of(String error, String message) {
-      return new Body(error, message, null);
+      return new Body(error, message, null, null);
     }
   }
 
@@ -44,7 +46,19 @@ class ScoringExceptionHandler {
   @ExceptionHandler(InvalidRuleSetException.class)
   ResponseEntity<Body> invalid(InvalidRuleSetException e) {
     return ResponseEntity.status(HttpStatus.UNPROCESSABLE_ENTITY)
-        .body(new Body("invalid_rule_set", e.getMessage(), e.violations()));
+        .body(new Body("invalid_rule_set", e.getMessage(), e.violations(), null));
+  }
+
+  @ExceptionHandler(InvalidStatSheetException.class)
+  ResponseEntity<Body> invalidSheet(InvalidStatSheetException e) {
+    return ResponseEntity.status(HttpStatus.UNPROCESSABLE_ENTITY)
+        .body(new Body(e.code(), e.getMessage(), null, e.fields()));
+  }
+
+  @ExceptionHandler(MatchRefusedException.class)
+  ResponseEntity<Body> matchRefused(MatchRefusedException e) {
+    return ResponseEntity.status(e.conflict() ? HttpStatus.CONFLICT : HttpStatus.NOT_FOUND)
+        .body(Body.of(e.code(), e.getMessage()));
   }
 
   @ExceptionHandler(InvalidRequestException.class)

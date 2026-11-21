@@ -9,6 +9,7 @@ import com.paddleup.packs.dto.RuleDto;
 import com.paddleup.packs.dto.StatDto;
 import com.paddleup.packs.dto.TagDto;
 import com.paddleup.packs.exception.PackViolation;
+import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -18,6 +19,8 @@ import java.util.stream.Collectors;
 
 /** The checks applied to a pack after it parsed. Each violation carries a stable check code. */
 class PackValidator {
+
+  private static final BigDecimal STAT_LIMIT = BigDecimal.valueOf(1_000_000);
 
   static final Set<Integer> SUPPORTED_SCHEMA_VERSIONS = Set.of(1);
 
@@ -95,6 +98,10 @@ class PackValidator {
                 "stat '%s' group must be plain text of at most %d characters"
                     .formatted(stat.id(), PackDisplayRules.STAT_GROUP_MAX)));
       }
+    }
+
+    for (StatDto stat : pack.statSchema()) {
+      statBounds(stat, pack, file, out);
     }
 
     for (PresetDto preset : pack.presets()) {
@@ -399,6 +406,30 @@ class PackValidator {
   }
 
   /** The rules in order, with the rule nested in each role-conditional following its parent. */
+  /** A stat's optional limits must satisfy 0 <= min <= max <= 1,000,000, whole for a whole stat. */
+  private void statBounds(StatDto stat, PackDto pack, String file, List<PackViolation> out) {
+    BigDecimal min = stat.min();
+    BigDecimal max = stat.max();
+    if (min == null && max == null) {
+      return;
+    }
+    BigDecimal lo = min == null ? BigDecimal.ZERO : min;
+    BigDecimal hi = max == null ? STAT_LIMIT : max;
+    boolean fractional =
+        stat.whole()
+            && ((min != null && min.stripTrailingZeros().scale() > 0)
+                || (max != null && max.stripTrailingZeros().scale() > 0));
+    if (lo.signum() < 0 || hi.compareTo(STAT_LIMIT) > 0 || lo.compareTo(hi) > 0 || fractional) {
+      out.add(
+          violation(
+              file,
+              pack,
+              "stat-bounds",
+              "stat '%s' limits must satisfy 0 <= min <= max <= 1000000, whole for a whole stat"
+                  .formatted(stat.id())));
+    }
+  }
+
   private static List<RuleDto> flatten(List<RuleDto> rules) {
     var all = new ArrayList<RuleDto>();
     for (RuleDto rule : rules) {

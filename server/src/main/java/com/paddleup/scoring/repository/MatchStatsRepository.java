@@ -1,5 +1,7 @@
 package com.paddleup.scoring.repository;
 
+import com.paddleup.scoring.model.FieldKey;
+import com.paddleup.scoring.model.MatchSummary;
 import com.paddleup.scoring.model.OverrideValue;
 import com.paddleup.scoring.model.ProviderValue;
 import com.paddleup.scoring.util.Sql;
@@ -29,14 +31,20 @@ public class MatchStatsRepository {
     this.template = template;
   }
 
-  /** Adds the match or moves its scheduled start. */
-  public void upsertMatch(UUID datasetId, String matchId, Instant startsAt) {
+  /**
+   * Adds the match or moves its scheduled start. A null label keeps the label the match already
+   * has.
+   */
+  public void upsertMatch(UUID datasetId, String matchId, Instant startsAt, String label) {
     jdbc.sql(
             """
-            INSERT INTO scoring_matches (dataset_id, match_id, starts_at) VALUES (?, ?, ?)
-            ON CONFLICT (dataset_id, match_id) DO UPDATE SET starts_at = EXCLUDED.starts_at
+            INSERT INTO scoring_matches (dataset_id, match_id, starts_at, label)
+            VALUES (?, ?, ?, ?)
+            ON CONFLICT (dataset_id, match_id) DO UPDATE
+            SET starts_at = EXCLUDED.starts_at,
+                label = COALESCE(EXCLUDED.label, scoring_matches.label)
             """)
-        .params(datasetId, matchId, Sql.utc(startsAt))
+        .params(datasetId, matchId, Sql.utc(startsAt), label)
         .update();
   }
 
@@ -46,6 +54,42 @@ public class MatchStatsRepository {
         .params(datasetId, matchId)
         .query(Boolean.class)
         .single();
+  }
+
+  /** The scheduled start of a dataset match; empty for an unknown match. */
+  public Optional<Instant> matchStart(UUID datasetId, String matchId) {
+    return jdbc.sql("SELECT starts_at FROM scoring_matches WHERE dataset_id = ? AND match_id = ?")
+        .params(datasetId, matchId)
+        .query((rs, n) -> Sql.instant(rs, "starts_at"))
+        .optional();
+  }
+
+  /**
+   * Every match of the dataset in play order (start, then id) with its provider row count and the
+   * number of players this room has a manual value for, in one query.
+   */
+  public List<MatchSummary> matchSummaries(UUID roomId, UUID datasetId) {
+    return jdbc.sql(
+            """
+            SELECT m.match_id, m.starts_at, m.label,
+                   (SELECT count(*) FROM scoring_stat_values v
+                     WHERE v.dataset_id = m.dataset_id AND v.match_id = m.match_id) AS provider_rows,
+                   (SELECT count(DISTINCT o.pool_player_id) FROM scoring_stat_overrides o
+                     WHERE o.room_id = ? AND o.match_id = m.match_id) AS override_players
+            FROM scoring_matches m
+            WHERE m.dataset_id = ?
+            ORDER BY m.starts_at, m.match_id
+            """)
+        .params(roomId, datasetId)
+        .query(
+            (rs, n) ->
+                new MatchSummary(
+                    rs.getString("match_id"),
+                    Sql.instant(rs, "starts_at"),
+                    rs.getString("label"),
+                    rs.getInt("provider_rows"),
+                    rs.getInt("override_players")))
+        .list();
   }
 
   /** The earliest scheduled start among the dataset's matches; empty when it has none. */
@@ -123,6 +167,34 @@ public class MatchStatsRepository {
             """)
         .params(roomId, matchId, v.poolPlayerId(), v.stat(), v.eventType(), v.value())
         .update();
+  }
+
+  /** The room's manual values for one player in one match. */
+  public List<OverrideValue> overridesFor(UUID roomId, String matchId, UUID poolPlayerId) {
+    return jdbc.sql(
+            "SELECT pool_player_id, stat, event_type, value FROM scoring_stat_overrides"
+                + " WHERE room_id = ? AND match_id = ? AND pool_player_id = ?"
+                + " ORDER BY stat, event_type")
+        .params(roomId, matchId, poolPlayerId)
+        .query(
+            (rs, n) ->
+                new OverrideValue(
+                    rs.getObject("pool_player_id", UUID.class),
+                    rs.getString("stat"),
+                    rs.getString("event_type"),
+                    rs.getBigDecimal("value")))
+        .list();
+  }
+
+  /** Removes the player's manual values for exactly these fields; other fields stay. */
+  public void deleteOverrides(UUID roomId, String matchId, UUID poolPlayerId, List<FieldKey> keys) {
+    for (FieldKey key : keys) {
+      jdbc.sql(
+              "DELETE FROM scoring_stat_overrides WHERE room_id = ? AND match_id = ?"
+                  + " AND pool_player_id = ? AND stat = ? AND event_type = ?")
+          .params(roomId, matchId, poolPlayerId, key.stat(), key.eventType())
+          .update();
+    }
   }
 
   public List<OverrideValue> overrides(UUID roomId, String matchId) {

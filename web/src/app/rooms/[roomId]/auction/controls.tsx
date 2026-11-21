@@ -70,7 +70,7 @@ export function Controls({ ctx, children }: { ctx: ControlsContext; children?: R
     setBusy(true);
     ctx.onNotice(null);
     try {
-      const answer = await intents.run(`${action}:${JSON.stringify(extra)}`, (id) => sendControl(ctx.roomId, action, extra, id));
+      const answer = await intents.submit(`${action}:${JSON.stringify(extra)}`, (id) => sendControl(ctx.roomId, action, extra, id));
       if (answer.outcome === "rejected") {
         ctx.onNotice(controlRefusal(action, answer.reason, extra.lot ?? lot?.no ?? null, ctx.nameOf(state.leaderFranchiseId)));
       }
@@ -269,7 +269,7 @@ export function Controls({ ctx, children }: { ctx: ControlsContext; children?: R
             titleRow
             serverNow={ctx.serverNow}
             poolHref={`/rooms/${ctx.roomId}/pool`}
-            send={(iso): Promise<IntentResult> => intents.run(`adjourn:${iso}`, (id) => sendControl(ctx.roomId, "adjourn", { resumeAt: iso }, id))}
+            send={(iso): Promise<IntentResult> => intents.submit(`adjourn:${iso}`, (id) => sendControl(ctx.roomId, "adjourn", { resumeAt: iso }, id))}
             onClose={() => setMode("list")}
             onDone={() => {
               closeAll();

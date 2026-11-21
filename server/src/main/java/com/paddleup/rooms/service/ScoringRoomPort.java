@@ -2,6 +2,7 @@ package com.paddleup.rooms.service;
 
 import com.paddleup.accounts.dto.UserId;
 import com.paddleup.rooms.dto.RoomAccessDto;
+import com.paddleup.rooms.dto.ScoringFranchiseDto;
 import com.paddleup.rooms.dto.ScoringInputsDto;
 import com.paddleup.rooms.dto.ScoringPlayerDto;
 import com.paddleup.rooms.exception.RoomForbiddenException;
@@ -95,7 +96,15 @@ public class ScoringRoomPort {
   @Transactional(readOnly = true)
   public List<ScoringPlayerDto> players(UUID roomId) {
     return pools.players(roomId).stream()
-        .map(p -> new ScoringPlayerDto(p.id(), p.sourcePlayerId(), p.role()))
+        .map(p -> new ScoringPlayerDto(p.id(), p.sourcePlayerId(), p.name(), p.role()))
+        .toList();
+  }
+
+  /** The room's franchises, by name, for owner chips. */
+  @Transactional(readOnly = true)
+  public List<ScoringFranchiseDto> franchises(UUID roomId) {
+    return this.franchises.findByRoom(roomId).stream()
+        .map(f -> new ScoringFranchiseDto(f.id(), f.name(), f.monogram(), f.colour()))
         .toList();
   }
 
