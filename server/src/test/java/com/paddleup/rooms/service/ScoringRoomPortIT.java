@@ -132,6 +132,7 @@ class ScoringRoomPortIT extends AbstractRoomsIT {
     var added = players.stream().filter(p -> p.sourcePlayerId() == null).toList();
     assertThat(added).hasSize(1);
     assertThat(added.get(0).role()).isEqualTo("WK");
+    assertThat(added.get(0).name()).isEqualTo("Hand Added");
     assertThat(players).extracting("role").contains("BAT", "BOWL", "AR", "WK");
   }
 
@@ -145,5 +146,29 @@ class ScoringRoomPortIT extends AbstractRoomsIT {
     assertThat(port.roomsOnDataset(dataset))
         .containsExactlyInAnyOrder(id(), UUID.fromString(second))
         .doesNotContain(UUID.fromString(third));
+  }
+
+  @Test
+  void franchisesListsTheRoomsTeamsWithNameShortNameAndColour() {
+    var teams = port.franchises(id());
+
+    assertThat(teams).isNotEmpty();
+    var mine =
+        teams.stream()
+            .filter(
+                t ->
+                    t.id()
+                        .equals(
+                            jdbc.queryForObject(
+                                "SELECT id FROM franchises WHERE room_id = ? AND owner_user_id = ?",
+                                UUID.class,
+                                id(),
+                                userId(manager))))
+            .findFirst()
+            .orElseThrow();
+    assertThat(mine.name()).isNotBlank();
+    assertThat(mine.shortName()).isNotBlank();
+    assertThat(mine.colour()).isEqualTo("sky");
+    assertThat(port.franchises(UUID.randomUUID())).isEmpty();
   }
 }

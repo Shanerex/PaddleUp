@@ -4,6 +4,22 @@
  */
 
 export interface paths {
+    "/api/rooms/{roomId}/stat-entry/matches/{matchId}/players/{poolPlayerId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["sheet"];
+        put: operations["save"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/rooms/{roomId}/scoring/rules": {
         parameters: {
             query?: never;
@@ -126,6 +142,22 @@ export interface paths {
         get: operations["mine"];
         put?: never;
         post: operations["create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/rooms/{roomId}/stat-entry/matches/{matchId}/players/{poolPlayerId}/clear": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["clear"];
         delete?: never;
         options?: never;
         head?: never;
@@ -436,6 +468,38 @@ export interface paths {
         patch: operations["update"];
         trace?: never;
     };
+    "/api/rooms/{roomId}/stat-entry/matches": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["matches"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/rooms/{roomId}/stat-entry/matches/{matchId}/players": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["matchPlayers"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/rooms/{roomId}/scoring/rules/log": {
         parameters: {
             query?: never;
@@ -444,6 +508,22 @@ export interface paths {
             cookie?: never;
         };
         get: operations["ruleLog"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/rooms/{roomId}/scoring/override-log": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["overrideLog"];
         put?: never;
         post?: never;
         delete?: never;
@@ -616,6 +696,71 @@ export interface paths {
 export type webhooks = Record<string, never>;
 export interface components {
     schemas: {
+        FieldValueDto: {
+            stat: string;
+            eventType?: string | null;
+            value?: number | null;
+        };
+        SaveSheetRequest: {
+            fields?: components["schemas"]["FieldValueDto"][];
+        };
+        FranchiseDeltaDto: {
+            /** Format: uuid */
+            id: string;
+            delta: number;
+        };
+        OwnerDto: {
+            /** Format: uuid */
+            id: string;
+            name: string;
+            shortName: string;
+            colour: string;
+        };
+        SheetFieldDto: {
+            stat: string;
+            eventType: string;
+            label: string;
+            kind: string;
+            unit?: string | null;
+            group?: string | null;
+            min: number;
+            max: number;
+            input: string;
+            provider?: number | null;
+            manual?: number | null;
+        };
+        SheetResultDto: {
+            before?: number | null;
+            after?: number | null;
+            providerOnly?: number | null;
+            franchise?: components["schemas"]["FranchiseDeltaDto"];
+            /** Format: int32 */
+            changedFields: number;
+            sheet: components["schemas"]["StatSheetViewDto"];
+        };
+        StatMatchDto: {
+            matchId: string;
+            /** Format: int32 */
+            n: number;
+            label?: string | null;
+            /** Format: date-time */
+            startsAt: string;
+            chip: string;
+            /** Format: int32 */
+            manualPlayers: number;
+        };
+        StatSheetViewDto: {
+            match: components["schemas"]["StatMatchDto"];
+            /** Format: uuid */
+            poolPlayerId: string;
+            name: string;
+            /** @description The role id; the room's pack gives its label */
+            role: string;
+            owner?: components["schemas"]["OwnerDto"];
+            points?: number | null;
+            providerOnly?: number | null;
+            fields: components["schemas"]["SheetFieldDto"][];
+        };
         AppearanceBonus: {
             type: "AppearanceBonus";
         } & (Omit<components["schemas"]["RuleDto"], "type"> & {
@@ -1055,6 +1200,8 @@ export interface components {
             eventTypes?: string[];
             unit?: string;
             group?: string;
+            min?: number;
+            max?: number;
         };
         TagDto: {
             id?: string;
@@ -1070,6 +1217,13 @@ export interface components {
             presetId: string;
             name: string;
             competition?: string;
+        };
+        ClearFieldsRequest: {
+            fields?: components["schemas"]["FieldRefDto"][];
+        };
+        FieldRefDto: {
+            stat: string;
+            eventType?: string | null;
         };
         RevertRequest: {
             /** Format: int32 */
@@ -1248,6 +1402,24 @@ export interface components {
             /** Format: date-time */
             serverNow: string;
         };
+        MatchPlayersDto: {
+            match: components["schemas"]["StatMatchDto"];
+            /** Format: int32 */
+            withValues: number;
+            /** Format: int32 */
+            poolSize: number;
+            players: components["schemas"]["StatMatchPlayerDto"][];
+        };
+        StatMatchPlayerDto: {
+            /** Format: uuid */
+            poolPlayerId: string;
+            name: string;
+            /** @description The role id; the room's pack gives its label */
+            role: string;
+            owner?: components["schemas"]["OwnerDto"];
+            chip?: string | null;
+            total?: number | null;
+        };
         RuleDiffDto: {
             added: string[];
             removed: string[];
@@ -1267,6 +1439,21 @@ export interface components {
             before: components["schemas"]["RuleSetDto"];
             after: components["schemas"]["RuleSetDto"];
             diff: components["schemas"]["RuleDiffDto"];
+        };
+        OverrideLogEntryDto: {
+            /** Format: int64 */
+            seq: number;
+            /** Format: uuid */
+            actor: string;
+            /** Format: date-time */
+            occurredAt: string;
+            matchId: string;
+            /** Format: uuid */
+            poolPlayerId: string;
+            stat: string;
+            eventType: string;
+            oldValue?: number | null;
+            newValue?: number | null;
         };
         MatchPointsDto: {
             matchId: string;
@@ -1390,6 +1577,58 @@ export interface components {
 }
 export type $defs = Record<string, never>;
 export interface operations {
+    sheet: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                roomId: string;
+                matchId: string;
+                poolPlayerId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["StatSheetViewDto"];
+                };
+            };
+        };
+    };
+    save: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                roomId: string;
+                matchId: string;
+                poolPlayerId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SaveSheetRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["SheetResultDto"];
+                };
+            };
+        };
+    };
     readRules: {
         parameters: {
             query?: never;
@@ -1660,6 +1899,34 @@ export interface operations {
                 };
                 content: {
                     "*/*": components["schemas"]["RoomDto"];
+                };
+            };
+        };
+    };
+    clear: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                roomId: string;
+                matchId: string;
+                poolPlayerId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ClearFieldsRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["SheetResultDto"];
                 };
             };
         };
@@ -2271,6 +2538,51 @@ export interface operations {
             };
         };
     };
+    matches: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                roomId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["StatMatchDto"][];
+                };
+            };
+        };
+    };
+    matchPlayers: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                roomId: string;
+                matchId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["MatchPlayersDto"];
+                };
+            };
+        };
+    };
     ruleLog: {
         parameters: {
             query?: never;
@@ -2289,6 +2601,31 @@ export interface operations {
                 };
                 content: {
                     "*/*": components["schemas"]["RuleLogEntryDto"][];
+                };
+            };
+        };
+    };
+    overrideLog: {
+        parameters: {
+            query?: {
+                after?: number;
+                limit?: number;
+            };
+            header?: never;
+            path: {
+                roomId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["OverrideLogEntryDto"][];
                 };
             };
         };

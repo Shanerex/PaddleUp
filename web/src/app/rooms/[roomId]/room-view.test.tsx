@@ -21,6 +21,7 @@ vi.mock("../../../api/client", async (importOriginal) => ({
   getInvite: vi.fn(),
   getPool: vi.fn(),
   getAuction: vi.fn(),
+  getStatMatches: vi.fn(),
   scheduleAuction: vi.fn(),
   advanceRoom: vi.fn(),
   issueInvite: vi.fn(),
@@ -37,6 +38,7 @@ import {
   createOwnFranchise,
   editFranchise,
   getAuction,
+  getStatMatches,
   getInvite,
   getMembers,
   getPool,
@@ -136,6 +138,7 @@ beforeEach(() => {
   vi.mocked(getRoom).mockResolvedValue(room("setup"));
   vi.mocked(getMembers).mockResolvedValue(members);
   vi.mocked(getTransitions).mockResolvedValue([]);
+  vi.mocked(getStatMatches).mockResolvedValue([]);
   vi.mocked(getAuction).mockResolvedValue({ phase: "scheduled" } as AuctionState);
   vi.mocked(getInvite).mockResolvedValue({
     code: "ABCDEFGHJKMN",
@@ -475,6 +478,68 @@ describe("RoomView auction controls card and audit link (Room commish, commishLi
 
     expect(await screen.findByTestId("audit-link")).toBeTruthy();
     expect(screen.queryByTestId("commish-controls")).toBeNull();
+  });
+});
+
+describe("RoomView manual stat entry card (Room commishLive)", () => {
+  const match = (n: number, chip: string, manualPlayers = 0, label: string | null = null) => ({
+    matchId: `m${n}`,
+    n,
+    label,
+    startsAt: "2031-04-01T10:00:00Z",
+    chip,
+    manualPlayers,
+  });
+
+  it("lists the most recent started matches with their chips and opens the stat entry route", async () => {
+    vi.mocked(getRoom).mockResolvedValue(room("auction_live", { advanceTo: [] }));
+    vi.mocked(getStatMatches).mockResolvedValue([
+      match(1, "PROVIDER"),
+      match(2, "NO_DATA"),
+      match(3, "PROVIDER_MANUAL", 1, "Final"),
+      match(4, "PROVIDER"),
+      match(5, "UPCOMING"),
+    ]);
+    render(<RoomView roomId="room-1" />);
+
+    const card = await screen.findByTestId("stat-entry-card");
+    const rows = await within(card).findAllByTestId("stat-card-match");
+    expect(rows.map((r) => r.textContent)).toEqual(["4Match 4PROVIDER", "3FinalPROVIDER + 1 MANUAL", "2Match 2NO DATA"]);
+    expect(within(card).getByText("OVERRIDES PROVIDER")).toBeTruthy();
+    expect(within(card).getByTestId("stat-entry-open").getAttribute("href")).toBe("/rooms/room-1/stats");
+  });
+
+  it("is for the Commissioner of a room with season data whose auction is live or later", async () => {
+    vi.mocked(getRoom).mockResolvedValue(room("auction_scheduled", { advanceTo: [] }));
+    render(<RoomView roomId="room-1" />);
+    await screen.findByTestId("room-state");
+    expect(screen.queryByTestId("stat-entry-card")).toBeNull();
+    cleanup();
+
+    vi.mocked(getRoom).mockResolvedValue(room("season_live", { advanceTo: [] }));
+    render(<RoomView roomId="room-1" />);
+    expect(await screen.findByTestId("stat-entry-card")).toBeTruthy();
+    cleanup();
+
+    vi.mocked(getPool).mockResolvedValue(poolOf({ hasPool: false, datasetVersion: null }));
+    render(<RoomView roomId="room-1" />);
+    await screen.findByTestId("room-state");
+    expect(screen.queryByTestId("stat-entry-card")).toBeNull();
+    cleanup();
+
+    vi.mocked(getPool).mockResolvedValue(poolOf());
+    vi.mocked(getRoom).mockResolvedValue(room("auction_live", { myRole: "manager", myFranchiseId: "f-ben", advanceTo: [] }));
+    render(<RoomView roomId="room-1" />);
+    await screen.findByTestId("audit-link");
+    expect(screen.queryByTestId("stat-entry-card")).toBeNull();
+  });
+
+  it("says so when no match has started", async () => {
+    vi.mocked(getRoom).mockResolvedValue(room("auction_live", { advanceTo: [] }));
+    vi.mocked(getStatMatches).mockResolvedValue([match(1, "UPCOMING")]);
+    render(<RoomView roomId="room-1" />);
+
+    expect(await screen.findByText("No match has started yet.")).toBeTruthy();
   });
 });
 

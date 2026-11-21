@@ -7,6 +7,8 @@ import com.paddleup.rooms.dto.ScoringPlayerDto;
 import com.paddleup.rooms.service.ScoringRoomPort;
 import com.paddleup.scoring.dto.PlayerPointsDto;
 import com.paddleup.scoring.dto.ProviderStatLineDto;
+import com.paddleup.scoring.model.OverrideValue;
+import com.paddleup.scoring.repository.MatchStatsRepository;
 import java.math.BigDecimal;
 import java.time.Instant;
 import java.util.List;
@@ -23,6 +25,7 @@ class ScoringServiceIT extends AbstractRoomsIT {
 
   @Autowired MatchStatsService matches;
   @Autowired ScoringService scoring;
+  @Autowired MatchStatsRepository overrides;
   @Autowired ScoringRoomPort port;
 
   UUID roomA;
@@ -57,6 +60,13 @@ class ScoringServiceIT extends AbstractRoomsIT {
                 playerA.sourcePlayerId(),
                 Map.of("runs", new BigDecimal(runs), "in-playing-xi", BigDecimal.ONE),
                 null)));
+  }
+
+  /** A manual value for runs, then the match recomputed, as a save would leave it. */
+  private void override(UUID room, UUID poolPlayer, String runs) {
+    overrides.upsertOverride(
+        room, "m1", new OverrideValue(poolPlayer, "runs", "", new BigDecimal(runs)));
+    scoring.recompute(room, "m1");
   }
 
   private PlayerPointsDto only(UUID room) {
@@ -117,7 +127,7 @@ class ScoringServiceIT extends AbstractRoomsIT {
   void aManualValueInOneRoomBeatsTheProviderAndStillDoesAfterAReimport() {
     provider("30");
 
-    matches.putOverride(roomA, "m1", playerA.poolPlayerId(), "runs", null, new BigDecimal("50"));
+    override(roomA, playerA.poolPlayerId(), "50");
 
     // 50 runs + 10 for the half-century + 4 for appearing; the provider's 30 is ignored.
     assertThat(only(roomA).total()).isEqualByComparingTo("64");
@@ -143,7 +153,7 @@ class ScoringServiceIT extends AbstractRoomsIT {
         roomA);
     provider("30");
 
-    matches.putOverride(roomA, "m1", added, "runs", null, new BigDecimal("7"));
+    override(roomA, added, "7");
 
     var byPlayer =
         scoring.points(roomA, "m1").stream()

@@ -111,4 +111,30 @@ class ScoringSchemaIT extends AbstractPostgresIT {
                     "INSERT INTO scoring_rule_sets (room_id, updated_at) VALUES (?, now())", room))
         .isInstanceOf(DataAccessException.class);
   }
+
+  @Test
+  void theOverrideLogRejectsUpdateDeleteAndTruncate() {
+    UUID actor = user();
+    UUID room = room(actor);
+    long seq =
+        jdbc.queryForObject(
+            "INSERT INTO scoring_override_log (room_id, actor, occurred_at, match_id,"
+                + " pool_player_id, stat, event_type, old_value, new_value)"
+                + " VALUES (?, ?, now(), 'm1', ?, 's', '', NULL, 5) RETURNING seq",
+            Long.class,
+            room,
+            actor,
+            UUID.randomUUID());
+
+    assertThatThrownBy(
+            () -> jdbc.update("UPDATE scoring_override_log SET new_value = 6 WHERE seq = ?", seq))
+        .isInstanceOf(DataAccessException.class)
+        .hasMessageContaining("append-only");
+    assertThatThrownBy(() -> jdbc.update("DELETE FROM scoring_override_log WHERE seq = ?", seq))
+        .isInstanceOf(DataAccessException.class)
+        .hasMessageContaining("append-only");
+    assertThatThrownBy(() -> jdbc.execute("TRUNCATE scoring_override_log"))
+        .isInstanceOf(DataAccessException.class)
+        .hasMessageContaining("append-only");
+  }
 }

@@ -59,6 +59,28 @@ class MatchStatsServiceIT extends AbstractRoomsIT {
   }
 
   @Test
+  void aMatchLabelRoundTripsAndAnUpsertWithoutOneKeepsIt() {
+    service.upsertMatch(datasetId, "m1", START, " Final ");
+    assertThat(label("m1")).isEqualTo("Final");
+
+    service.upsertMatch(datasetId, "m1", START.plusSeconds(60));
+    assertThat(label("m1")).isEqualTo("Final");
+
+    service.upsertMatch(datasetId, "m2", START);
+    assertThat(label("m2")).isNull();
+    assertThatThrownBy(() -> service.upsertMatch(datasetId, "m3", START, "x".repeat(61)))
+        .isInstanceOf(IllegalArgumentException.class);
+  }
+
+  private String label(String matchId) {
+    return jdbc.queryForObject(
+        "SELECT label FROM scoring_matches WHERE dataset_id = ? AND match_id = ?",
+        String.class,
+        datasetId,
+        matchId);
+  }
+
+  @Test
   void aDatasetWithNoMatchesHasNoEarliestStart() {
     assertThat(stats.earliestStart(UUID.randomUUID())).isEmpty();
     assertThat(stats.earliestStart(datasetId)).isEmpty();
@@ -104,48 +126,6 @@ class MatchStatsServiceIT extends AbstractRoomsIT {
   }
 
   @Test
-  void anOverrideIsStoredForOneRoomOnlyAndAnEarlierValueIsReplaced() {
-    service.upsertMatch(datasetId, "m1", START);
-    String other = createRoom(person());
-
-    service.putOverride(roomId, "m1", poolPlayer, "runs", null, new BigDecimal("40"));
-    service.putOverride(roomId, "m1", poolPlayer, "runs", "", new BigDecimal("41"));
-    service.putOverride(roomId, "m1", poolPlayer, "wickets", "lbw", new BigDecimal("1"));
-
-    var mine = stats.overrides(roomId, "m1");
-    assertThat(mine)
-        .extracting(OverrideValue::stat, OverrideValue::eventType)
-        .containsExactlyInAnyOrder(
-            org.assertj.core.groups.Tuple.tuple("runs", ""),
-            org.assertj.core.groups.Tuple.tuple("wickets", "lbw"));
-    assertThat(mine.stream().filter(o -> o.stat().equals("runs")).findFirst().get().value())
-        .isEqualByComparingTo("41");
-    assertThat(stats.overrides(UUID.fromString(other), "m1")).isEmpty();
-  }
-
-  @Test
-  void anOverrideForAnUnknownThingIsRefusedAndNothingIsSaved() {
-    service.upsertMatch(datasetId, "m1", START);
-    var v = new BigDecimal("1");
-
-    assertThatThrownBy(() -> service.putOverride(roomId, "zz", poolPlayer, "runs", null, v))
-        .isInstanceOf(IllegalArgumentException.class);
-    assertThatThrownBy(() -> service.putOverride(roomId, "m1", UUID.randomUUID(), "runs", null, v))
-        .isInstanceOf(IllegalArgumentException.class);
-    assertThatThrownBy(() -> service.putOverride(roomId, "m1", poolPlayer, "nope", null, v))
-        .isInstanceOf(IllegalArgumentException.class);
-    assertThatThrownBy(() -> service.putOverride(roomId, "m1", poolPlayer, "wickets", "zz", v))
-        .isInstanceOf(IllegalArgumentException.class);
-    assertThatThrownBy(
-            () -> service.putOverride(roomId, "m1", poolPlayer, "runs", null, new BigDecimal("-1")))
-        .isInstanceOf(IllegalArgumentException.class);
-    assertThatThrownBy(() -> service.putOverride(roomId, "m1", poolPlayer, "runs", null, null))
-        .isInstanceOf(IllegalArgumentException.class);
-
-    assertThat(stats.overrides(roomId, "m1")).isEmpty();
-  }
-
-  @Test
   void scoredMatchesListsMatchesWithProviderRowsOrOverrides() {
     service.upsertMatch(datasetId, "m1", START);
     service.upsertMatch(datasetId, "m2", START);
@@ -154,7 +134,7 @@ class MatchStatsServiceIT extends AbstractRoomsIT {
         datasetId,
         "m1",
         List.of(new ProviderStatLineDto(seasonPlayer, Map.of("runs", BigDecimal.ONE), null)));
-    service.putOverride(roomId, "m2", poolPlayer, "runs", null, BigDecimal.ONE);
+    stats.upsertOverride(roomId, "m2", new OverrideValue(poolPlayer, "runs", "", BigDecimal.ONE));
 
     assertThat(stats.scoredMatches(roomId, datasetId)).containsExactly("m1", "m2");
     assertThat(stats.scoredMatches(roomId, null)).containsExactly("m2");

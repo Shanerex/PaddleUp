@@ -1,0 +1,500 @@
+/* Manual stat entry (Room `statEntry`, `statEntryError`, `statEntryNoData`, `statEntrySaved`,
+   `statEntryClear`; App Screens 9f-9j). Numbers use DM Mono tabular; sizes follow the mock. */
+.page {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.title {
+  margin: 0;
+  font-size: 24px;
+  font-weight: 800;
+  letter-spacing: -0.025em;
+}
+
+.lede {
+  margin: 4px 0 0;
+  font-size: 14px;
+  color: var(--ink-2);
+}
+
+.grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+  align-items: flex-start;
+}
+
+.matchCol {
+  flex: 1 1 280px;
+  min-width: 0;
+  border-radius: 24px;
+  background: var(--surface);
+  box-shadow: var(--shadow);
+  padding: 6px;
+}
+
+.mainCol {
+  flex: 2 1 400px;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.card {
+  border-radius: 24px;
+  background: var(--surface);
+  box-shadow: var(--shadow);
+  padding: 6px;
+}
+
+.cardHead {
+  padding: 10px 10px 6px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.label {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  color: var(--ink-2);
+}
+
+.change {
+  display: none;
+  align-items: center;
+  gap: 2px;
+  border: 0;
+  padding: 0;
+  background: transparent;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--team-ink);
+  cursor: pointer;
+}
+
+/* On a phone only the open match shows, with Change to pick another (mock: `phone`). */
+@media (max-width: 719px) {
+  .change {
+    display: flex;
+  }
+  .matchRow.matchRowAside {
+    display: none;
+  }
+}
+
+.matchRow {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px;
+  border: 0;
+  border-radius: 14px;
+  background: transparent;
+  color: var(--ink);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.matchRowOn {
+  background: var(--team-tint);
+}
+
+.matchRow:disabled {
+  color: var(--ink-3);
+  cursor: not-allowed;
+}
+
+.num {
+  font-family: "DM Mono", monospace;
+  font-variant-numeric: tabular-nums;
+}
+
+.matchN {
+  font-family: "DM Mono", monospace;
+  font-variant-numeric: tabular-nums;
+  font-size: 12px;
+  color: var(--ink-2);
+  width: 28px;
+}
+
+.matchText {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.matchName {
+  font-weight: 700;
+  font-size: 14px;
+}
+
+.matchWhen {
+  font-size: 12px;
+  color: var(--ink-2);
+}
+
+.chip {
+  font-size: 10px;
+  font-weight: 800;
+  padding: 3px 7px;
+  border-radius: 6px;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.info {
+  background: var(--info-tint);
+  color: var(--info);
+}
+
+.warn {
+  background: var(--warn-tint);
+  color: var(--warn-ink);
+}
+
+.bad {
+  background: var(--bad-tint);
+  color: var(--bad);
+}
+
+.quiet {
+  background: var(--surface-2);
+  color: var(--ink-3);
+}
+
+.empty {
+  background: var(--surface-2);
+  color: var(--ink-2);
+}
+
+.playersHead {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 10px 10px 8px;
+}
+
+.playersTitle {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.h3 {
+  margin: 0;
+  font-weight: 800;
+  font-size: 17px;
+}
+
+.sub {
+  font-size: 12px;
+  color: var(--ink-2);
+}
+
+.count {
+  font-size: 12px;
+  color: var(--ink-2);
+  white-space: nowrap;
+}
+
+/* The whole pool is listed; it scrolls inside the card so the sheet below stays in reach. */
+.playerList {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  max-height: 340px;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+
+.playerRow {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px;
+  border: 0;
+  border-top: 1px solid var(--line);
+  border-radius: 0;
+  background: transparent;
+  color: var(--ink);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.playerRowOn {
+  border-radius: 12px;
+  background: var(--team-tint);
+  box-shadow: inset 3px 0 0 var(--team);
+}
+
+.role {
+  font-size: 11px;
+  font-weight: 800;
+  padding: 3px 6px;
+  border-radius: 6px;
+  flex-shrink: 0;
+}
+
+.playerName {
+  flex: 1;
+  min-width: 0;
+  font-weight: 700;
+  font-size: 14px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.ownerSlot {
+  width: 24px;
+  height: 24px;
+  flex-shrink: 0;
+  display: inline-flex;
+}
+
+.pts {
+  font-family: "DM Mono", monospace;
+  font-variant-numeric: tabular-nums;
+  font-size: 14px;
+  width: 40px;
+  text-align: right;
+  flex-shrink: 0;
+}
+
+.sheet {
+  border-radius: 24px;
+  background: var(--surface);
+  box-shadow: var(--shadow);
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.sheetHead {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+}
+
+.sheetWho {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.sheetName {
+  font-weight: 800;
+  font-size: 16px;
+}
+
+.banner {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  padding: 10px 12px;
+  border-radius: 14px;
+  background: var(--bad-tint);
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.bannerIcon {
+  color: var(--bad);
+}
+
+.fields {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
+  gap: 10px;
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+
+.fieldLabel {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--ink-2);
+}
+
+.control {
+  height: 44px;
+  border-radius: 12px;
+  background: var(--surface-2);
+  border: 1.5px solid transparent;
+  box-sizing: border-box;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 10px;
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--ink);
+}
+
+.controlManual {
+  border-color: var(--team);
+}
+
+.controlBad {
+  border-color: var(--bad);
+}
+
+.input {
+  flex: 1;
+  min-width: 0;
+  height: 100%;
+  border: 0;
+  padding: 0;
+  background: transparent;
+  color: inherit;
+  font-family: "DM Mono", monospace;
+  font-variant-numeric: tabular-nums;
+  font-size: 14px;
+  font-weight: 500;
+  outline: none;
+}
+
+.input::placeholder {
+  color: var(--ink-3);
+}
+
+.control:focus-within {
+  outline: 2px solid var(--team);
+  outline-offset: 1px;
+}
+
+.choice {
+  flex: 1;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border: 0;
+  padding: 0;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  text-align: left;
+}
+
+.blank {
+  color: var(--ink-3);
+}
+
+.fieldIcon {
+  color: var(--ink-2);
+}
+
+.hint {
+  min-height: 14px;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--bad);
+}
+
+.note {
+  font-size: 12px;
+  color: var(--ink-2);
+}
+
+.actions {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.clear {
+  height: 48px;
+  padding: 0 16px;
+  border: 0;
+  border-radius: 14px;
+  background: var(--bad-tint);
+  color: var(--bad);
+  font: inherit;
+  font-weight: 700;
+  font-size: 14px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.save {
+  flex: 1 1 200px;
+  height: 48px;
+  border: 0;
+  border-radius: 14px;
+  background: var(--team);
+  color: var(--on-team);
+  font: inherit;
+  font-weight: 700;
+  font-size: 15px;
+  cursor: pointer;
+}
+
+.save:disabled,
+.clear:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+
+.state {
+  border-radius: 24px;
+  background: var(--surface);
+  box-shadow: var(--shadow);
+  padding: 22px;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 8px;
+}
+
+.stateTitle {
+  font-weight: 800;
+  font-size: 17px;
+}
+
+.stateBody {
+  font-size: 14px;
+  color: var(--ink-2);
+}
+
+.onlyDesktop {
+  display: inline;
+}
+
+.onlyPhone {
+  display: none;
+}
+
+@media (max-width: 719px) {
+  .onlyDesktop {
+    display: none;
+  }
+  .onlyPhone {
+    display: inline;
+  }
+}
