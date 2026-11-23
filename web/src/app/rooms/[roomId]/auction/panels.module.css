@@ -1,0 +1,380 @@
+/* Rivals and Bids chips' panels: the Bids feed (AuctionFeed.dc.html), the Rivals sheet (AuctionRivals.dc.html)
+   and the Your needs card (Auction A Spotlight). Numbers that change live use DM Mono tabular (.num). */
+.sheetBody {
+  padding: 0 0 4px;
+}
+
+/* Bids feed. */
+.feed {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+}
+
+.feedRow {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 9px 10px;
+  border-radius: 14px;
+}
+
+.feedRow.mine {
+  background: var(--team-tint);
+}
+
+.feedName {
+  flex: 1;
+  min-width: 0;
+  font-size: 14px;
+  font-weight: 600;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.feedAmount {
+  font-size: 15px;
+  font-weight: 500;
+  color: var(--ink-2);
+}
+
+.feedAmount.first {
+  color: var(--ink);
+}
+
+.feedAgo {
+  width: 32px;
+  font-size: 11px;
+  text-align: right;
+  color: var(--ink-2);
+}
+
+.feedOpen {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 9px 10px;
+  font-size: 13px;
+  color: var(--ink-2);
+}
+
+.openedTile {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 28px;
+  height: 28px;
+  border-radius: 9px;
+  background: var(--surface-2);
+  color: var(--ink-2);
+}
+
+.feedCard {
+  display: block;
+  max-height: 150px;
+  padding: 8px;
+  border: 0;
+  border-radius: 24px;
+  overflow: hidden;
+  background: var(--surface);
+  box-shadow: var(--shadow);
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+/* Rivals sheet. */
+.rivals {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.rival {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px;
+  border-radius: 14px;
+}
+
+.rival.mine {
+  background: var(--team-tint);
+}
+
+.rival.leading {
+  background: var(--surface-2);
+}
+
+.rival.offline {
+  opacity: 0.4;
+}
+
+.ring {
+  box-shadow:
+    0 0 0 3px var(--surface),
+    0 0 0 5px oklch(0.56 0.15 var(--mh));
+}
+
+.rivalText {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.rivalName {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+}
+
+.rivalNameText {
+  font-size: 14px;
+  font-weight: 700;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.badge {
+  flex-shrink: 0;
+  padding: 2px 6px;
+  border-radius: 6px;
+  background: var(--surface-2);
+  color: var(--ink-2);
+  font-size: 10px;
+  font-weight: 800;
+}
+
+.badgeLead {
+  background: var(--team);
+  color: var(--on-team);
+}
+
+.rivalSub {
+  font-size: 12px;
+  color: var(--ink-2);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.rivalNums {
+  max-width: 55%;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  flex-shrink: 0;
+  gap: 2px;
+}
+
+.rivalPurse {
+  font-size: 14px;
+  font-weight: 500;
+}
+
+/* "12 pl" then each restricted category as "6/8 label": one line while it fits, wrapping rather than squeezing the name. */
+.rivalSquad {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 0 6px;
+  font-size: 11px;
+  color: var(--ink-2);
+}
+
+.rivalSquad > span {
+  white-space: nowrap;
+}
+
+.rivalSquad > span + span::before {
+  content: "· ";
+}
+
+/* Your needs card. */
+.needs {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 14px;
+  border: 0;
+  border-radius: 24px;
+  background: var(--surface);
+  box-shadow: var(--shadow);
+  color: inherit;
+  font: inherit;
+  cursor: pointer;
+}
+
+/* The failed card's head and foot rows are buttons that look like the plain rows (AuctionPanelStates frame 2). */
+.needsRow {
+  padding: 0;
+  border: 0;
+  background: none;
+  font: inherit;
+  color: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.needsHead {
+  display: flex;
+  justify-content: space-between;
+  width: 100%;
+  font-size: 13px;
+}
+
+.needsTitle {
+  font-weight: 700;
+}
+
+.maxBid {
+  color: var(--team-ink);
+  font-weight: 700;
+}
+
+.tiles {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 6px;
+  width: 100%;
+}
+
+.tile {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 6px 4px;
+  border-radius: 12px;
+  font-size: 13px;
+}
+
+.tileLabel {
+  font-size: 10px;
+  font-weight: 800;
+}
+
+.toneMet {
+  background: var(--ok-tint);
+  color: var(--ok);
+}
+
+.toneEmpty {
+  background: var(--bad-tint);
+  color: var(--bad);
+}
+
+.toneShort {
+  background: var(--surface-2);
+  color: var(--ink);
+}
+
+.needsFoot {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 4px 12px;
+  width: 100%;
+  font-size: 12px;
+  color: var(--ink-2);
+  text-align: left;
+}
+
+.ink {
+  color: var(--ink);
+}
+
+.needsStatic {
+  cursor: default;
+}
+
+/* A figure the pool has not told yet: a muted bar the size of a number, never a zero (AuctionPanelStates). */
+.pending {
+  display: inline-block;
+  width: 14px;
+  height: 10px;
+  vertical-align: middle;
+  border-radius: 5px;
+  background: var(--line);
+}
+
+.tonePending {
+  background: var(--surface-2);
+  color: var(--ink-2);
+}
+
+/* The shared load-error Note (AuctionPanelStates; Home and Room banners). */
+.note {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  box-sizing: border-box;
+  padding: 10px 12px;
+  border-radius: 14px;
+  background: var(--bad-tint);
+  font-size: 13px;
+  text-align: left;
+}
+
+.noteIcon {
+  flex-shrink: 0;
+  color: var(--bad);
+}
+
+.noteText {
+  flex: 1;
+  min-width: 0;
+}
+
+.noteBody {
+  color: var(--ink-2);
+}
+
+.noteRetry {
+  flex-shrink: 0;
+  height: 32px;
+  padding: 0 12px;
+  border: 0;
+  border-radius: 10px;
+  background: var(--surface);
+  color: var(--ink);
+  font: inherit;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+/* Rivals sheet loading: three skeleton rows. */
+.skelMono {
+  flex-shrink: 0;
+  width: 36px;
+  height: 36px;
+  border-radius: 11px;
+  background: var(--surface-2);
+}
+
+.skelBar {
+  display: block;
+  max-width: 100%;
+  border-radius: 6px;
+  background: var(--line);
+}
+
+.skelSub {
+  display: block;
+  max-width: 100%;
+  height: 10px;
+  border-radius: 5px;
+  background: var(--surface-2);
+}
+
+.skelText {
+  gap: 6px;
+}

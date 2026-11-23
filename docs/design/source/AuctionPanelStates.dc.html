@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<title>PaddleUp — Auction panel states</title>
+<link rel="icon" href="assets/favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=DM+Mono:wght@400;500&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@20..48,400..600,0..1,0&display=block">
+<style>html,body{margin:0;padding:0}body{font-family:'Plus Jakarta Sans',system-ui,sans-serif;-webkit-font-smoothing:antialiased}</style>
+</helmet>
+<!--
+  auction-panels CR-17 (needs approval, 2026-11-23): loading and failed states for the auction panels
+  (Your needs card, Squad sheet, Rivals sheet). Rules:
+  - Figures the live auction state holds (purse, Max bid, squad count and range, category cap) always show.
+  - Figures only the player list can tell (role counts, category count, player names the state lacks) show a
+    muted pending bar while it loads, never 0. The category slot dots are hidden until it lands.
+  - A failed player-list read keeps the state figures and adds the shared load-error Note (Home.dc.html,
+    Room.dc.html banner): error icon, bold title, ink-2 body, Retry. The read also retries on its own.
+  - Rivals sheet loading: three skeleton rows. Rivals sheet failed: the Note alone.
+  - The Bids feed has no failed state: it shows the live bids it has and re-syncs on its own.
+-->
+<div style="--bg:oklch(0.975 0.006 75);--surface:oklch(0.995 0.003 75);--surface-2:oklch(0.955 0.007 75);--line:oklch(0.905 0.008 75);--ink:oklch(0.23 0.012 60);--ink-2:oklch(0.46 0.012 60);--ink-3:oklch(0.62 0.01 60);--bad:oklch(0.57 0.2 25);--bad-tint:oklch(0.95 0.035 25);--warn:oklch(0.72 0.15 75);--warn-tint:oklch(0.96 0.05 85);--team:oklch(0.9 0.06 250);--team-ink:oklch(0.42 0.12 250);--shadow:0 1px 2px oklch(0.3 0.02 60 / 0.06), 0 6px 20px oklch(0.3 0.02 60 / 0.07);--role1-bg:oklch(0.93 0.04 70);--role1-ink:oklch(0.4 0.09 70);--role2-bg:oklch(0.93 0.04 250);--role2-ink:oklch(0.4 0.1 250);--role3-bg:oklch(0.93 0.04 150);--role3-ink:oklch(0.4 0.09 150);--role4-bg:oklch(0.93 0.04 320);--role4-ink:oklch(0.42 0.1 320);background:var(--bg);color:var(--ink);padding:24px;display:grid;grid-template-columns:repeat(auto-fill,minmax(340px,380px));gap:24px;align-items:start">
+
+  <!-- 1. Your needs card, player list loading -->
+  <div style="display:flex;flex-direction:column;gap:8px">
+    <span style="font-size:11px;font-weight:700;letter-spacing:0.06em;color:var(--ink-2)">YOUR NEEDS · LOADING</span>
+    <div aria-busy="true" style="background:var(--surface);border-radius:24px;padding:14px;display:flex;flex-direction:column;gap:10px;box-shadow:var(--shadow)">
+      <div style="display:flex;justify-content:space-between;font-size:13px"><span style="font-weight:700">Your needs</span><span style="color:var(--team-ink);font-weight:700">Max bid <span style="font-family:'DM Mono',monospace">₹14.5 Cr</span></span></div>
+      <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:6px">
+        <div style="border-radius:12px;padding:6px 4px;background:var(--surface-2);display:flex;flex-direction:column;align-items:center;gap:4px"><span style="font-size:10px;font-weight:800;color:var(--ink-2)">BAT</span><span style="font-family:'DM Mono',monospace;font-size:13px;color:var(--ink-2);display:flex;align-items:center"><span style="width:14px;height:10px;border-radius:5px;background:var(--line)"></span>/3</span></div>
+        <div style="border-radius:12px;padding:6px 4px;background:var(--surface-2);display:flex;flex-direction:column;align-items:center;gap:4px"><span style="font-size:10px;font-weight:800;color:var(--ink-2)">BOWL</span><span style="font-family:'DM Mono',monospace;font-size:13px;color:var(--ink-2);display:flex;align-items:center"><span style="width:14px;height:10px;border-radius:5px;background:var(--line)"></span>/3</span></div>
+        <div style="border-radius:12px;padding:6px 4px;background:var(--surface-2);display:flex;flex-direction:column;align-items:center;gap:4px"><span style="font-size:10px;font-weight:800;color:var(--ink-2)">AR</span><span style="font-family:'DM Mono',monospace;font-size:13px;color:var(--ink-2);display:flex;align-items:center"><span style="width:14px;height:10px;border-radius:5px;background:var(--line)"></span>/2</span></div>
+        <div style="border-radius:12px;padding:6px 4px;background:var(--surface-2);display:flex;flex-direction:column;align-items:center;gap:4px"><span style="font-size:10px;font-weight:800;color:var(--ink-2)">WK</span><span style="font-family:'DM Mono',monospace;font-size:13px;color:var(--ink-2);display:flex;align-items:center"><span style="width:14px;height:10px;border-radius:5px;background:var(--line)"></span>/1</span></div>
+      </div>
+      <div style="display:flex;justify-content:space-between;font-size:12px;color:var(--ink-2)"><span>Squad <span style="font-family:'DM Mono',monospace;color:var(--ink)">9 / 18–25</span></span><span style="display:flex;align-items:center;gap:4px">Overseas <span style="font-family:'DM Mono',monospace;color:var(--ink);display:flex;align-items:center"><span style="width:14px;height:10px;border-radius:5px;background:var(--line)"></span>/8</span></span></div>
+    </div>
+  </div>
+
+  <!-- 2. Your needs card, player list failed -->
+  <div style="display:flex;flex-direction:column;gap:8px">
+    <span style="font-size:11px;font-weight:700;letter-spacing:0.06em;color:var(--ink-2)">YOUR NEEDS · FAILED</span>
+    <div style="background:var(--surface);border-radius:24px;padding:14px;display:flex;flex-direction:column;gap:10px;box-shadow:var(--shadow)">
+      <div style="display:flex;justify-content:space-between;font-size:13px"><span style="font-weight:700">Your needs</span><span style="color:var(--team-ink);font-weight:700">Max bid <span style="font-family:'DM Mono',monospace">₹14.5 Cr</span></span></div>
+      <div role="alert" style="display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:14px;background:var(--bad-tint);font-size:13px"><span style="font-family:'Material Symbols Rounded';font-size:20px;line-height:1;color:var(--bad)">error</span><span style="flex:1"><b>Couldn't load the player list.</b> <span style="color:var(--ink-2)">Role counts are hidden.</span></span><span style="height:32px;padding:0 12px;border-radius:10px;background:var(--surface);color:var(--ink);font-size:13px;font-weight:700;display:flex;align-items:center">Retry</span></div>
+      <div style="display:flex;justify-content:space-between;font-size:12px;color:var(--ink-2)"><span>Squad <span style="font-family:'DM Mono',monospace;color:var(--ink)">9 / 18–25</span></span><span style="display:flex;align-items:center;gap:4px">Overseas <span style="font-family:'DM Mono',monospace;color:var(--ink);display:flex;align-items:center"><span style="width:14px;height:10px;border-radius:5px;background:var(--line)"></span>/8</span></span></div>
+    </div>
+  </div>
+
+  <!-- 3. Squad sheet, player list loading (body of the sheet; header and handle as in Auction A Spotlight) -->
+  <div style="display:flex;flex-direction:column;gap:8px">
+    <span style="font-size:11px;font-weight:700;letter-spacing:0.06em;color:var(--ink-2)">SQUAD SHEET · LOADING</span>
+    <div aria-busy="true" style="background:var(--surface);border-radius:24px;padding:16px;display:flex;flex-direction:column;gap:14px;box-shadow:var(--shadow)">
+      <div style="display:flex;flex-direction:column;gap:10px">
+        <div style="display:flex;justify-content:space-between;align-items:baseline"><span style="font-size:11px;font-weight:700;letter-spacing:0.06em;color:var(--ink-2)">PURSE</span><span style="font-family:'DM Mono',monospace;font-size:12px;color:var(--ink-2)">of ₹120 Cr</span></div>
+        <div style="display:flex;justify-content:space-between;align-items:baseline;gap:8px"><span style="font-family:'DM Mono',monospace;font-size:26px;font-weight:500;letter-spacing:-0.03em">₹41.5 Cr</span><span style="font-size:13px;font-weight:700;color:var(--team-ink)">Max bid ₹14.5 Cr</span></div>
+        <div style="height:10px;border-radius:5px;background:var(--team);display:flex;overflow:hidden"><div style="width:65%;background:var(--ink-3)"></div><div style="width:12%;background:repeating-linear-gradient(135deg,var(--warn) 0 3px,var(--warn-tint) 3px 6px)"></div></div>
+      </div>
+      <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:6px">
+        <div style="border-radius:12px;padding:8px 4px;background:var(--surface-2);display:flex;flex-direction:column;gap:4px;align-items:center"><span style="font-size:10px;font-weight:800;color:var(--ink-2)">BAT</span><span style="font-family:'DM Mono',monospace;font-size:14px;color:var(--ink-2);display:flex;align-items:center"><span style="width:14px;height:10px;border-radius:5px;background:var(--line)"></span>/3</span></div>
+        <div style="border-radius:12px;padding:8px 4px;background:var(--surface-2);display:flex;flex-direction:column;gap:4px;align-items:center"><span style="font-size:10px;font-weight:800;color:var(--ink-2)">BOWL</span><span style="font-family:'DM Mono',monospace;font-size:14px;color:var(--ink-2);display:flex;align-items:center"><span style="width:14px;height:10px;border-radius:5px;background:var(--line)"></span>/3</span></div>
+        <div style="border-radius:12px;padding:8px 4px;background:var(--surface-2);display:flex;flex-direction:column;gap:4px;align-items:center"><span style="font-size:10px;font-weight:800;color:var(--ink-2)">AR</span><span style="font-family:'DM Mono',monospace;font-size:14px;color:var(--ink-2);display:flex;align-items:center"><span style="width:14px;height:10px;border-radius:5px;background:var(--line)"></span>/2</span></div>
+        <div style="border-radius:12px;padding:8px 4px;background:var(--surface-2);display:flex;flex-direction:column;gap:4px;align-items:center"><span style="font-size:10px;font-weight:800;color:var(--ink-2)">WK</span><span style="font-family:'DM Mono',monospace;font-size:14px;color:var(--ink-2);display:flex;align-items:center"><span style="width:14px;height:10px;border-radius:5px;background:var(--line)"></span>/1</span></div>
+      </div>
+      <div style="display:flex;justify-content:space-between;font-size:13px"><span style="color:var(--ink-2)">Squad</span><span style="font-family:'DM Mono',monospace;font-weight:500">9 <span style="color:var(--ink-2)">/ 18–25</span></span></div>
+      <div style="display:flex;justify-content:space-between;font-size:13px;align-items:center"><span style="color:var(--ink-2);display:flex;align-items:center;gap:4px">Overseas <span style="font-family:'DM Mono',monospace;display:flex;align-items:center"><span style="width:14px;height:10px;border-radius:5px;background:var(--line)"></span>/8</span></span><span style="font-size:12px;color:var(--ink-3)">slots after the list loads</span></div>
+      <div style="display:flex;flex-direction:column;border-top:1px solid var(--line);padding-top:6px">
+        <div style="display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--line)"><span style="width:34px;height:18px;border-radius:6px;background:var(--surface-2)"></span><span style="flex:1;font-size:14px;font-weight:600">R. Mehta</span><span style="font-family:'DM Mono',monospace;font-size:13px">₹9.0 Cr</span></div>
+        <div style="display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--line)"><span style="width:34px;height:18px;border-radius:6px;background:var(--surface-2)"></span><span style="flex:1;display:flex"><span style="width:110px;height:12px;border-radius:6px;background:var(--line)"></span></span><span style="font-family:'DM Mono',monospace;font-size:13px">₹6.5 Cr</span></div>
+        <div style="display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--line)"><span style="width:34px;height:18px;border-radius:6px;background:var(--surface-2)"></span><span style="flex:1;display:flex"><span style="width:84px;height:12px;border-radius:6px;background:var(--line)"></span></span><span style="font-family:'DM Mono',monospace;font-size:13px">₹4.0 Cr</span></div>
+      </div>
+      <span style="font-size:12px;color:var(--ink-2)">Price always shows. A name the live state carries shows; others wait on the list. Role tags wait on the list.</span>
+    </div>
+  </div>
+
+  <!-- 4. Squad sheet, player list failed: frame 3 plus the Note on top, names the state lacks stay as bars -->
+  <div style="display:flex;flex-direction:column;gap:8px">
+    <span style="font-size:11px;font-weight:700;letter-spacing:0.06em;color:var(--ink-2)">SQUAD SHEET · FAILED</span>
+    <div style="background:var(--surface);border-radius:24px;padding:16px;display:flex;flex-direction:column;gap:14px;box-shadow:var(--shadow)">
+      <div role="alert" style="display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:14px;background:var(--bad-tint);font-size:13px"><span style="font-family:'Material Symbols Rounded';font-size:20px;line-height:1;color:var(--bad)">error</span><span style="flex:1"><b>Couldn't load the player list.</b> <span style="color:var(--ink-2)">Purse and squad are live; roles are hidden.</span></span><span style="height:32px;padding:0 12px;border-radius:10px;background:var(--surface);color:var(--ink);font-size:13px;font-weight:700;display:flex;align-items:center">Retry</span></div>
+      <div style="display:flex;justify-content:space-between;align-items:baseline;gap:8px"><span style="font-family:'DM Mono',monospace;font-size:26px;font-weight:500;letter-spacing:-0.03em">₹41.5 Cr</span><span style="font-size:13px;font-weight:700;color:var(--team-ink)">Max bid ₹14.5 Cr</span></div>
+      <div style="display:flex;justify-content:space-between;font-size:13px"><span style="color:var(--ink-2)">Squad</span><span style="font-family:'DM Mono',monospace;font-weight:500">9 <span style="color:var(--ink-2)">/ 18–25</span></span></div>
+      <span style="font-size:12px;color:var(--ink-3)">Rest of the sheet as LOADING (pending bars, no slot dots).</span>
+    </div>
+  </div>
+
+  <!-- 5. Rivals sheet, loading -->
+  <div style="display:flex;flex-direction:column;gap:8px">
+    <span style="font-size:11px;font-weight:700;letter-spacing:0.06em;color:var(--ink-2)">RIVALS SHEET · LOADING</span>
+    <div aria-busy="true" style="background:var(--surface);border-radius:24px;padding:10px;display:flex;flex-direction:column;gap:2px;box-shadow:var(--shadow)">
+      <div style="display:flex;align-items:center;gap:12px;padding:10px"><span style="width:36px;height:36px;border-radius:11px;background:var(--surface-2)"></span><span style="flex:1;display:flex;flex-direction:column;gap:6px"><span style="width:120px;height:12px;border-radius:6px;background:var(--line)"></span><span style="width:170px;height:10px;border-radius:5px;background:var(--surface-2)"></span></span><span style="width:56px;height:12px;border-radius:6px;background:var(--line)"></span></div>
+      <div style="display:flex;align-items:center;gap:12px;padding:10px"><span style="width:36px;height:36px;border-radius:11px;background:var(--surface-2)"></span><span style="flex:1;display:flex;flex-direction:column;gap:6px"><span style="width:96px;height:12px;border-radius:6px;background:var(--line)"></span><span style="width:150px;height:10px;border-radius:5px;background:var(--surface-2)"></span></span><span style="width:56px;height:12px;border-radius:6px;background:var(--line)"></span></div>
+      <div style="display:flex;align-items:center;gap:12px;padding:10px"><span style="width:36px;height:36px;border-radius:11px;background:var(--surface-2)"></span><span style="flex:1;display:flex;flex-direction:column;gap:6px"><span style="width:132px;height:12px;border-radius:6px;background:var(--line)"></span><span style="width:160px;height:10px;border-radius:5px;background:var(--surface-2)"></span></span><span style="width:56px;height:12px;border-radius:6px;background:var(--line)"></span></div>
+    </div>
+  </div>
+
+  <!-- 6. Rivals sheet, failed -->
+  <div style="display:flex;flex-direction:column;gap:8px">
+    <span style="font-size:11px;font-weight:700;letter-spacing:0.06em;color:var(--ink-2)">RIVALS SHEET · FAILED</span>
+    <div style="background:var(--surface);border-radius:24px;padding:10px;box-shadow:var(--shadow)">
+      <div role="alert" style="display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:14px;background:var(--bad-tint);font-size:13px"><span style="font-family:'Material Symbols Rounded';font-size:20px;line-height:1;color:var(--bad)">error</span><span style="flex:1"><b>Couldn't load the squads.</b> <span style="color:var(--ink-2)">Check your connection and try again.</span></span><span style="height:32px;padding:0 12px;border-radius:10px;background:var(--surface);color:var(--ink);font-size:13px;font-weight:700;display:flex;align-items:center">Retry</span></div>
+    </div>
+  </div>
+
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:1240,&quot;height&quot;:900}}"></script>
+</body>
+</html>

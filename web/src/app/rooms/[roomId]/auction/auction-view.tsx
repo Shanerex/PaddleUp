@@ -6,7 +6,11 @@ import { useIntentRetry } from "../../../../api/intent";
 import { ApiError, getMembers, getRoom, sendControl, sendPicks, setReady, type Member, type Room } from "../../../../api/client";
 import { formatLotTime, pageClock } from "../../../../auction/clock";
 import { controlRefusal, reopenedNotice, skippedNotice, type Notice } from "../../../../auction/copy";
+import { feedView, type FeedParty } from "../../../../auction/feed";
+import { needsView, rivalsView, type Party } from "../../../../auction/rivals";
 import { useBid } from "../../../../auction/useBid";
+import { useFeed } from "../../../../auction/useFeed";
+import { usePool } from "../../../../auction/usePool";
 import { useLive, useTicker } from "../../../../auction/useLive";
 import { buildView } from "../../../../auction/view";
 import { HOME } from "../../../../auth/redirect";
@@ -24,11 +28,13 @@ import { BidDock } from "./bid-dock";
 import { Controls } from "./controls";
 import { Lobby } from "./lobby";
 import { SquadChip, SquadSheet } from "./my-squad";
+import { FeedCard, FeedChip, FeedSheet, NeedsCard, RivalsChip, RivalsSheet } from "./panels";
 import { LotCard, type LotResult } from "./lot-card";
 import { AdjournedCard, ClosedCard, NoAuctionCard, Notices, hueStyle, type Toast, type Who } from "./notices";
 
 const BRAND_HUE = 38;
 const TOAST_MS = 5000;
+const NO_BIDS: never[] = [];
 
 interface Data {
   room: Room;
@@ -141,6 +147,27 @@ function Auction({ roomId, data, reloadRoom }: { roomId: string; data: Data; rel
   const bidder = useBid(roomId);
   const lotNo = state?.lot?.no ?? null;
 
+  // The Rivals sheet and Your needs card read each squad's roles from the pool; the Bids feed rebuilds
+  // from the events page and the live bids. All of it is derived here, nothing is kept.
+  const { pool, failed: poolFailed, retry: retryPool } = usePool(roomId, phase !== null && phase !== "scheduled" && phase !== "ended");
+  const feedEvents = useFeed(roomId, { synced: snapshot.synced, bids: snapshot.bids ?? NO_BIDS }, lotNo);
+  const parties = useMemo(() => members.flatMap((m): Party[] => (m.franchise ? [{ id: m.franchise.id, name: m.franchise.name, monogram: m.franchise.monogram, colour: m.franchise.colour, manager: m.displayName }] : [])), [members]);
+
+  // The three derived views are rebuilt only when what they read changes, not on every clock tick (the
+  // screen re-renders ten times a second on a lot). Only the feed's "ago" text follows the clock, once a second.
+  const lotBase = state?.lot?.basePrice ?? null;
+  const feedSecond = Math.floor((serverNow ?? (state ? Date.parse(state.serverNow) : 0)) / 1000);
+  const bids = useMemo(
+    () => feedView(feedEvents, lotNo !== null && lotBase !== null ? { no: lotNo, basePrice: lotBase } : null, parties as FeedParty[], room.config, { now: feedSecond * 1000, me }),
+    [feedEvents, lotNo, lotBase, parties, room.config, feedSecond, me],
+  );
+  // Without the pool the Rivals sheet has nothing to count roles from and says so; the needs card and squad sheet show what the state holds and a placeholder for the rest. Never zeros.
+  const rivals = useMemo(
+    () => (state && pool ? rivalsView({ state, pool, room, parties, connected: snapshot.connected, leaderId: state.lotOpen ? (state.leaderFranchiseId ?? null) : null, me, presenceKnown: !offline }) : null),
+    [state, pool, room, parties, snapshot.connected, me, offline],
+  );
+  const needs = useMemo(() => (state ? needsView({ state, pool, room, me }) : null), [state, pool, room, me]);
+
   // Having led a lot is what makes losing it "outbid"; a bid I sent counts too.
   const [ledLot, setLedLot] = useState<number | null>(null);
   if (me && state?.leaderFranchiseId === me && lotNo !== null && ledLot !== lotNo) setLedLot(lotNo);
@@ -238,6 +265,7 @@ function Auction({ roomId, data, reloadRoom }: { roomId: string; data: Data; rel
   // The Commissioner sets or moves the start. The sheet only asks; what shows is the server's reply.
   const [sheet, setSheet] = useState<"new" | "move" | "retime" | null>(null);
   const [squadOpen, setSquadOpen] = useState(false);
+  const [panel, setPanel] = useState<"rivals" | "feed" | null>(null);
   const commish = room.myRole === "commissioner";
 
   // Commissioner intents that need no form: each only asks, and the server's answer or a refusal shows.
@@ -392,6 +420,14 @@ function Auction({ roomId, data, reloadRoom }: { roomId: string; data: Data; rel
   });
   const timeText = view.timeLeftMs === null ? "–:––" : formatLotTime(view.timeLeftMs);
 
+  const chips = (
+    <>
+      <RivalsChip onClick={() => setPanel("rivals")} />
+      <FeedChip onClick={() => setPanel("feed")} />
+      {me ? <SquadChip onClick={() => setSquadOpen(true)} /> : null}
+    </>
+  );
+
   return (
     <div className={`team ${s.screen}`} style={{ "--h": hue } as CSSProperties}>
       <Header
@@ -422,13 +458,11 @@ function Auction({ roomId, data, reloadRoom }: { roomId: string; data: Data; rel
               onResync: () => live.resync(),
             }}
           >
-            {me ? <SquadChip onClick={() => setSquadOpen(true)} /> : null}
+            {chips}
           </Controls>
         )}
-        {!commish && me && (
-          <div className={s.chipRow}>
-            <SquadChip onClick={() => setSquadOpen(true)} />
-          </div>
+        {!commish && (
+          <div className={s.chipRow}>{chips}</div>
         )}
         <div className={s.scroll}>
           {view.status === "main_done" ? (
@@ -521,6 +555,8 @@ function Auction({ roomId, data, reloadRoom }: { roomId: string; data: Data; rel
                       )}
                     </div>
                   </section>
+                  <FeedCard view={bids} onOpen={() => setPanel("feed")} />
+                  {me && (needs ? <NeedsCard view={needs} config={room.config} onOpen={() => setSquadOpen(true)} failed={poolFailed && !pool} onRetry={retryPool} /> : null)}
                 </div>
               </div>
             )
@@ -550,9 +586,13 @@ function Auction({ roomId, data, reloadRoom }: { roomId: string; data: Data; rel
           onDismissAdmin={dismissAdmin}
         />
       </div>
+      {panel === "rivals" && <RivalsSheet rows={rivals} failed={poolFailed} onRetry={retryPool} config={room.config} onClose={() => setPanel(null)} />}
+      {panel === "feed" && <FeedSheet lot={lot?.no ?? null} view={bids} onClose={() => setPanel(null)} />}
       {squadOpen && me && (
         <SquadSheet
-          roomId={roomId}
+          pool={pool}
+          failed={poolFailed}
+          onRetry={retryPool}
           state={state}
           room={room}
           me={me}

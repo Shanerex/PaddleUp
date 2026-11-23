@@ -74,6 +74,9 @@ export type AuctionEvent = {
   serverNow?: string;
 };
 
+/** One page of the event log. */
+export type EventsPage = components["schemas"]["EventsDto"];
+
 /** A non-2xx answer from the server. */
 export class ApiError extends Error {
   constructor(
@@ -326,6 +329,12 @@ export async function sendPicks(id: string, lots: number[], intentId: string = c
 export async function getAudit(id: string, kind: string = "all", after = 0, limit?: number): Promise<AuditPage> {
   const query = new URLSearchParams({ kind, after: String(after), ...(limit ? { limit: String(limit) } : {}) });
   return (await request(`${room(id)}/auction/audit?${query}`)).json();
+}
+
+/** One page of the event log, oldest first; pass the previous page's `lastSeq` as `after` while `more` is true. */
+export async function getEvents(id: string, after = 0, limit?: number): Promise<EventsPage> {
+  const query = new URLSearchParams({ after: String(after), ...(limit ? { limit: String(limit) } : {}) });
+  return (await request(`${room(id)}/auction/events?${query}`)).json();
 }
 
 /** A single-use ticket for the auction socket. */

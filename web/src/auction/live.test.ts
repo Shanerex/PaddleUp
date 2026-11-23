@@ -137,6 +137,66 @@ describe("createLive", () => {
     expect(t.getAuction).toHaveBeenCalledTimes(1);
   });
 
+  it("keeps the bids and passes it applies, for the Bids feed, once each and in order", async () => {
+    const t = setup();
+    t.live.start();
+    const { socket } = await t.connectLatest();
+    expect(t.live.snapshot().bids).toEqual([]);
+
+    socket.send(topicOf(ROOM), bidEvent(4, 20));
+    socket.send(topicOf(ROOM), { seq: 5, at: "x", kind: "passed", franchiseId: A, lot: 1, payload: {} });
+    socket.send(topicOf(ROOM), bidEvent(5, 99, A)); // a seq it has: not kept twice
+    expect(t.live.snapshot().bids.map((e) => [e.seq, e.kind])).toEqual([
+      [4, "bid_accepted"],
+      [5, "passed"],
+    ]);
+  });
+
+  it("never trims the open lot's bids when earlier lots' events overflow the cap", async () => {
+    const t = setup(state({ lastSeq: 0, lot: { no: 2, playerId: "p2", name: "Player 2", country: "Chile", role: "BAT", tags: [], set: "S", position: 1, basePrice: 20 } }));
+    t.live.start();
+    const { socket } = await t.connectLatest();
+    const on = (seq: number, lot: number): AuctionEvent => ({ ...bidEvent(seq, 20 + seq), lot });
+    for (let seq = 1; seq <= 150; seq++) socket.send(topicOf(ROOM), on(seq, 1)); // lot 1: earlier
+    for (let seq = 151; seq <= 400; seq++) socket.send(topicOf(ROOM), on(seq, 2)); // lot 2: the open lot
+    const kept = t.live.snapshot().bids;
+    expect(kept.filter((e) => e.lot === 2)).toHaveLength(250);
+    expect(kept.some((e) => e.seq === 151)).toBe(true);
+    expect(kept.filter((e) => e.lot === 1).length).toBeLessThanOrEqual(0);
+  });
+
+  it("trims by what is not the open lot, never by lot number: a re-opened lot's higher number came first (AC-2)", async () => {
+    const t = setup(state({ lastSeq: 0, lot: { no: 4, playerId: "p4", name: "Player 4", country: "Chile", role: "BAT", tags: [], set: "S", position: 1, basePrice: 20 } }));
+    t.live.start();
+    const { socket } = await t.connectLatest();
+    const on = (seq: number, lot: number): AuctionEvent => ({ ...bidEvent(seq, 20 + seq), lot });
+    for (let seq = 1; seq <= 150; seq++) socket.send(topicOf(ROOM), on(seq, 12)); // lot 3 re-opened as 12: played first
+    for (let seq = 151; seq <= 400; seq++) socket.send(topicOf(ROOM), on(seq, 4)); // lot 4: the open lot, a lower number
+    const kept = t.live.snapshot().bids;
+    expect(kept.filter((e) => e.lot === 4)).toHaveLength(250);
+    expect(kept.filter((e) => e.lot === 12)).toHaveLength(0);
+  });
+
+  it("keeps the events it applied from the buffer after the first fetch, and not a gap it refetched over", async () => {
+    const t = setup();
+    let release: (s: AuctionState) => void = () => {};
+    t.getAuction.mockImplementationOnce(() => new Promise<AuctionState>((r) => (release = r)));
+    t.live.start();
+    await vi.advanceTimersByTimeAsync(0);
+    const { socket, handlers } = t.sockets[0];
+    handlers.onConnect(socket);
+    socket.send(topicOf(ROOM), bidEvent(4, 25, B));
+    socket.send(topicOf(ROOM), bidEvent(5, 30, A));
+    release(state({ lastSeq: 3 }));
+    await vi.advanceTimersByTimeAsync(0);
+    expect(t.live.snapshot().bids.map((e) => e.seq)).toEqual([4, 5]);
+
+    t.setFetches(state({ lastSeq: 8, currentBid: 50 }));
+    socket.send(topicOf(ROOM), bidEvent(8, 50, A)); // 6 and 7 missed: the events page covers them
+    await vi.advanceTimersByTimeAsync(0);
+    expect(t.live.snapshot().bids.map((e) => e.seq)).toEqual([4, 5]);
+  });
+
   it("refetches on a seq gap and stays unsynced until the fetch lands", async () => {
     const t = setup();
     t.live.start();

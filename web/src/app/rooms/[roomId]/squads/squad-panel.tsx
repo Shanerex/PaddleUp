@@ -40,6 +40,10 @@ type Common = {
   startsAt: string | null;
   /** No hammer has fallen in the auction yet. */
   firstHammer: boolean;
+  /** The pool, which says each player's role and tags, is not read: role and category counts show a placeholder, never zero. */
+  poolPending?: boolean;
+  /** The pool read failed: the placeholders stay, but nothing is still loading. */
+  poolFailed?: boolean;
 };
 
 const roleStyle = (slot: number): CSSProperties => ({ background: `var(--role${slot}-bg)`, color: `var(--role${slot}-ink)` });
@@ -215,13 +219,14 @@ function PlayerRow({ p, config }: { p: SquadPlayer; config: RoomConfig }) {
 }
 
 /** AuctionSquad: purse, role chips, squad count, the restricted slots and the players, newest first. */
-function SheetBody({ squad, config }: Common) {
+function SheetBody({ squad, config, poolPending = false, poolFailed = false }: Common) {
+  const hold = (n: number) => (poolPending ? <span className={s.pending} role="img" aria-label="Loading" data-testid="pending" /> : n);
   const free = Math.max(0, squad.purse);
   const spentPct = squad.spent + free > 0 ? Math.round((100 * squad.spent) / (squad.spent + free)) : 0;
   const players = squad.groups.flatMap((g) => g.players.map((p) => ({ p, role: g, key: `${g.key}-${p.lot}-${p.playerId}` })));
   players.sort((a, b) => b.p.lot - a.p.lot);
   return (
-    <div className={s.sheet} data-testid="squad-sheet" data-franchise={squad.franchiseId}>
+    <div className={s.sheet} data-testid="squad-sheet" data-franchise={squad.franchiseId} aria-busy={poolPending && !poolFailed ? true : undefined}>
       <div className={s.sheetBlock}>
         <div className={s.sheetRow}>
           <span className={s.sectionLabel}>PURSE</span>
@@ -248,9 +253,9 @@ function SheetBody({ squad, config }: Common) {
       </div>
       <div className={s.roleGrid}>
         {squad.roleCounts.map((r) => (
-          <div key={r.key} className={s.roleChip} style={roleStyle(r.slot)} data-testid={`sheet-role-${r.key}`}>
+          <div key={r.key} className={`${s.roleChip} ${poolPending ? s.roleChipPending : ""}`} style={poolPending ? undefined : roleStyle(r.slot)} data-testid={`sheet-role-${r.key}`}>
             <span className={s.roleChipLabel}>{r.short}</span>
-            <span className={`${s.roleChipValue} num`}>{r.min === null ? r.have : `${r.have}/${r.min}`}</span>
+            <span className={`${s.roleChipValue} num`}>{r.min === null ? hold(r.have) : <>{hold(r.have)}/{r.min}</>}</span>
           </div>
         ))}
       </div>
@@ -263,10 +268,18 @@ function SheetBody({ squad, config }: Common) {
       {squad.restricted.map((c) => (
         <div className={s.sheetLine} key={c.id}>
           <span className={s.sheetMuted}>
-            {c.label} <span className="num" data-testid={`squad-restricted-${c.id}`}>{c.cap === null ? c.count : `${c.count}/${c.cap}`}</span>
+            {c.label}{" "}
+            <span className="num" data-testid={`squad-restricted-${c.id}`}>
+              {c.cap === null ? hold(c.count) : <>{hold(c.count)}/{c.cap}</>}
+            </span>
           </span>
-          {c.cap !== null && c.cap <= 16 && (
-            <span className={s.slots} aria-hidden="true">
+          {poolPending && !poolFailed && c.cap !== null && c.cap <= 16 && (
+            <span className={s.slotsWait} data-testid="squad-slots-pending">
+              slots after the list loads
+            </span>
+          )}
+          {!poolPending && c.cap !== null && c.cap <= 16 && (
+            <span className={s.slots} aria-hidden="true" data-testid="squad-slots">
               {Array.from({ length: c.cap }, (_, i) => (
                 <span key={i} className={s.slot} style={{ background: i < c.count ? "var(--team)" : "var(--surface-2)" }} />
               ))}
@@ -278,11 +291,25 @@ function SheetBody({ squad, config }: Common) {
         <div className={s.sheetPlayers}>
           {players.map(({ p, role, key }) => (
             <div className={`${s.sheetPlayer} ${p.justBought ? s.rowNew : ""}`} key={key} data-testid="squad-player">
-              <span className={s.sheetRole} style={roleStyle(role.slot)} title={role.label}>
-                {role.short}
-              </span>
+              {poolPending ? (
+                <span
+                  className={`${s.sheetRole} ${s.sheetRolePending}`}
+                  {...(poolFailed ? { role: "img", "aria-label": "Role unknown" } : { "aria-hidden": true })}
+                  data-testid="pending"
+                />
+              ) : (
+                <span className={s.sheetRole} style={roleStyle(role.slot)} title={role.label}>
+                  {role.short}
+                </span>
+              )}
               <span className={s.sheetName}>
-                {p.name} <span className={s.sheetTags}>{p.tags.join(" · ")}</span>
+                {poolPending && !poolFailed && !p.named ? (
+                  <span className={s.pendingName} aria-hidden="true" data-testid="pending-name" />
+                ) : (
+                  <>
+                    {p.name} <span className={s.sheetTags}>{p.tags.join(" · ")}</span>
+                  </>
+                )}
                 {p.justBought && (
                   <span className={s.justIn} data-testid="just-in">
                     JUST IN

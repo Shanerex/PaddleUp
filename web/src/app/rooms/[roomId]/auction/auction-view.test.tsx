@@ -15,6 +15,7 @@ vi.mock("../../../../api/client", async (importOriginal) => ({
   getRoom: vi.fn(),
   getMembers: vi.fn(),
   getPool: vi.fn(),
+  getEvents: vi.fn(),
   bid: vi.fn(),
   setReady: vi.fn(),
   scheduleAuction: vi.fn(),
@@ -27,9 +28,15 @@ const feed = vi.hoisted(() => {
   const api = {
     snapshot: undefined as unknown,
     now: 0,
+    ticks: 0,
     live: { retry: vi.fn(), resync: vi.fn(), applyPresence: vi.fn() },
     set(next: unknown) {
       api.snapshot = next;
+      listeners.forEach((l) => l());
+    },
+    /** One clock tick: the screen re-renders with nothing else changed. */
+    tick() {
+      api.ticks++;
       listeners.forEach((l) => l());
     },
     subscribe(l: () => void) {
@@ -47,15 +54,26 @@ vi.mock("../../../../auction/useLive", async () => {
       clock: { ready: true, now: () => feed.now },
       snapshot: React.useSyncExternalStore(feed.subscribe, () => feed.snapshot as never, () => feed.snapshot as never),
     }),
-    useTicker: () => 0,
+    useTicker: () => React.useSyncExternalStore(feed.subscribe, () => feed.ticks, () => feed.ticks),
   };
 });
+// The derived views are spied on (they still run) to see when the screen rebuilds them.
+vi.mock("../../../../auction/feed", async (importOriginal) => {
+  const m = await importOriginal<typeof import("../../../../auction/feed")>();
+  return { ...m, feedView: vi.fn(m.feedView) };
+});
+vi.mock("../../../../auction/rivals", async (importOriginal) => {
+  const m = await importOriginal<typeof import("../../../../auction/rivals")>();
+  return { ...m, rivalsView: vi.fn(m.rivalsView), needsView: vi.fn(m.needsView) };
+});
 
-import { ApiError, bid, getMembers, getPool, getRoom, scheduleAuction, sendControl, sendPicks, setReady, type AuctionState, type Member, type Room } from "../../../../api/client";
+import { ApiError, bid, getEvents, getMembers, getPool, getRoom, scheduleAuction, sendControl, sendPicks, setReady, type AuctionState, type Member, type Room } from "../../../../api/client";
+import { feedView } from "../../../../auction/feed";
+import { needsView, rivalsView } from "../../../../auction/rivals";
 import { AuctionView } from "./auction-view";
 
 const NOW = Date.parse("2030-03-01T10:00:00Z");
-const labels = { packId: "stub-football", packName: "Stub", roles: [{ id: "gk", label: "Goalkeeper" }], tags: [], stats: [], terminology: {} };
+const labels = { packId: "stub-football", packName: "Stub", roles: [{ id: "gk", label: "Goalkeeper" }], tags: [], stats: [], terminology: {}, restrictedCategories: [] };
 const config = {
   name: "Friends",
   purse: 100_000_000,
@@ -110,13 +128,15 @@ const scheduled = (over: Partial<AuctionState> = {}): AuctionState =>
   live({ phase: "scheduled", startsAt: "2030-03-01T10:10:00Z", lotOpen: false, lot: undefined, nextBid: undefined, deadline: undefined, config: undefined, lotCount: 0, ...over });
 
 function snap(state: AuctionState | null, over: Record<string, unknown> = {}) {
-  return { state, connection: "live", synced: true, connected: ["fa"], ready: [], missing: false, lastSeen: null, frozenLeft: null, ...over };
+  return { state, connection: "live", synced: true, connected: ["fa"], ready: [], missing: false, lastSeen: null, frozenLeft: null, bids: [], adminEvent: null, ...over };
 }
 
 beforeEach(() => {
   feed.now = NOW;
   vi.mocked(getRoom).mockResolvedValue(room());
   vi.mocked(getMembers).mockResolvedValue(members);
+  vi.mocked(getPool).mockResolvedValue({ players: [] } as never);
+  vi.mocked(getEvents).mockResolvedValue({ events: [], lastSeq: 0, more: false, serverNow: "2030-03-01T10:00:00Z" });
 });
 afterEach(() => {
   cleanup();
@@ -706,5 +726,559 @@ describe("AuctionView squad chip and sheet", () => {
     render(<AuctionView roomId="r1" />);
     await screen.findByTestId("controls-chip");
     expect(screen.queryByTestId("squad-chip")).toBeNull();
+  });
+});
+
+describe("AuctionView chip row and panel sheets", () => {
+  const order = () => screen.getAllByRole("button").map((b) => b.getAttribute("data-testid")).filter((id) => id?.endsWith("-chip"));
+
+  it("shows Rivals, Bids and Squad to a franchise owner, in that order", async () => {
+    feed.set(snap(live()));
+    render(<AuctionView roomId="r1" />);
+    await screen.findByTestId("squad-chip");
+    expect(order()).toEqual(["rivals-chip", "feed-chip", "squad-chip"]);
+  });
+
+  it("puts Controls first for a Commissioner, and leaves Squad out when they have no franchise", async () => {
+    feed.set(snap(live()));
+    vi.mocked(getRoom).mockResolvedValue(room({ myRole: "commissioner" }));
+    const { unmount } = render(<AuctionView roomId="r1" />);
+    await screen.findByTestId("controls-chip");
+    expect(order()).toEqual(["controls-chip", "rivals-chip", "feed-chip", "squad-chip"]);
+    unmount();
+
+    vi.mocked(getRoom).mockResolvedValue(room({ myRole: "commissioner", myFranchiseId: null }));
+    render(<AuctionView roomId="r1" />);
+    await screen.findByTestId("controls-chip");
+    expect(order()).toEqual(["controls-chip", "rivals-chip", "feed-chip"]);
+  });
+
+  it("gives a member watching Rivals and Bids but no Squad chip", async () => {
+    feed.set(snap(live()));
+    vi.mocked(getRoom).mockResolvedValue(room({ myFranchiseId: null }));
+    render(<AuctionView roomId="r1" />);
+    await screen.findByTestId("rivals-chip");
+    expect(order()).toEqual(["rivals-chip", "feed-chip"]);
+  });
+
+  it("opens the Rivals and Bids sheets from their chips and closes them", async () => {
+    feed.set(snap(live()));
+    const user = userEvent.setup();
+    render(<AuctionView roomId="r1" />);
+
+    await user.click(await screen.findByTestId("rivals-chip"));
+    const rivals = await screen.findByRole("dialog", { name: "The room" });
+    await user.click(within(rivals).getByRole("button", { name: "Close" }));
+    expect(screen.queryByRole("dialog")).toBeNull();
+
+    await user.click(screen.getByTestId("feed-chip"));
+    const bids = await screen.findByRole("dialog", { name: "Bids on Lot 1" });
+    await user.click(within(bids).getByRole("button", { name: "Close" }));
+    expect(screen.queryByRole("dialog")).toBeNull();
+  });
+});
+
+// The panels read the room's pack, never a sport: the stub football pack drives these.
+describe("AuctionView panels (stub football pack)", () => {
+  const players = [
+    { id: "p1", name: "Fake 1", role: "gk", tags: ["foreign"], basePrice: 1, set: "S", country: "X", origin: "source" },
+    { id: "p2", name: "Fake 2", role: "def", tags: [], basePrice: 1, set: "S", country: "X", origin: "source" },
+  ];
+  const footRoom = (over: Record<string, unknown> = {}) =>
+    room({
+      config: { ...config, squadMin: 3, squadMax: 18, roleMinimums: { gk: 1, def: 2 }, categoryQuotas: { cap: 2 } },
+      packLabels: {
+        ...labels,
+        roles: [
+          { id: "gk", label: "Goalkeeper", short: "GK" },
+          { id: "def", label: "Defender", short: "DEF" },
+        ],
+        tags: [{ id: "foreign", label: "Foreign" }],
+        restrictedCategories: [{ id: "cap", label: "Foreign players", tag: "foreign", max: 4 }],
+      },
+      ...over,
+    });
+  const ev = (seq: number, franchiseId: string, amount: number | null, over: Record<string, unknown> = {}) => ({
+    seq,
+    at: "2030-03-01T10:00:00Z",
+    kind: amount === null ? "passed" : "bid_accepted",
+    franchiseId,
+    lot: 1,
+    payload: amount === null ? {} : { amount },
+    ...over,
+  });
+  const bidsState = (over: Partial<AuctionState> = {}) =>
+    live({ currentBid: 500_000, leaderFranchiseId: "fb", nextBid: 600_000, lastSeq: 6, ...over });
+
+  beforeEach(() => {
+    vi.mocked(getRoom).mockResolvedValue(footRoom());
+    vi.mocked(getPool).mockResolvedValue({ players } as never);
+  });
+
+  describe("Bids feed", () => {
+    it("lists the open lot's bids and passes newest first, with a 'You' row and the opening line", async () => {
+      const bids = [ev(4, "fa", 300_000), ev(5, "fb", 400_000), ev(6, "fb", 500_000), ev(7, "fa", null)];
+      feed.set(snap(bidsState(), { bids }));
+      render(<AuctionView roomId="r1" />);
+
+      const card = await screen.findByTestId("feed-card");
+      const rows = within(card).getAllByTestId("feed-row");
+      expect(rows.map((r) => r.getAttribute("data-kind"))).toEqual(["pass", "bid", "bid", "bid"]);
+      expect(rows[0].textContent).toContain("You");
+      expect(rows[0].textContent).toContain("Passed");
+      expect(rows[1].textContent).toContain("Blue FC");
+      expect(rows[1].textContent).toContain("€0.5 M");
+      expect(rows[1].textContent).toContain("now");
+      expect(rows[3].textContent).toContain("€0.3 M");
+      expect(within(card).getByTestId("feed-opened").textContent).toContain("Lot 1 opened at €0.3 M");
+    });
+
+    it("shows a new bid within one live update, and drops other lots' bids", async () => {
+      feed.set(snap(bidsState(), { bids: [ev(5, "fb", 400_000)] }));
+      render(<AuctionView roomId="r1" />);
+      const card = await screen.findByTestId("feed-card");
+      expect(within(card).getAllByTestId("feed-row")).toHaveLength(1);
+
+      act(() => feed.set(snap(bidsState({ lastSeq: 7, currentBid: 600_000, leaderFranchiseId: "fa" }), { bids: [ev(5, "fb", 400_000), ev(7, "fa", 600_000)] })));
+
+      await waitFor(() => expect(within(screen.getByTestId("feed-card")).getAllByTestId("feed-row")).toHaveLength(2));
+      expect(within(screen.getByTestId("feed-card")).getAllByTestId("feed-row")[0].textContent).toContain("€0.6 M");
+
+      act(() => feed.set(snap(bidsState({ lastSeq: 9, lot: { ...lot, no: 2 }, currentBid: 0, leaderFranchiseId: undefined }), { bids: [ev(5, "fb", 400_000), ev(7, "fa", 600_000)] })));
+      await waitFor(() => expect(within(screen.getByTestId("feed-card")).queryAllByTestId("feed-row")).toHaveLength(0));
+      expect(screen.getByTestId("feed-opened").textContent).toContain("Lot 2 opened at €0.3 M");
+    });
+
+    it("rebuilds the same rows in a new tab from the events page, and shows them in the Bids sheet", async () => {
+      const events = [ev(5, "fb", 400_000), ev(6, "fb", 500_000)];
+      vi.mocked(getEvents).mockResolvedValue({ events, lastSeq: 6, more: false, serverNow: "2030-03-01T10:00:00Z" } as never);
+      feed.set(snap(bidsState(), { bids: [] }));
+      const user = userEvent.setup();
+      render(<AuctionView roomId="r1" />);
+
+      const card = await screen.findByTestId("feed-card");
+      await waitFor(() => expect(within(card).getAllByTestId("feed-row")).toHaveLength(2));
+      expect(getEvents).toHaveBeenCalledWith("r1", 0);
+
+      await user.click(screen.getByTestId("feed-chip"));
+      const sheet = await screen.findByRole("dialog", { name: "Bids on Lot 1" });
+      expect(within(sheet).getAllByTestId("feed-row").map((r) => r.textContent)).toEqual(within(card).getAllByTestId("feed-row").map((r) => r.textContent));
+    });
+
+    it("keeps the feed on screen for a Commissioner without a franchise", async () => {
+      vi.mocked(getRoom).mockResolvedValue(footRoom({ myRole: "commissioner", myFranchiseId: null }));
+      feed.set(snap(bidsState(), { bids: [ev(5, "fb", 400_000)] }));
+      render(<AuctionView roomId="r1" />);
+      const card = await screen.findByTestId("feed-card");
+      expect(within(card).getAllByTestId("feed-row")[0].textContent).toContain("Blue FC");
+    });
+  });
+
+  describe("Rivals sheet", () => {
+    const squadState = (over: Partial<AuctionState> = {}) =>
+      bidsState({
+        standings: [
+          { franchiseId: "fa", purse: 99_000_000, squad: [{ lot: 1, playerId: "p1", price: 1_000_000 }] },
+          { franchiseId: "fb", purse: 100_000_000, squad: [] },
+        ],
+        ...over,
+      });
+    const open = async () => {
+      const user = userEvent.setup();
+      render(<AuctionView roomId="r1" />);
+      await user.click(await screen.findByTestId("rivals-chip"));
+      return within(await screen.findByRole("dialog", { name: "The room" }));
+    };
+
+    it("lists every franchise with manager, purse, squad, the pack's category cap and unmet needs", async () => {
+      feed.set(snap(squadState(), { connected: ["fa", "fb"] }));
+      const sheet = await open();
+      await waitFor(() => expect(sheet.getAllByTestId("rival-row")).toHaveLength(2));
+      const [a, b] = sheet.getAllByTestId("rival-row");
+      expect(a.textContent).toContain("Ace FC");
+      expect(a.textContent).toContain("Ann · needs 2 DEF");
+      expect(a.textContent).toContain("€99 M");
+      expect(a.textContent).toContain("1 pl");
+      expect(within(a).getByTestId("rival-category").textContent).toBe("1/2 Foreign players");
+      expect(b.textContent).toContain("Ben · needs 1 GK · 2 DEF");
+      expect(within(b).getByTestId("rival-category").textContent).toBe("0/2 Foreign players");
+    });
+
+    it("marks the lot leader LEADING and a franchise that is not connected OFFLINE, and follows each change", async () => {
+      feed.set(snap(squadState(), { connected: ["fa"] }));
+      const sheet = await open();
+      await waitFor(() => expect(sheet.getAllByTestId("rival-row")).toHaveLength(2));
+      const row = (id: string) => sheet.getAllByTestId("rival-row").find((r) => r.getAttribute("data-franchise") === id)!;
+      expect(row("fb").textContent).toContain("LEADING");
+      expect(row("fb").textContent).toContain("OFFLINE");
+      expect(row("fa").textContent).not.toContain("LEADING");
+      expect(row("fa").textContent).not.toContain("OFFLINE");
+
+      // A hammer moves the lead to Ace and a presence change brings Blue online.
+      act(() => feed.set(snap(squadState({ lastSeq: 7, leaderFranchiseId: "fa" }), { connected: ["fa", "fb"] })));
+      await waitFor(() => expect(row("fa").textContent).toContain("LEADING"));
+      expect(row("fb").textContent).not.toContain("LEADING");
+      expect(row("fb").textContent).not.toContain("OFFLINE");
+
+      act(() =>
+        feed.set(
+          snap(
+            squadState({
+              lastSeq: 8,
+              standings: [
+                { franchiseId: "fa", purse: 97_000_000, squad: [{ lot: 1, playerId: "p1", price: 1_000_000 }, { lot: 2, playerId: "p2", price: 2_000_000 }] },
+                { franchiseId: "fb", purse: 100_000_000, squad: [] },
+              ],
+            }),
+            { connected: ["fa", "fb"] },
+          ),
+        ),
+      );
+      await waitFor(() => expect(row("fa").textContent).toContain("€97 M"));
+      expect(row("fa").textContent).toContain("needs 1 DEF");
+    });
+  });
+
+  describe("Rivals sheet after the hammer (CR-18)", () => {
+    it("shows no LEADING marker once the lot has closed", async () => {
+      feed.set(
+        snap(
+          bidsState({
+            standings: [
+              { franchiseId: "fa", purse: 99_000_000, squad: [{ lot: 1, playerId: "p1", price: 1_000_000 }] },
+              { franchiseId: "fb", purse: 96_000_000, squad: [{ lot: 2, playerId: "p2", price: 4_000_000 }] },
+            ],
+            lotOpen: false,
+            phase: "paused",
+            heldMs: 3000,
+            deadline: undefined,
+            nextBid: undefined,
+            leaderFranchiseId: "fb",
+            lastResult: { lot: 2, sold: true, franchiseId: "fb", amount: 4_000_000 },
+          }),
+          { connected: ["fa", "fb"] },
+        ),
+      );
+      const user = userEvent.setup();
+      render(<AuctionView roomId="r1" />);
+      await user.click(await screen.findByTestId("rivals-chip"));
+      const sheet = within(await screen.findByRole("dialog", { name: "The room" }));
+      await waitFor(() => expect(sheet.getAllByTestId("rival-row")).toHaveLength(2));
+      for (const r of sheet.getAllByTestId("rival-row")) expect(r.textContent).not.toContain("LEADING");
+    });
+  });
+
+  describe("pool read fails", () => {
+    const failState = () =>
+      bidsState({
+        standings: [
+          { franchiseId: "fa", purse: 99_000_000, squad: [{ lot: 1, playerId: "p1", price: 1_000_000 }] },
+          { franchiseId: "fb", purse: 100_000_000, squad: [] },
+        ],
+      });
+
+    it("shows a failed state, never zero counts, in the Rivals sheet and the Your needs card, and recovers on a retry", async () => {
+      vi.mocked(getPool).mockRejectedValueOnce(new Error("down"));
+      feed.set(snap(failState(), { connected: ["fa", "fb"] }));
+      const user = userEvent.setup();
+      render(<AuctionView roomId="r1" />);
+      await user.click(await screen.findByTestId("rivals-chip"));
+      const sheet = within(await screen.findByRole("dialog", { name: "The room" }));
+      const note = await sheet.findByTestId("rivals-failed");
+      expect(note.textContent).toContain("Couldn't load the squads.");
+      expect(sheet.queryAllByTestId("rival-row")).toHaveLength(0);
+      expect(sheet.queryByTestId("rivals-loading")).toBeNull();
+
+      await user.click(sheet.getByRole("button", { name: "Retry" }));
+      await waitFor(() => expect(sheet.getAllByTestId("rival-row")).toHaveLength(2));
+      expect(sheet.queryByTestId("rivals-failed")).toBeNull();
+    });
+
+    it("keeps the Your needs card's Max bid and squad with the load-error Note in place of the role tiles, never a skeleton for good", async () => {
+      vi.mocked(getPool).mockRejectedValue(new Error("down"));
+      feed.set(snap(failState(), { connected: ["fa", "fb"] }));
+      const user = userEvent.setup();
+      render(<AuctionView roomId="r1" />);
+      const failed = await screen.findByTestId("needs-failed");
+      const card = screen.getByTestId("needs-card");
+      expect(card.contains(failed)).toBe(true);
+      expect(within(card).getByTestId("max-bid").textContent).toMatch(/^Max bid /);
+      expect(within(card).getByTestId("needs-squad").textContent).toBe("1 / 3–18");
+      expect(within(card).queryByTestId("need-gk")).toBeNull();
+      expect(within(card).getByTestId("needs-restricted").querySelector('[data-testid="pending"]')).not.toBeNull();
+      expect(failed.textContent).toContain("Couldn't load the player list.");
+      expect(card.getAttribute("aria-busy")).toBeNull();
+      expect(document.querySelector('[aria-busy="true"]')).toBeNull();
+
+      vi.mocked(getPool).mockResolvedValue({ players: [] } as never);
+      await user.click(within(failed).getByRole("button", { name: "Retry" }));
+      await screen.findByTestId("need-gk");
+      expect(screen.queryByTestId("needs-failed")).toBeNull();
+    });
+
+    it("keeps the failed Your needs card openable: the card opens the squad sheet, Retry reads the pool again and does not", async () => {
+      vi.mocked(getPool).mockRejectedValue(new Error("down"));
+      feed.set(snap(failState(), { connected: ["fa", "fb"] }));
+      const user = userEvent.setup();
+      render(<AuctionView roomId="r1" />);
+      const failed = await screen.findByTestId("needs-failed");
+      const calls = vi.mocked(getPool).mock.calls.length;
+
+      await user.click(within(failed).getByRole("button", { name: "Retry" }));
+      await waitFor(() => expect(vi.mocked(getPool).mock.calls.length).toBeGreaterThan(calls));
+      expect(screen.queryByRole("dialog", { name: "My squad" })).toBeNull();
+
+      await user.click(within(screen.getByTestId("needs-card")).getByTestId("max-bid"));
+      expect(await screen.findByRole("dialog", { name: "My squad" })).toBeTruthy();
+    });
+
+    it("opens the squad sheet from the failed card with the keyboard", async () => {
+      vi.mocked(getPool).mockRejectedValue(new Error("down"));
+      feed.set(snap(failState(), { connected: ["fa", "fb"] }));
+      const user = userEvent.setup();
+      render(<AuctionView roomId="r1" />);
+      await screen.findByTestId("needs-failed");
+      const open = within(screen.getByTestId("needs-card")).getAllByRole("button").filter((b) => b.textContent !== "Retry");
+      expect(open.length).toBeGreaterThan(0);
+      open[0].focus();
+      await user.keyboard("{Enter}");
+      expect(await screen.findByRole("dialog", { name: "My squad" })).toBeTruthy();
+    });
+
+    it("keeps the squad sheet's purse, count and names from the state, with the failure as a notice and a retry", async () => {
+      vi.mocked(getPool).mockRejectedValue(new Error("down"));
+      feed.set(snap(failState(), { connected: ["fa", "fb"] }));
+      const user = userEvent.setup();
+      render(<AuctionView roomId="r1" />);
+      await user.click(await screen.findByTestId("squad-chip"));
+      const sheet = within(await screen.findByRole("dialog", { name: "My squad" }));
+      const body = await sheet.findByTestId("squad-sheet");
+      expect(within(body).getByTestId("squad-purse").textContent).toBe("€99 M");
+      expect(sheet.getByTestId("squad-failed").textContent).toContain("Couldn't load the player list.");
+      expect(within(body).getByTestId("sheet-role-gk").querySelector('[data-testid="pending"]')).not.toBeNull();
+      expect(within(body).queryByTestId("squad-slots")).toBeNull();
+      expect(body.getAttribute("aria-busy")).toBeNull();
+      // CR-22: no aria-hidden bars for a name the failed read leaves unknown, no "after the list loads", labelled placeholders.
+      expect(within(body).queryByTestId("pending-name")).toBeNull();
+      expect(within(body).getByTestId("squad-player").textContent).toContain("Unknown player");
+      expect(within(body).queryByTestId("squad-slots-pending")).toBeNull();
+      expect(body.textContent).not.toContain("after the list loads");
+      expect(within(body).getByTestId("squad-player").querySelector('[data-testid="pending"]')?.getAttribute("aria-label")).toBe("Role unknown");
+
+      vi.mocked(getPool).mockResolvedValue({ players: [] } as never);
+      await user.click(sheet.getByRole("button", { name: "Retry" }));
+      await waitFor(() => expect(sheet.queryByTestId("squad-failed")).toBeNull());
+      expect(sheet.getByTestId("squad-sheet")).toBeTruthy();
+    });
+  });
+
+  describe("pool still loading", () => {
+    const loadingState = () =>
+      bidsState({
+        bidLimits: [{ kind: "purse", above: 9_000_000 }] as never,
+        standings: [
+          { franchiseId: "fa", purse: 99_000_000, squad: [{ lot: 1, playerId: "p1", price: 1_000_000 }] },
+          { franchiseId: "fb", purse: 100_000_000, squad: [] },
+        ],
+      });
+
+    it("shows the Your needs figures the state holds and a placeholder for the pool's, never a zero (CR-15)", async () => {
+      vi.mocked(getPool).mockReturnValue(new Promise(() => {}));
+      feed.set(snap(loadingState(), { connected: ["fa", "fb"] }));
+      render(<AuctionView roomId="r1" />);
+      const card = await screen.findByTestId("needs-card");
+      expect(within(card).getByTestId("needs-squad").textContent).toBe("1 / 3–18");
+      expect(within(card).getByTestId("max-bid").textContent).toBe("Max bid €9 M");
+      expect(within(card).getByTestId("need-gk").textContent).not.toMatch(/0\//);
+      expect(within(card).getByTestId("need-gk").querySelector('[data-testid="pending"]')).not.toBeNull();
+      expect(within(card).getByTestId("needs-restricted").querySelector('[data-testid="pending"]')).not.toBeNull();
+      expect(within(card).getByTestId("needs-restricted").textContent).toBe("/2");
+    });
+
+    it("marks the Your needs card busy while only a restricted count waits on the pool, in a room with no role minimums (CR-31)", async () => {
+      vi.mocked(getPool).mockReturnValue(new Promise(() => {}));
+      vi.mocked(getRoom).mockResolvedValue(
+        room({
+          config: { ...config, squadMin: 3, squadMax: 18, roleMinimums: {}, categoryQuotas: { cap: 2 } },
+          packLabels: { ...labels, restrictedCategories: [{ id: "cap", label: "Foreign players", tag: "foreign", max: 4 }] },
+        }),
+      );
+      feed.set(snap(loadingState(), { connected: ["fa", "fb"] }));
+      render(<AuctionView roomId="r1" />);
+      const card = await screen.findByTestId("needs-card");
+      expect(within(card).queryByTestId("need-gk")).toBeNull();
+      expect(within(card).getByTestId("needs-restricted").querySelector('[data-testid="pending"]')).not.toBeNull();
+      expect(card.getAttribute("aria-busy")).toBe("true");
+    });
+
+    it("labels every pending figure for a screen reader, so a bare /min is never read alone (CR-32)", async () => {
+      vi.mocked(getPool).mockReturnValue(new Promise(() => {}));
+      feed.set(snap(loadingState(), { connected: ["fa", "fb"] }));
+      const user = userEvent.setup();
+      render(<AuctionView roomId="r1" />);
+      const card = await screen.findByTestId("needs-card");
+      for (const el of card.querySelectorAll('[data-testid="pending"]')) {
+        expect(el.getAttribute("role")).toBe("img");
+        expect(el.getAttribute("aria-label")).toBe("Loading");
+        expect(el.getAttribute("aria-hidden")).toBeNull();
+      }
+      await user.click(await screen.findByTestId("squad-chip"));
+      const sheet = within(await screen.findByRole("dialog", { name: "My squad" }));
+      const body = within(await sheet.findByTestId("squad-sheet"));
+      const figures = body.getByTestId("sheet-role-gk").querySelectorAll('[data-testid="pending"]');
+      expect(figures.length).toBeGreaterThan(0);
+      for (const el of figures) expect(el.getAttribute("aria-label")).toBe("Loading");
+      for (const el of body.getByTestId("squad-restricted-cap").querySelectorAll('[data-testid="pending"]')) expect(el.getAttribute("aria-label")).toBe("Loading");
+    });
+
+    it("shows three skeleton rows in the Rivals sheet while the pool loads", async () => {
+      vi.mocked(getPool).mockReturnValue(new Promise(() => {}));
+      feed.set(snap(loadingState(), { connected: ["fa", "fb"] }));
+      const user = userEvent.setup();
+      render(<AuctionView roomId="r1" />);
+      await user.click(await screen.findByTestId("rivals-chip"));
+      const sheet = within(await screen.findByRole("dialog", { name: "The room" }));
+      const loading = await sheet.findByTestId("rivals-loading");
+      expect(loading.getAttribute("aria-busy")).toBe("true");
+      expect(loading.children).toHaveLength(3);
+    });
+
+    it("shows the squad sheet's purse and count from the state and a placeholder for role and category counts (CR-15)", async () => {
+      vi.mocked(getPool).mockReturnValue(new Promise(() => {}));
+      feed.set(snap(loadingState(), { connected: ["fa", "fb"] }));
+      const user = userEvent.setup();
+      render(<AuctionView roomId="r1" />);
+      await user.click(await screen.findByTestId("squad-chip"));
+      const sheet = within(await screen.findByRole("dialog", { name: "My squad" }));
+      const body = within(await sheet.findByTestId("squad-sheet"));
+      expect(body.getByTestId("squad-purse").textContent).toBe("€99 M");
+      expect(body.getByTestId("squad-count").textContent).toContain("1");
+      expect(body.getByTestId("sheet-role-gk").textContent).not.toMatch(/0/);
+      expect(body.getByTestId("sheet-role-gk").querySelector('[data-testid="pending"]')).not.toBeNull();
+      expect(body.getByTestId("squad-restricted-cap").querySelector('[data-testid="pending"]')).not.toBeNull();
+      expect(body.queryByTestId("squad-slots")).toBeNull();
+      expect(body.getByTestId("squad-slots-pending")).toBeTruthy();
+      expect(body.getByTestId("sheet-role-gk").getAttribute("style")).toBeNull();
+    });
+  });
+
+  describe("while the viewer's own socket is reconnecting", () => {
+    it("claims no franchise is OFFLINE, since the presence list is stale", async () => {
+      feed.set(snap(bidsState(), { connected: ["fa"], connection: "reconnecting", synced: false, frozenLeft: 17_000 }));
+      const user = userEvent.setup();
+      render(<AuctionView roomId="r1" />);
+      await user.click(await screen.findByTestId("rivals-chip"));
+      const sheet = within(await screen.findByRole("dialog", { name: "The room" }));
+      await waitFor(() => expect(sheet.queryAllByTestId("rival-row").length).toBeGreaterThan(0));
+      expect(sheet.queryByText("OFFLINE")).toBeNull();
+    });
+  });
+
+  describe("clock ticks (CR-26)", () => {
+    const calls = () => [vi.mocked(feedView).mock.calls.length, vi.mocked(rivalsView).mock.calls.length, vi.mocked(needsView).mock.calls.length];
+
+    it("does not rebuild the Bids, Rivals or needs views on a tick when nothing they read changed", async () => {
+      feed.set(snap(bidsState(), { bids: [ev(4, "fa", 300_000), ev(5, "fb", 400_000)], connected: ["fa", "fb"] }));
+      render(<AuctionView roomId="r1" />);
+      await screen.findByTestId("feed-card");
+      await waitFor(() => expect(within(screen.getByTestId("needs-card")).getByTestId("need-gk")).toBeTruthy());
+      await act(async () => {});
+      const before = calls();
+      expect(before.every((n) => n > 0)).toBe(true);
+
+      for (let i = 0; i < 10; i++) act(() => feed.tick());
+      expect(calls()).toEqual(before);
+    });
+
+    it("still ages the feed rows as the clock moves, once a second", async () => {
+      feed.set(snap(bidsState(), { bids: [ev(4, "fa", 300_000)] }));
+      render(<AuctionView roomId="r1" />);
+      const age = async () => within(await screen.findByTestId("feed-card")).getAllByTestId("feed-row")[0].textContent;
+      expect(await age()).toContain("now");
+
+      feed.now = NOW + 12_000;
+      act(() => feed.tick());
+      expect(await age()).toContain("12s");
+    });
+
+    it("rebuilds the views when what they read does change", async () => {
+      feed.set(snap(bidsState(), { bids: [ev(4, "fa", 300_000)], connected: ["fa"] }));
+      render(<AuctionView roomId="r1" />);
+      await screen.findByTestId("feed-card");
+      await act(async () => {});
+      const before = calls();
+      act(() => feed.set(snap(bidsState({ lastSeq: 7, currentBid: 600_000, leaderFranchiseId: "fa", nextBid: 700_000 }), { bids: [ev(4, "fa", 300_000), ev(7, "fa", 600_000)], connected: ["fa", "fb"] })));
+      await waitFor(() => expect(within(screen.getByTestId("feed-card")).getAllByTestId("feed-row")).toHaveLength(2));
+      const after = calls();
+      expect(after[0]).toBeGreaterThan(before[0]);
+      expect(after[1]).toBeGreaterThan(before[1]);
+      expect(after[2]).toBeGreaterThan(before[2]);
+    });
+  });
+
+  describe("Bids card", () => {
+    it("is a button with no label overriding its bids, holding no block elements", async () => {
+      feed.set(snap(bidsState(), { bids: [ev(5, "fb", 400_000)] }));
+      render(<AuctionView roomId="r1" />);
+      const card = await screen.findByTestId("feed-card");
+      expect(card.getAttribute("aria-label")).toBeNull();
+      expect(card.querySelector("div")).toBeNull();
+      expect(card.textContent).toContain("Blue FC");
+    });
+  });
+
+  describe("Your needs card", () => {
+    const needsState = (limits: AuctionState["bidLimits"]) =>
+      bidsState({
+        bidLimits: limits,
+        standings: [
+          { franchiseId: "fa", purse: 99_000_000, squad: [{ lot: 1, playerId: "p1", price: 1_000_000 }] },
+          { franchiseId: "fb", purse: 100_000_000, squad: [] },
+        ],
+      });
+
+    it("shows have/min per pack role, the squad range, the category count and the lowest limit as Max bid", async () => {
+      feed.set(snap(needsState([{ kind: "purse", above: 9_000_000 }, { kind: "reserve", above: 4_000_000 }] as never)));
+      render(<AuctionView roomId="r1" />);
+
+      const card = await screen.findByTestId("needs-card");
+      await waitFor(() => expect(within(card).getByTestId("need-gk").textContent).toContain("1/1"));
+      expect(within(card).getByTestId("need-gk").getAttribute("data-tone")).toBe("met");
+      expect(within(card).getByTestId("need-gk").textContent).toContain("GK");
+      expect(within(card).getByTestId("need-def").textContent).toContain("0/2");
+      expect(within(card).getByTestId("need-def").getAttribute("data-tone")).toBe("empty");
+      expect(within(card).getByTestId("needs-squad").textContent).toBe("1 / 3–18");
+      expect(within(card).getByTestId("needs-restricted").textContent).toBe("1/2");
+      expect(within(card).getByTestId("max-bid").textContent).toBe("Max bid €4 M");
+    });
+
+    it("says no bid is possible when a limit has no `above`", async () => {
+      feed.set(snap(needsState([{ kind: "squad_full" }] as never)));
+      render(<AuctionView roomId="r1" />);
+      await screen.findByTestId("needs-card");
+      expect(screen.getByTestId("max-bid").textContent).toBe("No bid possible");
+    });
+
+    it("opens the squad sheet, and follows the live state", async () => {
+      feed.set(snap(needsState([{ kind: "purse", above: 9_000_000 }] as never)));
+      const user = userEvent.setup();
+      render(<AuctionView roomId="r1" />);
+      await user.click(await screen.findByTestId("needs-card"));
+      expect(await screen.findByRole("dialog", { name: "My squad" })).toBeTruthy();
+    });
+
+    it("is not drawn for a Commissioner without a franchise or a member watching, who still get the chips and feed", async () => {
+      for (const over of [{ myRole: "commissioner", myFranchiseId: null }, { myFranchiseId: null }]) {
+        vi.mocked(getRoom).mockResolvedValue(footRoom(over));
+        feed.set(snap(needsState([])));
+        const { unmount } = render(<AuctionView roomId="r1" />);
+        await screen.findByTestId("feed-card");
+        expect(screen.queryByTestId("needs-card")).toBeNull();
+        expect(screen.queryByTestId("squad-chip")).toBeNull();
+        expect(screen.getByTestId("rivals-chip")).toBeTruthy();
+        expect(screen.getByTestId("feed-chip")).toBeTruthy();
+        unmount();
+      }
+    });
   });
 });
