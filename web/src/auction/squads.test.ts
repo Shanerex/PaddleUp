@@ -132,5 +132,7 @@ describe("squadView", () => {
     const orphan = a.groups[a.groups.length - 1];
     expect(orphan.key).toBe("");
     expect(orphan.players.map((p) => p.name)).toContain("Unknown player");
+    expect(a.groups.find((g) => g.key === "mid")?.players[0].named).toBe(true);
+    expect(orphan.players.find((p) => p.name === "Unknown player")?.named).toBe(false);
   });
 });

@@ -136,6 +136,7 @@ row and are not on the graph; they run when the owner asks.
 | Id | Feature | Scope | Touches |
 |---|---|---|---|
 | 2026-11-09-home-redesign | Franchise wall hub, Room settings mode, outside-room restyle | FR-2, FR-10..13, FR-15 | web, rooms, packs (display fields), auction (start times for the hub list) |
+| 2026-11-22-auction-panels | Auction screen Rivals and Bids chips, Bids feed, Your needs card (quick lane; takes over the gaps 10 and 24 deferred) | FR-60 | web |
 
 ## Dependency graph
 

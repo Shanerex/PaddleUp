@@ -23,6 +23,8 @@ export type SquadPlayer = {
   playerId: string;
   lot: number;
   name: string;
+  /** False when neither the state nor the pool names the player yet, so `name` is only a stand-in. */
+  named: boolean;
   /** Pack tag labels. */
   tags: string[];
   price: number;
@@ -87,6 +89,7 @@ export function squadView(
           playerId: e.playerId ?? "",
           lot: e.lot ?? 0,
           name: p?.name ?? "Unknown player",
+          named: !!p,
           tags: (p?.tags ?? []).map((t) => tagLabel(labels, t)),
           price: e.price ?? 0,
           justBought: !!fresh && fresh.franchiseId === st.franchiseId && fresh.lot === e.lot,

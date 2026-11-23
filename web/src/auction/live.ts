@@ -24,6 +24,12 @@ export type LiveSnapshot = {
   frozenLeft: number | null;
   /** The latest Commissioner skip or re-open that arrived live, for the notice every manager sees. */
   adminEvent: AdminEvent | null;
+  /**
+   * The bids and passes this feed applied, oldest first, for the Bids feed. Past a limit only
+   * events of lots other than the open one are trimmed; the open lot's own are never trimmed. A seq the
+   * feed missed (a gap, a dropped socket) is not here: the events page has it.
+   */
+  bids: AuctionEvent[];
 };
 
 /** A lot the Commissioner skipped or re-opened, as the broadcast says it (3s, 3t). */
@@ -66,6 +72,9 @@ export type LiveDeps = {
   mono?: () => number;
 };
 
+/** How many applied bids and passes the snapshot keeps for the feed. */
+const BIDS_KEPT = 200;
+
 const RETRY_MIN_MS = 500;
 const RETRY_MAX_MS = 4000;
 
@@ -96,6 +105,7 @@ export function createLive(deps: LiveDeps) {
     lastSeen: null,
     frozenLeft: null,
     adminEvent: null,
+    bids: [],
   };
   const listeners = new Set<() => void>();
   let stopped = true;
@@ -187,6 +197,7 @@ export function createLive(deps: LiveDeps) {
     const pending = buffer.filter((e) => e.seq > next.lastSeq).sort((a, b) => a.seq - b.seq);
     buffer = [];
     let gap = false;
+    const applied: AuctionEvent[] = [];
     for (const e of pending) {
       if (e.seq !== next.lastSeq + 1) {
         gap = true;
@@ -198,6 +209,7 @@ export function createLive(deps: LiveDeps) {
         break;
       }
       next = patched;
+      applied.push(e);
     }
     // Presence that arrived while the fetch was in flight is newer than the fetched snapshot.
     const newer = presenceStamp !== atPresence ? lastPresence : null;
@@ -205,6 +217,7 @@ export function createLive(deps: LiveDeps) {
     if (socketUp) attempt = 0;
     emit({
       state: next,
+      bids: keep(snap.bids, applied, next.lot?.no),
       missing: false,
       connected: newer ? newer.connected : next.connected,
       ready: newer ? (next.phase === "scheduled" ? newer.ready : []) : next.ready,
@@ -214,6 +227,27 @@ export function createLive(deps: LiveDeps) {
       frozenLeft: socketUp ? null : snap.frozenLeft,
     });
     if (gap) again = true;
+  };
+
+  /**
+   * The feed's bids and passes after `added`: once per seq, oldest first. Past {@link BIDS_KEPT} only
+   * events of other lots than the open one (`lotNo`) are dropped, oldest first: the open lot's own are
+   * what the feed shows, so they are never trimmed. Lot numbers are not ordered in time (a re-opened
+   * lot plays under a higher number), so "other" means not equal, never lower.
+   */
+  const keep = (have: AuctionEvent[], added: AuctionEvent[], lotNo: number | null | undefined): AuctionEvent[] => {
+    if (added.length === 0) return have;
+    const seen = new Set(have.map((e) => e.seq));
+    const all = [...have, ...added.filter((e) => !seen.has(e.seq))];
+    let drop = all.length - BIDS_KEPT;
+    if (drop <= 0) return all;
+    return all.filter((e) => {
+      if (drop > 0 && lotNo != null && e.lot !== lotNo) {
+        drop--;
+        return false;
+      }
+      return true;
+    });
   };
 
   /** The state after one event, or null when the event needs a refetch. */
@@ -263,7 +297,7 @@ export function createLive(deps: LiveDeps) {
     if (e.seq <= s.lastSeq) return;
     const next = e.seq === s.lastSeq + 1 ? patch(s, e) : null;
     if (next) {
-      emit({ state: next, lastSeen: Date.now() });
+      emit({ state: next, bids: keep(snap.bids, [e], next.lot?.no), lastSeen: Date.now() });
       return;
     }
     emit({ synced: false });
